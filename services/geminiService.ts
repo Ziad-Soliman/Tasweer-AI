@@ -1,4 +1,7 @@
 import { GoogleGenAI, Modality, Part, Type } from "@google/genai";
+import { SceneTemplate, MarketingCopy } from "../types";
+import { LIGHTING_STYLES, CAMERA_PERSPECTIVES } from '../constants';
+
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -47,16 +50,23 @@ export const describeStyle = async (imageFile: File): Promise<string> => {
     return result.text.trim();
 };
 
-export const generateStyleSuggestions = async (productDescription: string): Promise<string[]> => {
+export const generateSceneTemplates = async (productDescription: string): Promise<SceneTemplate[]> => {
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Based on the product described as "${productDescription}", generate 3 creative and distinct scene concepts for a professional product photograph. Provide the response as a JSON array of strings, where each string is a complete and compelling image generation prompt. For example: ["A close-up shot of the product on a wet, black slate background with scattered water droplets, lit by dramatic side lighting.", "The product displayed on a pedestal made of natural wood, surrounded by lush green foliage and soft, diffused sunlight.", "A flat-lay of the product on a minimalist pastel-colored surface, with geometric shadows and a single, elegant flower petal."]`,
+        contents: `Based on the product "${productDescription}", generate 4 diverse and visually appealing scene templates for a professional product photograph. Provide the response as a JSON array of objects. Ensure lighting and perspective values are ONLY from the provided lists.`,
         config: {
             responseMimeType: "application/json",
             responseSchema: {
                 type: Type.ARRAY,
                 items: {
-                    type: Type.STRING
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING, description: "A short, catchy name for the scene (e.g., 'Minimalist Studio')." },
+                        prompt: { type: Type.STRING, description: "A detailed image generation prompt for this scene, incorporating the product." },
+                        lighting: { type: Type.STRING, description: `A suitable lighting style from this list: ${LIGHTING_STYLES.join(', ')}.` },
+                        perspective: { type: Type.STRING, description: `A suitable camera perspective from this list: ${CAMERA_PERSPECTIVES.join(', ')}.` }
+                    },
+                    required: ["name", "prompt", "lighting", "perspective"]
                 }
             }
         }
@@ -64,13 +74,13 @@ export const generateStyleSuggestions = async (productDescription: string): Prom
 
     try {
         const jsonString = result.text.trim();
-        const suggestions = JSON.parse(jsonString);
-        if (Array.isArray(suggestions) && suggestions.every(item => typeof item === 'string')) {
-            return suggestions;
+        const templates = JSON.parse(jsonString);
+        if (Array.isArray(templates)) {
+            return templates.filter(t => t.name && t.prompt && t.lighting && t.perspective);
         }
         return [];
     } catch (e) {
-        console.error("Failed to parse style suggestions:", e);
+        console.error("Failed to parse scene templates:", e);
         return [];
     }
 };
@@ -139,12 +149,48 @@ export const generateImage = async (
     throw new Error('Image generation failed: No image part in response.');
 };
 
-export const inpaintImage = async (
+export const generateVideo = async (
+    productImageBase64: string,
+    prompt: string
+): Promise<string> => {
+    let operation = await ai.models.generateVideos({
+        model: 'veo-2.0-generate-001',
+        prompt: prompt,
+        image: {
+            imageBytes: productImageBase64,
+            mimeType: 'image/png',
+        },
+        config: {
+            numberOfVideos: 1
+        }
+    });
+
+    while (!operation.done) {
+        // Wait for 10 seconds before polling again
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) {
+        throw new Error('Video generation failed: No download link in response.');
+    }
+
+    // The response.body contains the MP4 bytes. You must append an API key when fetching from the download link.
+    const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+    if (!response.ok) {
+        throw new Error(`Failed to download video: ${response.statusText}`);
+    }
+    const videoBlob = await response.blob();
+    return URL.createObjectURL(videoBlob);
+};
+
+export const magicEditImage = async (
     imageWithMaskBase64: string,
     prompt: string
 ): Promise<string> => {
     const imagePart = base64ToGenerativePart(imageWithMaskBase64);
-    const textPart = { text: `In the following image, fill the transparent area with: ${prompt}. Blend it seamlessly with the rest of the image.` };
+    const textPart = { text: `In the following image, edit the transparent (erased) area based on this instruction: "${prompt}". You can add, remove, or change objects. Blend the changes seamlessly with the rest of the image.` };
 
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
@@ -159,7 +205,7 @@ export const inpaintImage = async (
             return part.inlineData.data;
         }
     }
-    throw new Error('In-painting failed: No image part in response.');
+    throw new Error('Magic Edit failed: No image part in response.');
 };
 
 export const enhanceImage = async (
@@ -209,5 +255,36 @@ export const extractPalette = async (imageBase64: string): Promise<string[]> => 
     } catch (e) {
         console.error("Failed to parse palette:", e);
         return [];
+    }
+};
+
+export const generateMarketingCopy = async (imageBase64: string, prompt: string): Promise<MarketingCopy> => {
+    const imagePart = base64ToGenerativePart(imageBase64);
+    const textPart = { text: `This is a product photo generated with the prompt: "${prompt}". Based on this image, generate compelling marketing copy for this product. The product should be the central focus.` };
+    
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts: [imagePart, textPart] },
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    productName: { type: Type.STRING, description: "A catchy and descriptive product name." },
+                    tagline: { type: Type.STRING, description: "A short, memorable tagline (under 10 words)." },
+                    description: { type: Type.STRING, description: "A 2-3 sentence product description highlighting key features seen or implied in the image." },
+                    socialMediaPost: { type: Type.STRING, description: "An engaging social media post for Instagram, including relevant hashtags." }
+                },
+                required: ["productName", "tagline", "description", "socialMediaPost"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as MarketingCopy;
+    } catch (e) {
+        console.error("Failed to parse marketing copy:", e);
+        throw new Error("Could not generate marketing copy.");
     }
 };

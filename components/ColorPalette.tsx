@@ -19,20 +19,20 @@ export const ColorPalette: React.FC<ColorPaletteProps> = ({ palette, onExtract }
     if (!palette) {
         return (
             <Tooltip text="Extract Color Palette with AI">
-                <button onClick={onExtract} className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 p-2.5 rounded-full transition-colors">
-                    <Icon name="palette" className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <button onClick={onExtract} className="h-10 w-10 flex items-center justify-center bg-secondary hover:bg-accent text-muted-foreground rounded-full transition-colors">
+                    <Icon name="palette" className="w-5 h-5" />
                 </button>
             </Tooltip>
         );
     }
 
     return (
-        <div className="flex items-center gap-2 p-2 bg-gray-200 dark:bg-gray-900 rounded-full">
+        <div className="flex items-center gap-2 p-1.5 bg-secondary rounded-full">
             {palette.map((color) => (
                 <Tooltip key={color} text={copiedColor === color ? 'Copied!' : color}>
                     <button
                         onClick={() => handleCopy(color)}
-                        className="w-7 h-7 rounded-full transition-transform hover:scale-110 border-2 border-white/50 dark:border-black/50"
+                        className="w-7 h-7 rounded-full transition-transform hover:scale-110 border-2 border-background"
                         style={{ backgroundColor: color }}
                         aria-label={`Copy color ${color}`}
                     />

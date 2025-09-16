@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { GenerationSettings, HistoryItem, BrandKit } from '../types';
-import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES } from '../constants';
+import { GenerationSettings, HistoryItem, BrandKit, SceneTemplate, StyleTemplate } from '../types';
+import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, STYLE_TEMPLATES } from '../constants';
 import { FileUpload } from './FileUpload';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -18,7 +18,7 @@ interface ControlPanelProps {
     setSettings: React.Dispatch<React.SetStateAction<GenerationSettings>>;
     finalPrompt: string;
 
-    styleSuggestions: string[];
+    sceneTemplates: SceneTemplate[];
     onGenerate: () => void;
     isLoading: boolean;
     productImage: File | null;
@@ -28,88 +28,146 @@ interface ControlPanelProps {
     onRevertToHistory: (item: HistoryItem) => void;
     onToggleFavorite: (id: string) => void;
     
-    brandKit: BrandKit;
-    setBrandKit: React.Dispatch<React.SetStateAction<BrandKit>>;
+    brandKits: BrandKit[];
+    setBrandKits: React.Dispatch<React.SetStateAction<BrandKit[]>>;
+    activeBrandKitId: string | null;
+    setActiveBrandKitId: React.Dispatch<React.SetStateAction<string | null>>;
+    activeBrandKit: BrandKit | undefined;
 }
 
-const Section: React.FC<{ title: string; children: React.ReactNode; step?: number; }> = ({ title, children, step }) => (
-    <div className="bg-gray-500/10 dark:bg-gray-800/50 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-3 flex items-center">
-            {step && <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500 text-white mr-2 text-xs">{step}</span>}
-            {title}
-        </h3>
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <div className={`bg-card text-card-foreground border rounded-xl shadow-sm ${className}`}>
         {children}
     </div>
 );
 
-const Select: React.FC<{ label: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: string[]; disabled?: boolean }> = ({ label, value, onChange, options, disabled }) => (
-    <div>
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>
-        <select
-            value={value}
-            onChange={onChange}
-            disabled={disabled}
-            className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none disabled:opacity-50"
-        >
-            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
+const CardHeader: React.FC<{ title: string; step?: number }> = ({ title, step }) => (
+    <div className="p-4 border-b">
+        <h3 className="text-sm font-semibold text-foreground flex items-center">
+            {step && <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground mr-2 text-xs font-bold">{step}</span>}
+            {title}
+        </h3>
     </div>
 );
 
-const WatermarkPanel: React.FC<{ settings: GenerationSettings; setSettings: React.Dispatch<React.SetStateAction<GenerationSettings>>; brandKit: BrandKit; }> = ({ settings, setSettings, brandKit }) => {
+const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <div className={`p-4 ${className}`}>{children}</div>
+);
+
+const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <label className="block text-xs font-medium text-muted-foreground mb-1.5">{children}</label>
+);
+
+const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly string[]; disabled?: boolean }> = ({ value, onChange, options, disabled }) => (
+    <select
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+    </select>
+);
+
+const Input: React.FC<{ value: string | number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; disabled?: boolean; type?: string }> = (props) => (
+    <input
+        {...props}
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    />
+);
+
+const Textarea: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; placeholder?: string; disabled?: boolean }> = (props) => (
+    <textarea
+        {...props}
+        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    />
+);
+
+const ToggleGroup: React.FC<{
+    options: { value: string; label: string }[];
+    value: string;
+    onValueChange: (value: string) => void;
+    disabled?: boolean;
+}> = ({ options, value, onValueChange, disabled }) => {
+    return (
+        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+            {options.map(option => (
+                <button
+                    key={option.value}
+                    onClick={() => onValueChange(option.value)}
+                    disabled={disabled}
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${value === option.value ? 'bg-background text-foreground shadow-sm' : ''}`}
+                >
+                    {option.label}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+const Switch: React.FC<{ checked: boolean; onCheckedChange: (checked: boolean) => void; id: string }> = ({ checked, onCheckedChange, id }) => (
+     <label htmlFor={id} className="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id={id} className="sr-only peer" checked={checked} onChange={e => onCheckedChange(e.target.checked)} />
+        <div className="w-9 h-5 bg-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+    </label>
+);
+
+const Accordion: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="border-t">
+            <button onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between py-3 text-sm font-medium text-primary">
+                {title}
+                <Icon name={isOpen ? 'close' : 'sparkles'} className="w-4 h-4 transition-transform" style={{transform: isOpen ? 'rotate(45deg)' : 'rotate(0)'}}/>
+            </button>
+            {isOpen && <div className="overflow-hidden transition-all animate-accordion-down">{children}</div>}
+        </div>
+    );
+};
+
+
+const WatermarkPanel: React.FC<{ settings: GenerationSettings; setSettings: React.Dispatch<React.SetStateAction<GenerationSettings>>; brandKit: BrandKit | undefined; }> = ({ settings, setSettings, brandKit }) => {
     const { watermark } = settings;
     const updateWatermark = (updates: Partial<GenerationSettings['watermark']>) => {
         setSettings(s => ({ ...s, watermark: { ...s.watermark, ...updates } }));
     };
 
     return (
-        <div className="space-y-4 pt-2 border-t border-gray-200 dark:border-gray-700 mt-3">
+        <div className="space-y-4 pt-4">
             <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Watermark</label>
+                <div className="flex items-center space-x-2">
+                    <Label>Watermark</Label>
                     <Tooltip text="Automatically add a text or logo watermark to your final image upon download.">
-                        <Icon name="info" className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                        <Icon name="info" className="w-3.5 h-3.5 text-muted-foreground" />
                     </Tooltip>
                 </div>
-                 <label htmlFor="enable-watermark" className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="enable-watermark" className="sr-only peer" checked={watermark.enabled} onChange={e => updateWatermark({ enabled: e.target.checked })} />
-                    <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-indigo-600"></div>
-                </label>
+                <Switch checked={watermark.enabled} onCheckedChange={enabled => updateWatermark({ enabled })} id="enable-watermark" />
             </div>
 
             {watermark.enabled && (
                 <div className="space-y-3 animate-fade-in">
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => updateWatermark({ useLogo: false })} className={`text-xs p-2 rounded-md transition-colors ${!watermark.useLogo ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>Text</button>
-                        <button onClick={() => updateWatermark({ useLogo: true })} disabled={!brandKit.logo} className={`text-xs p-2 rounded-md transition-colors ${watermark.useLogo ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'} disabled:opacity-50 disabled:cursor-not-allowed`}>Logo</button>
-                    </div>
+                    <ToggleGroup
+                        value={watermark.useLogo ? 'logo' : 'text'}
+                        onValueChange={(val) => updateWatermark({ useLogo: val === 'logo' })}
+                        options={[{value: 'text', label: 'Text'}, {value: 'logo', label: 'Logo'}]}
+                        disabled={!brandKit?.logo}
+                    />
                     {!watermark.useLogo && (
-                         <input type="text" value={watermark.text} onChange={e => updateWatermark({ text: e.target.value })}
-                            className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                         <Input value={watermark.text} onChange={e => updateWatermark({ text: e.target.value })}
                             placeholder="Your brand name" />
                     )}
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Position</label>
-                         <select value={watermark.position} onChange={e => updateWatermark({ position: e.target.value as GenerationSettings['watermark']['position']})} className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <option value="top-left">Top Left</option>
-                            <option value="top-center">Top Center</option>
-                            <option value="top-right">Top Right</option>
-                            <option value="middle-left">Middle Left</option>
-                            <option value="middle-center">Middle Center</option>
-                            <option value="middle-right">Middle Right</option>
-                            <option value="bottom-left">Bottom Left</option>
-                            <option value="bottom-center">Bottom Center</option>
-                            <option value="bottom-right">Bottom Right</option>
-                         </select>
+                        <Label>Position</Label>
+                         <Select value={watermark.position} onChange={e => updateWatermark({ position: e.target.value as GenerationSettings['watermark']['position']})} options={['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']} />
                     </div>
                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Scale ({watermark.scale}%)</label>
-                            <input type="range" min="1" max="25" value={watermark.scale} onChange={e => updateWatermark({ scale: Number(e.target.value)})} className="w-full"/>
+                            <Label>Scale ({watermark.scale}%)</Label>
+                            <input type="range" min="1" max="25" value={watermark.scale} onChange={e => updateWatermark({ scale: Number(e.target.value)})} className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"/>
                         </div>
                          <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Opacity ({watermark.opacity}%)</label>
-                            <input type="range" min="10" max="100" value={watermark.opacity} onChange={e => updateWatermark({ opacity: Number(e.target.value)})} className="w-full"/>
+                            <Label>Opacity ({watermark.opacity}%)</Label>
+                            <input type="range" min="10" max="100" value={watermark.opacity} onChange={e => updateWatermark({ opacity: Number(e.target.value)})} className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"/>
                         </div>
                     </div>
                 </div>
@@ -118,13 +176,72 @@ const WatermarkPanel: React.FC<{ settings: GenerationSettings; setSettings: Reac
     );
 };
 
+const SceneTemplates: React.FC<{ templates: SceneTemplate[], onSelect: (template: SceneTemplate) => void, disabled: boolean }> = ({ templates, onSelect, disabled }) => {
+    if (templates.length === 0) return null;
+    
+    return (
+        <div>
+            <Label>✨ AI Scene Templates</Label>
+            <div className="grid grid-cols-2 gap-3">
+                {templates.map((template, index) => (
+                    <button 
+                        key={index} 
+                        onClick={() => onSelect(template)} 
+                        disabled={disabled}
+                        className="text-left bg-muted hover:bg-accent ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 p-3 rounded-lg disabled:opacity-50"
+                    >
+                        <p className="font-semibold text-xs text-foreground">{template.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1" title={template.prompt}>
+                            {template.prompt.substring(0, 40) + (template.prompt.length > 40 ? '...' : '')}
+                        </p>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
 
-const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertToHistory' | 'onToggleFavorite'>> = ({
+const StyleTemplates: React.FC<{
+    selectedTemplateName: string | null;
+    onSelect: (template: StyleTemplate) => void;
+    onDeselect: () => void;
+    disabled: boolean;
+}> = ({ selectedTemplateName, onSelect, onDeselect, disabled }) => {
+    return (
+        <div>
+            <Label>🎨 Style Presets</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {STYLE_TEMPLATES.map(template => {
+                    const isSelected = selectedTemplateName === template.name;
+                    return (
+                        <button
+                            key={template.name}
+                            onClick={() => (isSelected ? onDeselect() : onSelect(template))}
+                            disabled={disabled}
+                            className={`relative text-left p-2.5 rounded-lg ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden h-16
+                                ${isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-inset ring-transparent hover:ring-primary/50'}`
+                            }
+                        >
+                            <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-70 group-hover:opacity-90 transition-opacity`}></div>
+                            <div className="relative flex items-center gap-2">
+                                <Icon name={template.icon} className={`w-5 h-5 ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-800' : 'text-white'}`} />
+                                <p className={`font-semibold text-xs truncate ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-900' : 'text-white'}`}>
+                                    {template.name}
+                                </p>
+                            </div>
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    );
+};
+
+const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertToHistory' | 'onToggleFavorite' | 'brandKits' | 'setBrandKits' | 'activeBrandKitId' | 'setActiveBrandKitId'>> = ({
     onProductImageUpload, onClearProductImage, onStyleImageUpload, onClearStyleImage,
-    settings, setSettings, finalPrompt, styleSuggestions, onGenerate, isLoading,
-    productImage, styleImage, brandKit
+    settings, setSettings, finalPrompt, sceneTemplates, onGenerate, isLoading,
+    productImage, styleImage, activeBrandKit
 }) => {
-    const [showAdvanced, setShowAdvanced] = useState(false);
     
     const isPromptEdited = settings.editedPrompt !== null;
 
@@ -139,113 +256,161 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
         }));
     };
 
+    const handleSelectTemplate = (template: SceneTemplate) => {
+        setSettings(s => ({
+            ...s,
+            editedPrompt: template.prompt,
+            lightingStyle: LIGHTING_STYLES.includes(template.lighting) ? template.lighting : s.lightingStyle,
+            cameraPerspective: CAMERA_PERSPECTIVES.includes(template.perspective) ? template.perspective : s.cameraPerspective,
+        }));
+    };
+
+    const handleSelectStyleTemplate = (template: StyleTemplate) => {
+        setSettings(s => ({
+            ...s,
+            styleKeywords: template.keywords,
+            selectedStyleTemplateName: template.name,
+        }));
+        // If a style image was present, clear it, as the template takes precedence.
+        if (styleImage) {
+            onClearStyleImage();
+        }
+    };
+
+    const handleDeselectStyleTemplate = () => {
+        setSettings(s => ({
+            ...s,
+            styleKeywords: '', // Clear keywords when deselecting
+            selectedStyleTemplateName: null,
+        }));
+    };
+
     return (
         <div className="flex flex-col space-y-4">
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Section title="Upload Product" step={1}>
-                    <FileUpload onFileUpload={onProductImageUpload} label="Upload Product Photo" uploadedFileName={productImage?.name} onClear={productImage ? onClearProductImage : undefined} />
-                </Section>
-                <Section title="Style Reference (Optional)" step={2}>
-                     <FileUpload onFileUpload={onStyleImageUpload} label="Upload Style Photo" uploadedFileName={styleImage?.name} onClear={styleImage ? onClearStyleImage : undefined} />
-                </Section>
+                <Card className="flex flex-col">
+                    <CardHeader title="Upload Product" step={1}/>
+                    <CardContent className="flex-1 flex items-center justify-center">
+                        <FileUpload onFileUpload={onProductImageUpload} label="Upload Product Photo" uploadedFileName={productImage?.name} onClear={productImage ? onClearProductImage : undefined} />
+                    </CardContent>
+                </Card>
+                <Card className="flex flex-col">
+                    <CardHeader title="Style Reference" step={2}/>
+                    <CardContent className="flex-1 flex items-center justify-center">
+                         <FileUpload 
+                            onFileUpload={onStyleImageUpload} 
+                            label="Upload Style Photo" 
+                            uploadedFileName={styleImage?.name} 
+                            onClear={styleImage ? () => {
+                                onClearStyleImage();
+                                setSettings(s => ({...s, styleKeywords: ''}));
+                            } : undefined}
+                            disabled={!!settings.selectedStyleTemplateName}
+                        />
+                    </CardContent>
+                </Card>
             </div>
 
-            <Section title="Customize Scene" step={3}>
-                <div className="space-y-4">
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Aspect Ratio</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {ASPECT_RATIOS.map(({ label, value }) => (
-                                    <button
-                                        key={value}
-                                        onClick={() => setSettings(s => ({...s, aspectRatio: value}))}
-                                        className={`text-xs p-2 rounded-md transition-colors truncate ${settings.aspectRatio === value ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
-                                        disabled={isLoading} title={label}>
-                                        {value}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Number of Images</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {[1, 4].map((num) => (
-                                    <button
-                                        key={num}
-                                        onClick={() => setSettings(s => ({...s, numberOfImages: num as 1 | 4}))}
-                                        className={`text-xs p-2 rounded-md transition-colors ${settings.numberOfImages === num ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
-                                        disabled={isLoading}>
-                                        {num} Image{num > 1 ? 's' : ''}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+            <Card>
+                <CardHeader title="Customize Scene" step={3}/>
+                <CardContent className="space-y-4">
+                     <div>
+                        <Label>Mode</Label>
+                        <ToggleGroup
+                            value={settings.generationMode}
+                            // Fix: Added type assertion to satisfy the GenerationSettings type.
+                            onValueChange={(mode) => setSettings(s => ({ ...s, generationMode: mode as 'image' | 'video' }))}
+                            options={[{value: 'image', label: 'Image'}, {value: 'video', label: 'Video'}]}
+                            disabled={isLoading}
+                        />
                     </div>
-                    <Select label="Lighting Style" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
-                    <Select label="Camera Perspective" value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} />
-                    <button onClick={handleSurpriseMe} disabled={isLoading} className="w-full text-sm text-indigo-600 dark:text-indigo-400 hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2">
+                     <p className="text-center text-xs text-muted-foreground -mt-2">Upload a style photo OR select a preset below.</p>
+                     
+                    <StyleTemplates
+                        selectedTemplateName={settings.selectedStyleTemplateName}
+                        onSelect={handleSelectStyleTemplate}
+                        onDeselect={handleDeselectStyleTemplate}
+                        disabled={isLoading || !!styleImage}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label>Aspect Ratio</Label>
+                            <ToggleGroup
+                                value={settings.aspectRatio}
+                                onValueChange={(val) => setSettings(s => ({...s, aspectRatio: val as GenerationSettings['aspectRatio']}))}
+                                options={ASPECT_RATIOS.map(ar => ({value: ar.value, label: ar.value}))}
+                                disabled={isLoading}
+                            />
+                        </div>
+                        {settings.generationMode === 'image' && (
+                            <div>
+                                <Label>Number of Images</Label>
+                                <ToggleGroup
+                                    value={String(settings.numberOfImages)}
+                                    onValueChange={(val) => setSettings(s => ({...s, numberOfImages: Number(val) as 1 | 4}))}
+                                    options={[{value: '1', label: '1'}, {value: '4', label: '4'}]}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        )}
+                    </div>
+                     {settings.generationMode === 'video' && (
+                        <div className="grid grid-cols-2 gap-4">
+                             <div><Label>Video Length</Label><Select value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'] }))} options={VIDEO_LENGTHS} disabled={isLoading} /></div>
+                             <div><Label>Camera Motion</Label><Select value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'] }))} options={CAMERA_MOTIONS} disabled={isLoading} /></div>
+                        </div>
+                    )}
+                    <div><Label>Lighting Style</Label><Select value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} /></div>
+                    <div><Label>Camera Perspective</Label><Select value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} /></div>
+                    
+                    <button onClick={handleSurpriseMe} disabled={isLoading} className="w-full text-sm text-primary hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2 font-medium">
                         <Icon name="dice" className="w-4 h-4"/> Surprise Me!
                     </button>
-                    {styleSuggestions.length > 0 && !isPromptEdited && (
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">✨ Style Suggestions</label>
-                            <div className="flex flex-wrap gap-2">
-                                {styleSuggestions.map((suggestion, index) => (
-                                    <button key={index} onClick={() => setSettings(s=>({...s, editedPrompt: suggestion}))} className="text-xs text-left bg-gray-200 dark:bg-gray-700/80 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-600/80 transition-colors px-3 py-1.5 rounded-full" title={suggestion}>
-                                        {suggestion.substring(0, 40) + (suggestion.length > 40 ? '...' : '')}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </Section>
+                    <SceneTemplates templates={sceneTemplates} onSelect={handleSelectTemplate} disabled={isLoading} />
+                </CardContent>
+            </Card>
 
-            <Section title="Final Prompt" step={4}>
-                 <div className="relative">
-                    <textarea value={finalPrompt || 'Prompt will appear here...'} onChange={(e) => setSettings(s=>({...s, editedPrompt: e.target.value}))}
-                        className="w-full h-24 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-700 rounded-md p-2 text-xs text-gray-600 dark:text-gray-300 resize-none outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Describe the image you want to create..." disabled={isLoading || !productImage} />
-                    {isPromptEdited && (
-                        <button onClick={() => setSettings(s=>({...s, editedPrompt: null}))} className="absolute top-2 right-2 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors" aria-label="Reset prompt to auto-generated">
-                            <Icon name="restart" className="w-4 h-4" />
-                        </button>
-                    )}
-                 </div>
-                 <div className="mt-3">
-                    <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
-                        {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-                    </button>
-                    {showAdvanced && (
-                        <div className="mt-2 space-y-3 animate-fade-in">
-                            <div>
-                               <div className="flex items-center space-x-1 mb-1">
-                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Negative Prompt</label>
-                                    <Tooltip text="Describe what you DON'T want in the image. Helps remove unwanted elements.">
-                                        <Icon name="info" className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                                    </Tooltip>
-                                </div>
-                                <input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s=>({...s, negativePrompt: e.target.value}))}
-                                    className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                                    placeholder="e.g., text, watermarks, ugly" disabled={isLoading || !productImage} />
+            <Card>
+                <CardHeader title="Final Prompt" step={4} />
+                 <CardContent>
+                    <div className="relative">
+                        <Textarea value={finalPrompt || 'Prompt will appear here...'} onChange={(e) => setSettings(s=>({...s, editedPrompt: e.target.value}))}
+                            placeholder="Describe the image you want to create..." disabled={isLoading || !productImage} />
+                        {isPromptEdited && (
+                            <Tooltip text="Reset to auto-generated prompt">
+                                <button onClick={() => setSettings(s=>({...s, editedPrompt: null}))} className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:bg-accent" aria-label="Reset prompt">
+                                    <Icon name="restart" className="w-4 h-4" />
+                                </button>
+                            </Tooltip>
+                        )}
+                    </div>
+                 </CardContent>
+                 <Accordion title="Advanced Options">
+                    <div className="px-4 pb-4 space-y-4">
+                        <div>
+                            <div className="flex items-center space-x-1 mb-1.5">
+                                <Label>Negative Prompt</Label>
+                                <Tooltip text="Describe what you DON'T want in the image. Helps remove unwanted elements.">
+                                    <Icon name="info" className="w-3.5 h-3.5 text-muted-foreground" />
+                                </Tooltip>
                             </div>
-                            <div>
-                                <div className="flex items-center space-x-1 mb-1">
-                                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Seed</label>
-                                   <Tooltip text="A number for reproducible images. Same seed + same prompt = similar result.">
-                                        <Icon name="info" className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                                    </Tooltip>
-                                </div>
-                                <input type="number" value={settings.seed} onChange={(e) => setSettings(s=>({...s, seed: e.target.value}))}
-                                    className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                                    placeholder="Any number for reproducible results" disabled={isLoading || !productImage} />
-                            </div>
-                             <WatermarkPanel settings={settings} setSettings={setSettings} brandKit={brandKit} />
+                            <Input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s=>({...s, negativePrompt: e.target.value}))}
+                                placeholder="e.g., text, watermarks, ugly" disabled={isLoading || !productImage} />
                         </div>
-                    )}
-                 </div>
-            </Section>
+                        <div>
+                            <div className="flex items-center space-x-1 mb-1.5">
+                                <Label>Seed</Label>
+                                <Tooltip text="A number for reproducible images. Same seed + same prompt = similar result.">
+                                    <Icon name="info" className="w-3.5 h-3.5 text-muted-foreground" />
+                                </Tooltip>
+                            </div>
+                            <Input type="number" value={settings.seed} onChange={(e) => setSettings(s=>({...s, seed: e.target.value}))}
+                                placeholder="Any number for reproducible results" disabled={isLoading || !productImage} />
+                        </div>
+                         <WatermarkPanel settings={settings} setSettings={setSettings} brandKit={activeBrandKit} />
+                    </div>
+                </Accordion>
+            </Card>
         </div>
     );
 };
@@ -253,9 +418,10 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
 
 export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
     const { onGenerate, isLoading, productImage, settings, history } = props;
+    const isVideoMode = settings.generationMode === 'video';
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-1 sm:p-2 flex flex-col h-full shadow-lg">
+        <Card className="flex flex-col h-full">
             <Tabs tabs={['Generate', `History (${history.length})`, 'Brand']}>
                 {(activeTab) => (
                     <div className="p-1 sm:p-4 flex-1 flex flex-col">
@@ -269,8 +435,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                         }
                         {activeTab === 'Brand' &&
                             <BrandKitPanel
-                                brandKit={props.brandKit}
-                                setBrandKit={props.setBrandKit}
+                                brandKits={props.brandKits}
+                                setBrandKits={props.setBrandKits}
+                                activeBrandKitId={props.activeBrandKitId}
+                                setActiveBrandKitId={props.setActiveBrandKitId}
                             />
                         }
                         
@@ -278,19 +446,23 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                             <button
                                 onClick={onGenerate}
                                 disabled={isLoading || !productImage}
-                                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 w-full"
                                 title="Generate (Ctrl+G)"
                             >
                                 {isLoading ? (
                                      <><Icon name="spinner" className="animate-spin mr-2" /> Generating...</>
                                 ) : (
-                                     <><Icon name="sparkles" className="mr-2" /> Generate Image{settings.numberOfImages > 1 ? 's' : ''}</>
+                                    isVideoMode ? (
+                                        <><Icon name="video" className="mr-2 w-5 h-5" /> Generate Video</>
+                                    ) : (
+                                        <><Icon name="sparkles" className="mr-2" /> Generate Image{settings.numberOfImages > 1 ? 's' : ''}</>
+                                    )
                                 )}
                             </button>
                         </div>
                     </div>
                 )}
             </Tabs>
-        </div>
+        </Card>
     );
 };

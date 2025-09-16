@@ -15,7 +15,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, setTheme }) => 
     return (
         <button
             onClick={toggleTheme}
-            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10 bg-secondary hover:bg-accent text-secondary-foreground"
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
         >
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-5 h-5" />

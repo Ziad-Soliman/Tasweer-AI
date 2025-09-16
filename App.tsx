@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { nanoid } from 'nanoid';
 import { ControlPanel } from './components/ControlPanel';
 import { Canvas } from './components/Canvas';
-import { AspectRatio, GenerationSettings, HistoryItem, Theme, EditorMode, BrandKit, TextOverlay } from './types';
-import { LIGHTING_STYLES, CAMERA_PERSPECTIVES } from './constants';
+import { AspectRatio, GenerationSettings, HistoryItem, Theme, EditorMode, BrandKit, TextOverlay, SceneTemplate, MarketingCopy, VideoLength, CameraMotion } from './types';
+// Fix: Corrected typo LIGHTING_STYYLES to LIGHTING_STYLES.
+import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS } from './constants';
 import * as geminiService from './services/geminiService';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { Icon } from './components/Icon';
+import { Tooltip } from './components/Tooltip';
 
 // Helper function to get initial theme
 const getInitialTheme = (): Theme => {
@@ -22,15 +27,139 @@ const getInitialTheme = (): Theme => {
     return 'dark'; // default
 };
 
-const getInitialBrandKit = (): BrandKit => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-        const storedKit = window.localStorage.getItem('brand-kit');
-        if (storedKit) {
-            return JSON.parse(storedKit);
+const getInitialBrandKits = (): { kits: BrandKit[], activeId: string | null } => {
+    if (typeof window === 'undefined' || !window.localStorage) {
+        const defaultKit = { id: nanoid(), name: 'Default Kit', logo: null, primaryColor: '#60A5FA', font: 'Inter' };
+        return { kits: [defaultKit], activeId: defaultKit.id };
+    }
+
+    const storedKitsJSON = window.localStorage.getItem('brand-kit-presets');
+    const storedActiveId = window.localStorage.getItem('active-brand-kit-id');
+    
+    if (storedKitsJSON) {
+        try {
+            const kits = JSON.parse(storedKitsJSON);
+            const activeId = storedActiveId && kits.some((k: BrandKit) => k.id === storedActiveId) 
+                ? storedActiveId 
+                : (kits.length > 0 ? kits[0].id : null);
+            return { kits, activeId };
+        } catch (e) {
+            console.error("Failed to parse brand kits from local storage", e);
         }
     }
-    return { logo: null, primaryColor: '#6366F1', font: 'Inter' };
+    
+    // Migration from old single kit format
+    const oldStoredKitJSON = window.localStorage.getItem('brand-kit');
+    if (oldStoredKitJSON) {
+        try {
+            const oldKit = JSON.parse(oldStoredKitJSON);
+            const newKit: BrandKit = { id: nanoid(), name: 'My Brand Kit', ...oldKit };
+            // Clear old key
+            window.localStorage.removeItem('brand-kit');
+            return { kits: [newKit], activeId: newKit.id };
+        } catch (e) {
+            console.error("Failed to migrate old brand kit", e);
+        }
+    }
+
+    const defaultKit = { id: nanoid(), name: 'Default Kit', logo: null, primaryColor: '#60A5FA', font: 'Inter' };
+    return { kits: [defaultKit], activeId: defaultKit.id };
 };
+
+
+const MarketingCopyModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    copy: MarketingCopy | null;
+    isLoading: boolean;
+    onRegenerate: () => void;
+}> = ({ isOpen, onClose, copy, isLoading, onRegenerate }) => {
+    if (!isOpen) return null;
+
+    const CopyField: React.FC<{ label: string; value: string }> = ({ label, value }) => {
+        const [copied, setCopied] = useState(false);
+        const handleCopy = () => {
+            navigator.clipboard.writeText(value);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        };
+
+        return (
+            <div className="grid gap-2">
+                 <label className="text-sm font-medium leading-none text-muted-foreground">{label}</label>
+                <div className="flex items-center space-x-2">
+                    <p className="flex-1 text-sm bg-secondary text-secondary-foreground p-3 rounded-md whitespace-pre-wrap font-mono">{value}</p>
+                    <Tooltip text={copied ? "Copied!" : "Copy"}>
+                        <button onClick={handleCopy} className="p-2 rounded-md bg-secondary hover:bg-accent text-muted-foreground">
+                            <Icon name={copied ? "check" : "copy"} className="w-4 h-4" />
+                        </button>
+                    </Tooltip>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div 
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+            onClick={onClose}
+            aria-modal="true"
+            role="dialog"
+        >
+            <div 
+                className="bg-card border shadow-lg rounded-lg p-6 w-full max-w-2xl m-4"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Dialog Header */}
+                <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6">
+                     <h3 className="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
+                        <Icon name="pencil" /> AI Generated Marketing Copy
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        Review, copy, and use this AI-generated content for your marketing.
+                    </p>
+                </div>
+
+                {/* Dialog Content */}
+                {isLoading && (
+                    <div className="h-72 flex flex-col items-center justify-center text-center">
+                        <Icon name="spinner" className="w-8 h-8 animate-spin text-primary" />
+                        <p className="mt-3 text-muted-foreground">Generating brilliant copy...</p>
+                    </div>
+                )}
+                
+                {!isLoading && copy && (
+                    <div className="space-y-4">
+                        <CopyField label="Product Name" value={copy.productName} />
+                        <CopyField label="Tagline" value={copy.tagline} />
+                        <CopyField label="Description" value={copy.description} />
+                        <CopyField label="Social Media Post" value={copy.socialMediaPost} />
+                    </div>
+                )}
+
+                {/* Dialog Footer */}
+                <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+                     <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-accent"
+                        onClick={onClose}
+                    >
+                        Close
+                    </button>
+                    <button
+                        type="button"
+                        disabled={isLoading}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 mb-2 sm:mb-0"
+                        onClick={onRegenerate}
+                    >
+                        <Icon name="restart" className="w-4 h-4" /> Regenerate
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const App: React.FC = () => {
     // Core state
@@ -41,9 +170,12 @@ const App: React.FC = () => {
     // Settings state
     const [settings, setSettings] = useState<GenerationSettings>(() => {
         const initial: GenerationSettings = {
+            generationMode: 'image',
             aspectRatio: '1:1',
             lightingStyle: LIGHTING_STYLES[0],
             cameraPerspective: CAMERA_PERSPECTIVES[0],
+            videoLength: VIDEO_LENGTHS[0],
+            cameraMotion: CAMERA_MOTIONS[0],
             prompt: '',
             editedPrompt: null,
             negativePrompt: '',
@@ -51,15 +183,17 @@ const App: React.FC = () => {
             numberOfImages: 1,
             productDescription: '',
             styleKeywords: '',
+            selectedStyleTemplateName: null,
             watermark: { enabled: false, text: '', position: 'bottom-right', scale: 5, opacity: 70, useLogo: false }
         };
         return initial;
     });
 
-    const [styleSuggestions, setStyleSuggestions] = useState<string[]>([]);
+    const [sceneTemplates, setSceneTemplates] = useState<SceneTemplate[]>([]);
     
     // Output state
     const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+    const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
@@ -70,8 +204,19 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [theme, setTheme] = useState<Theme>(getInitialTheme);
     const [editorMode, setEditorMode] = useState<EditorMode>('view');
-    const [brandKit, setBrandKit] = useState<BrandKit>(getInitialBrandKit);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    
+    // Brand Kit State
+    const [initialBrandKitState] = useState(getInitialBrandKits);
+    const [brandKits, setBrandKits] = useState<BrandKit[]>(initialBrandKitState.kits);
+    const [activeBrandKitId, setActiveBrandKitId] = useState<string | null>(initialBrandKitState.activeId);
+    
+    // Marketing Copy State
+    const [showCopyModal, setShowCopyModal] = useState(false);
+    const [isCopyLoading, setIsCopyLoading] = useState(false);
+    const [marketingCopy, setMarketingCopy] = useState<MarketingCopy | null>(null);
+
+    const activeBrandKit = useMemo(() => brandKits.find(kit => kit.id === activeBrandKitId), [brandKits, activeBrandKitId]);
 
     // Derived state for the final prompt
     const finalPrompt = settings.editedPrompt ?? settings.prompt;
@@ -79,23 +224,28 @@ const App: React.FC = () => {
     const resetForNewProduct = () => {
         setStyleImage(null);
         setGeneratedImages([]);
+        setGeneratedVideoUrl(null);
         setSelectedImageIndex(null);
         setError(null);
         setTextOverlays([]);
         setSettings(s => ({
             ...s,
+            generationMode: 'image',
             aspectRatio: '1:1',
             lightingStyle: LIGHTING_STYLES[0],
             cameraPerspective: CAMERA_PERSPECTIVES[0],
+            videoLength: VIDEO_LENGTHS[0],
+            cameraMotion: CAMERA_MOTIONS[0],
             prompt: '',
             editedPrompt: null,
             negativePrompt: '',
             seed: '',
             numberOfImages: 1,
             productDescription: '',
-            styleKeywords: ''
+            styleKeywords: '',
+            selectedStyleTemplateName: null,
         }));
-        setStyleSuggestions([]);
+        setSceneTemplates([]);
     };
 
     // Main image upload and analysis
@@ -109,9 +259,9 @@ const App: React.FC = () => {
             const description = await geminiService.describeProduct(file);
             setSettings(s => ({ ...s, productDescription: description }));
 
-            setLoadingMessage('Getting style ideas...');
-            const suggestions = await geminiService.generateStyleSuggestions(description);
-            setStyleSuggestions(suggestions);
+            setLoadingMessage('Generating scene templates...');
+            const templates = await geminiService.generateSceneTemplates(description);
+            setSceneTemplates(templates);
 
         } catch (e) {
             setError('Failed to analyze product.');
@@ -130,7 +280,7 @@ const App: React.FC = () => {
         setLoadingMessage('Analyzing style reference...');
         try {
             const keywords = await geminiService.describeStyle(file);
-            setSettings(s => ({ ...s, styleKeywords: keywords }));
+            setSettings(s => ({ ...s, styleKeywords: keywords, selectedStyleTemplateName: null }));
         } catch (e) {
             setError('Failed to get style keywords.');
             console.error(e);
@@ -145,25 +295,37 @@ const App: React.FC = () => {
         if (!settings.productDescription || settings.editedPrompt !== null) {
             return;
         }
+
         const lightingClause = LIGHTING_STYLES.includes(settings.lightingStyle) ? `, lit with ${settings.lightingStyle.toLowerCase()}` : '';
         const perspectiveClause = CAMERA_PERSPECTIVES.includes(settings.cameraPerspective) ? `, ${settings.cameraPerspective.toLowerCase()}` : '';
         const styleClause = settings.styleKeywords ? `, in the style of ${settings.styleKeywords}` : '';
 
-        const prompt = `Professional product photography of ${settings.productDescription}${perspectiveClause}${lightingClause}${styleClause}.`;
+        const modeClause = settings.generationMode === 'video'
+            ? `A ${settings.videoLength.split(' ')[0].toLowerCase()}-long video with ${settings.cameraMotion.toLowerCase()} camera movement`
+            : 'Professional product photography';
+
+        const prompt = `${modeClause} of ${settings.productDescription}${perspectiveClause}${lightingClause}${styleClause}.`;
         setSettings(s => ({ ...s, prompt }));
-    }, [settings.productDescription, settings.styleKeywords, settings.lightingStyle, settings.cameraPerspective, settings.editedPrompt]);
+    }, [
+        settings.productDescription, 
+        settings.styleKeywords, 
+        settings.lightingStyle, 
+        settings.cameraPerspective, 
+        settings.editedPrompt,
+        settings.generationMode,
+        settings.videoLength,
+        settings.cameraMotion,
+    ]);
 
-    // Main generate function
-    const handleGenerate = async () => {
+    const handleImageGeneration = async () => {
         if (!productImage || !finalPrompt) return;
-
         setIsLoading(true);
         setError(null);
         setGeneratedImages([]);
+        setGeneratedVideoUrl(null);
         setSelectedImageIndex(null);
         setEditorMode('view');
         setTextOverlays([]);
-
         try {
             setLoadingMessage('Step 1/2: Removing background...');
             const productWithoutBg = await geminiService.removeBackground(productImage);
@@ -181,7 +343,6 @@ const App: React.FC = () => {
             setGeneratedImages(finalImages);
             setSelectedImageIndex(0);
             
-            // Add to history
             const newHistoryItem: HistoryItem = {
                 id: crypto.randomUUID(),
                 images: finalImages,
@@ -200,17 +361,79 @@ const App: React.FC = () => {
             setLoadingMessage('');
         }
     };
+
+    const handleVideoGeneration = async () => {
+        if (!productImage || !finalPrompt) return;
+
+        setIsLoading(true);
+        setError(null);
+        setGeneratedImages([]);
+        setGeneratedVideoUrl(null);
+        setSelectedImageIndex(null);
+        setEditorMode('view');
+        
+        const videoLoadingMessages = [
+            'Warming up the digital cameras...',
+            'Setting up the virtual dolly tracks...',
+            'AI Director is calling "Action!"...',
+            'Rendering the first few frames...',
+            'Applying cinematic color grading...',
+            'Adding the final polish...',
+            'Almost ready for the premiere!'
+        ];
+        let messageIndex = 0;
+        setLoadingMessage(videoLoadingMessages[messageIndex]);
+        const intervalId = setInterval(() => {
+            messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
+            setLoadingMessage(videoLoadingMessages[messageIndex]);
+        }, 5000);
+
+        try {
+            setLoadingMessage('Removing background...');
+            const productWithoutBg = await geminiService.removeBackground(productImage);
+
+            const videoUrl = await geminiService.generateVideo(productWithoutBg, finalPrompt);
+            setGeneratedVideoUrl(videoUrl);
+
+            const newHistoryItem: HistoryItem = {
+                id: crypto.randomUUID(),
+                videoUrl: videoUrl,
+                settings: { ...settings, prompt: finalPrompt },
+                textOverlays: [],
+                isFavorite: false,
+                timestamp: Date.now()
+            };
+            setHistory(prev => [newHistoryItem, ...prev]);
+
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during video generation.');
+        } finally {
+            clearInterval(intervalId);
+            setIsLoading(false);
+            setLoadingMessage('');
+        }
+    };
     
-    // In-painting
-    const handleInpaint = async (imageWithMaskBase64: string, inpaintPrompt: string) => {
+    // Main generate function
+    const handleGenerate = async () => {
+        if (settings.generationMode === 'video') {
+            await handleVideoGeneration();
+        } else {
+            await handleImageGeneration();
+        }
+    };
+    
+    // Magic Edit
+    const handleMagicEdit = async (imageWithMaskBase64: string, inpaintPrompt: string) => {
         if (selectedImageIndex === null) return;
 
         setIsLoading(true);
         setError(null);
-        setLoadingMessage('In-painting image...');
+        setLoadingMessage('Performing Magic Edit...');
 
         try {
-            const inpaintedImageBase64 = await geminiService.inpaintImage(imageWithMaskBase64, inpaintPrompt);
+            const inpaintedImageBase64 = await geminiService.magicEditImage(imageWithMaskBase64, inpaintPrompt);
             const finalImage = `data:image/png;base64,${inpaintedImageBase64}`;
             
             const updatedImages = [...generatedImages];
@@ -219,7 +442,7 @@ const App: React.FC = () => {
 
             const latestHistoryItem = history[0];
             if (latestHistoryItem) {
-                const updatedHistoryImages = [...latestHistoryItem.images];
+                const updatedHistoryImages = [...(latestHistoryItem.images || [])];
                 updatedHistoryImages[selectedImageIndex] = finalImage;
                 const updatedHistoryItem = { ...latestHistoryItem, images: updatedHistoryImages };
                 setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
@@ -227,7 +450,7 @@ const App: React.FC = () => {
 
         } catch (e) {
             console.error(e);
-            setError(e instanceof Error ? e.message : 'An unknown error occurred during in-painting.');
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during Magic Edit.');
         } finally {
             setIsLoading(false);
             setLoadingMessage('');
@@ -255,7 +478,7 @@ const App: React.FC = () => {
 
             const latestHistoryItem = history[0];
             if (latestHistoryItem) {
-                const updatedHistoryImages = [...latestHistoryItem.images];
+                const updatedHistoryImages = [...(latestHistoryItem.images || [])];
                 updatedHistoryImages[selectedImageIndex] = finalImage;
                 const updatedHistoryItem = { ...latestHistoryItem, images: updatedHistoryImages };
                 setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
@@ -267,6 +490,29 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
             setLoadingMessage('');
+        }
+    };
+    
+    // AI Marketing Copy
+    const handleGenerateCopy = async () => {
+        if (selectedImageIndex === null) return;
+        const imageBase64 = generatedImages[selectedImageIndex].split(',')[1];
+        
+        setShowCopyModal(true);
+        setIsCopyLoading(true);
+        setMarketingCopy(null);
+        setError(null);
+        
+        try {
+            const copy = await geminiService.generateMarketingCopy(imageBase64, finalPrompt);
+            setMarketingCopy(copy);
+        } catch (e) {
+            console.error(e);
+            // Show error inside modal? For now, just close it and show global error.
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during copy generation.');
+            setShowCopyModal(false);
+        } finally {
+            setIsCopyLoading(false);
         }
     };
 
@@ -284,7 +530,8 @@ const App: React.FC = () => {
     
     const handleRevertToHistory = (historyItem: HistoryItem) => {
         setSettings({ ...historyItem.settings, editedPrompt: historyItem.settings.prompt });
-        setGeneratedImages(historyItem.images);
+        setGeneratedImages(historyItem.images || []);
+        setGeneratedVideoUrl(historyItem.videoUrl || null);
         setTextOverlays(historyItem.textOverlays || []);
         setSelectedImageIndex(0);
         setError(null);
@@ -333,8 +580,14 @@ const App: React.FC = () => {
     
     // Brand Kit persistence
     useEffect(() => {
-        window.localStorage.setItem('brand-kit', JSON.stringify(brandKit));
-    }, [brandKit]);
+        window.localStorage.setItem('brand-kit-presets', JSON.stringify(brandKits));
+    }, [brandKits]);
+    
+    useEffect(() => {
+        if (activeBrandKitId) {
+            window.localStorage.setItem('active-brand-kit-id', activeBrandKitId);
+        }
+    }, [activeBrandKitId]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -360,7 +613,7 @@ const App: React.FC = () => {
 
 
     return (
-        <div className="min-h-screen flex flex-col items-center p-2 sm:p-4 lg:p-6 font-sans">
+        <div className="min-h-screen flex flex-col font-sans">
             <ConfirmationModal
                 isOpen={showConfirmModal}
                 onClose={() => setShowConfirmModal(false)}
@@ -368,25 +621,36 @@ const App: React.FC = () => {
                 title="Are you sure?"
                 message="This will clear your current product, all generated images, and the session history. This action cannot be undone."
             />
-            <header className="w-full max-w-screen-2xl mx-auto mb-4 flex justify-between items-center">
-                <div className="text-center sm:text-left">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-600 dark:from-purple-400 dark:to-indigo-500">
-                        ProductGenius AI
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Generate stunning product shots in seconds.</p>
-                </div>
-                <ThemeToggle theme={theme} setTheme={setTheme} />
+             <MarketingCopyModal
+                isOpen={showCopyModal}
+                onClose={() => setShowCopyModal(false)}
+                copy={marketingCopy}
+                isLoading={isCopyLoading}
+                onRegenerate={handleGenerateCopy}
+            />
+            <header className="w-full mx-auto p-4 border-b">
+                 <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                             <Icon name="sparkles" className="w-5 h-5 text-white"/>
+                        </div>
+                        <h1 className="text-xl font-semibold text-foreground">
+                            ProductGenius AI
+                        </h1>
+                    </div>
+                    <ThemeToggle theme={theme} setTheme={setTheme} />
+                 </div>
             </header>
-            <main className="w-full max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
-                <div className="lg:col-span-4 xl:col-span-3">
+            <main className="w-full max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 p-4">
+                <aside className="lg:col-span-4 xl:col-span-3">
                     <ControlPanel
                         onProductImageUpload={handleProductImageUpload}
                         onClearProductImage={handleStartOver}
                         onStyleImageUpload={handleStyleImageUpload}
-                        onClearStyleImage={() => { setStyleImage(null); setSettings(s => ({ ...s, styleKeywords: '' }))}}
+                        onClearStyleImage={() => setStyleImage(null)}
                         settings={settings}
                         setSettings={setSettings}
-                        styleSuggestions={styleSuggestions}
+                        sceneTemplates={sceneTemplates}
                         onGenerate={handleGenerate}
                         isLoading={isLoading}
                         productImage={productImage}
@@ -395,14 +659,18 @@ const App: React.FC = () => {
                         onRevertToHistory={handleRevertToHistory}
                         onToggleFavorite={handleToggleFavorite}
                         finalPrompt={finalPrompt}
-                        brandKit={brandKit}
-                        setBrandKit={setBrandKit}
+                        brandKits={brandKits}
+                        setBrandKits={setBrandKits}
+                        activeBrandKitId={activeBrandKitId}
+                        setActiveBrandKitId={setActiveBrandKitId}
+                        activeBrandKit={activeBrandKit}
                     />
-                </div>
+                </aside>
                 <div className="lg:col-span-8 xl:col-span-9 flex min-h-[60vh] lg:min-h-0">
                     <Canvas
                         productImagePreview={productImagePreview}
                         generatedImages={generatedImages}
+                        generatedVideoUrl={generatedVideoUrl}
                         selectedImageIndex={selectedImageIndex}
                         onSelectImage={setSelectedImageIndex}
                         isLoading={isLoading}
@@ -411,13 +679,14 @@ const App: React.FC = () => {
                         onStartOver={handleStartOver}
                         onRetry={handleGenerate}
                         onEnhance={handleEnhance}
-                        onInpaint={handleInpaint}
+                        onMagicEdit={handleMagicEdit}
+                        onGenerateCopy={handleGenerateCopy}
                         aspectRatio={settings.aspectRatio}
                         editorMode={editorMode}
                         setEditorMode={setEditorMode}
                         textOverlays={textOverlays}
                         setTextOverlays={setTextOverlays}
-                        brandKit={brandKit}
+                        brandKit={activeBrandKit}
                         watermarkSettings={settings.watermark}
                         currentHistoryItem={history[0]}
                         onExtractPalette={handleExtractPalette}

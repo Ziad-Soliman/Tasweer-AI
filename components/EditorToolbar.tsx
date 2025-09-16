@@ -10,22 +10,22 @@ interface EditorToolbarProps {
 
 const TOOLS: { id: EditorMode; name: string; icon: string }[] = [
     { id: 'view', name: 'View', icon: 'image' },
-    { id: 'inpaint', name: 'In-paint', icon: 'brush' },
+    { id: 'magic-edit', name: 'Magic Edit', icon: 'brush' },
     { id: 'crop', name: 'Crop', icon: 'crop' },
     { id: 'text', name: 'Add Text', icon: 'text' },
 ];
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({ mode, setMode }) => {
     return (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900/70 backdrop-blur-md p-2 rounded-full flex gap-2 z-20">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 z-20 border shadow-lg">
             {TOOLS.map((tool) => (
                 <Tooltip key={tool.id} text={tool.name}>
                     <button
                         onClick={() => setMode(tool.id)}
                         className={`p-2.5 rounded-full transition-colors ${
                             mode === tool.id
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-gray-300 hover:bg-gray-700'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-foreground hover:bg-accent'
                         }`}
                         aria-label={tool.name}
                     >

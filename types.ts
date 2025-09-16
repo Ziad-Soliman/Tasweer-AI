@@ -2,7 +2,10 @@ export type AspectRatio = "1:1" | "4:5" | "16:9";
 
 export type Theme = 'light' | 'dark';
 
-export type EditorMode = 'view' | 'inpaint' | 'crop' | 'text';
+export type EditorMode = 'view' | 'magic-edit' | 'crop' | 'text';
+
+export type VideoLength = "Short (~5s)" | "Medium (~10s)" | "Long (~15s)";
+export type CameraMotion = "Static" | "Slow Pan" | "Dolly Zoom" | "Fly-through";
 
 export interface WatermarkSettings {
     enabled: boolean;
@@ -13,10 +16,20 @@ export interface WatermarkSettings {
     opacity: number; // 0-100
 }
 
+export interface StyleTemplate {
+    name: string;
+    icon: string;
+    keywords: string;
+    gradient: string;
+}
+
 export interface GenerationSettings {
+    generationMode: 'image' | 'video';
     aspectRatio: AspectRatio;
     lightingStyle: string;
     cameraPerspective: string;
+    videoLength: VideoLength;
+    cameraMotion: CameraMotion;
 
     prompt: string; // The auto-generated prompt
     editedPrompt: string | null; // The user-edited prompt
@@ -27,6 +40,7 @@ export interface GenerationSettings {
     
     productDescription: string;
     styleKeywords: string;
+    selectedStyleTemplateName: string | null;
     watermark: WatermarkSettings;
 }
 
@@ -42,7 +56,8 @@ export interface TextOverlay {
 
 export interface HistoryItem {
     id: string;
-    images: string[];
+    images?: string[];
+    videoUrl?: string;
     settings: GenerationSettings;
     isFavorite: boolean;
     timestamp: number;
@@ -51,7 +66,23 @@ export interface HistoryItem {
 }
 
 export interface BrandKit {
+    id:string;
+    name: string;
     logo: string | null; // base64 string
     primaryColor: string;
     font: string;
+}
+
+export interface SceneTemplate {
+    name: string;
+    prompt: string;
+    lighting: string;
+    perspective: string;
+}
+
+export interface MarketingCopy {
+    productName: string;
+    tagline: string;
+    description: string;
+    socialMediaPost: string;
 }
