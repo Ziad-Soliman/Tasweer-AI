@@ -36,6 +36,15 @@ export const CAMERA_MOTIONS: CameraMotion[] = [
   "Fly-through",
 ];
 
+export const MOCKUP_TYPES: string[] = [
+    'T-shirt on a model',
+    'Coffee mug on a desk',
+    'Billboard in a city',
+    'Smartphone screen',
+    'Tote bag held by a person',
+    'Hardcover book cover'
+];
+
 export const FONT_OPTIONS: string[] = [
     'Inter',
     'Poppins',
@@ -83,4 +92,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     keywords: 'pop art, bold colors, graphic style, halftone dots, comic book aesthetic, vibrant and playful',
     gradient: 'from-rose-400 to-red-500'
   },
+];
+
+export const NEGATIVE_PROMPT_PRESETS: string[] = [
+    'text', 'watermark', 'blurry', 'deformed', 'disfigured', 'ugly', 'low quality', 'pixelated'
 ];

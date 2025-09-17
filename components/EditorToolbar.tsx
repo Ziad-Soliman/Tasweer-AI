@@ -10,8 +10,9 @@ interface EditorToolbarProps {
 
 const TOOLS: { id: EditorMode; name: string; icon: string }[] = [
     { id: 'view', name: 'View', icon: 'image' },
-    { id: 'magic-edit', name: 'Magic Edit', icon: 'brush' },
-    { id: 'crop', name: 'Crop', icon: 'crop' },
+    { id: 'magic-edit', name: 'Magic Edit', icon: 'wand' },
+    { id: 'remove-object', name: 'Remove Object', icon: 'eraser' },
+    { id: 'expand', name: 'Expand Image', icon: 'expand' },
     { id: 'text', name: 'Add Text', icon: 'text' },
 ];
 

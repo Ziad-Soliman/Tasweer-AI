@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface IconProps {
@@ -27,7 +28,7 @@ const ICONS: { [key: string]: JSX.Element } = {
     trash: <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9M18.375 18H5.625m12.75 0-1.148-9M8.625 9 7.477 18" />,
     cog: <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.092 1.21-.138 2.43-.138 3.662s.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.092-1.21.138-2.43.138-3.662zM15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0z" />,
     history: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
-    'star-filled': <path fillRule="evenodd" d="M10.788 3.212a.75.75 0 0 1 .424 0l2.429 1.223a.75.75 0 0 0 .358.09l2.67.19a.75.75 0 0 1 .417 1.285l-1.93 1.882a.75.75 0 0 0-.215.665l.455 2.659a.75.75 0 0 1-1.088.791l-2.388-1.256a.75.75 0 0 0-.702 0l-2.388 1.256a.75.75 0 0 1-1.088-.791l.455-2.659a.75.75 0 0 0-.215-.665l-1.93-1.882a.75.75 0 0 1 .417-1.285l2.67-.19a.75.75 0 0 0 .358-.09l2.429-1.223Z" clipRule="evenodd" />,
+    'star-filled': <path fillRule="evenodd" d="M10.788 3.212a.75.75 0 0 1 .424 0l2.429 1.223a.75.75 0 0 0 .358.09l2.67.19a.75.75 0 0 1 .417 1.285l-1.93 1.882a.75.75 0 0 0-.215.665l.455 2.659a.75.75 0 0 1-1.088.791l-2.388-1.256a.75.75 0 0 0-.702 0l-2.388 1.256a.75.75 0 0 1-1.088-.791l.455-2.659a.75.75 0 0 0-.215-.665l-1.93-1.882a.75.75 0 0 1 .417-1.285l2.67-.19a.75.75 0 0 0 .358.09l2.429-1.223Z" clipRule="evenodd" />,
     star: <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321 1.003l-4.123 3.55a.563.563 0 0 0-.162.593l1.234 5.395c.099.434-.364.79-.746.592L12 17.5l-4.937 2.92c-.382.2-.845-.158-.746-.592l1.234-5.395a.563.563 0 0 0-.162-.593l-4.123-3.55c-.38-.34-.178-.963.321-1.003l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />,
     search: <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />,
     brush: <path strokeLinecap="round" strokeLinejoin="round" d="m9.53 16.122.213.213a2.25 2.25 0 0 0 3.182 0l4.243-4.243-3.182-3.182-4.243 4.243a2.25 2.25 0 0 0 0 3.182Z" />,
@@ -42,6 +43,13 @@ const ICONS: { [key: string]: JSX.Element } = {
     'paint-brush': <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />,
     leaf: <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />,
     'moon-stars': <><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25c0 5.385 4.365 9.75 9.75 9.75 2.833 0 5.398-1.21 7.252-3.248Z" /><path strokeLinecap="round" strokeLinejoin="round" d="m15.75 1.5-1.5 3 1.5 3 1.5-3-1.5-3Zm4.5 6-1.5 3 1.5 3 1.5-3-1.5-3Z" /></>,
+    eraser: <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />,
+    expand: <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />,
+    'arrow-up': <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5v-15m0 0l-6.75 6.75M12 4.5l6.75 6.75" />,
+    'arrow-down': <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m0 0l6.75-6.75M12 19.5l-6.75-6.75" />,
+    'arrow-left': <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />,
+    'arrow-right': <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75 6.75M19.5 12l-6.75-6.75" />,
+    'rotate-cw': <><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/></>,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, className, style }) => {

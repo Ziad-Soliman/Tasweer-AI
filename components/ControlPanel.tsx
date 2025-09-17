@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { GenerationSettings, HistoryItem, BrandKit, SceneTemplate, StyleTemplate } from '../types';
-import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, STYLE_TEMPLATES } from '../constants';
+import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, STYLE_TEMPLATES, NEGATIVE_PROMPT_PRESETS, MOCKUP_TYPES } from '../constants';
 import { FileUpload } from './FileUpload';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -20,7 +21,9 @@ interface ControlPanelProps {
 
     sceneTemplates: SceneTemplate[];
     onGenerate: () => void;
+    onEnhancePrompt: () => void;
     isLoading: boolean;
+    isEnhancingPrompt: boolean;
     productImage: File | null;
     styleImage: File | null;
     
@@ -33,6 +36,9 @@ interface ControlPanelProps {
     activeBrandKitId: string | null;
     setActiveBrandKitId: React.Dispatch<React.SetStateAction<string | null>>;
     activeBrandKit: BrandKit | undefined;
+
+    customStyleTemplates: StyleTemplate[];
+    onSaveCustomStyle: (name: string) => void;
 }
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
@@ -54,8 +60,8 @@ const CardContent: React.FC<{ children: React.ReactNode; className?: string }> =
     <div className={`p-4 ${className}`}>{children}</div>
 );
 
-const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <label className="block text-xs font-medium text-muted-foreground mb-1.5">{children}</label>
+const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <label className={`block text-xs font-medium text-muted-foreground mb-1.5 ${className}`}>{children}</label>
 );
 
 const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly string[]; disabled?: boolean }> = ({ value, onChange, options, disabled }) => (
@@ -206,33 +212,46 @@ const StyleTemplates: React.FC<{
     onSelect: (template: StyleTemplate) => void;
     onDeselect: () => void;
     disabled: boolean;
-}> = ({ selectedTemplateName, onSelect, onDeselect, disabled }) => {
+    customTemplates: StyleTemplate[];
+}> = ({ selectedTemplateName, onSelect, onDeselect, disabled, customTemplates }) => {
+
+    const renderTemplate = (template: StyleTemplate) => {
+        const isSelected = selectedTemplateName === template.name;
+        return (
+            <button
+                key={template.name}
+                onClick={() => (isSelected ? onDeselect() : onSelect(template))}
+                disabled={disabled}
+                className={`relative text-left p-2.5 rounded-lg ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden h-16
+                    ${isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-inset ring-transparent hover:ring-primary/50'}`
+                }
+            >
+                <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-70 group-hover:opacity-90 transition-opacity`}></div>
+                <div className="relative flex items-center gap-2">
+                    <Icon name={template.icon} className={`w-5 h-5 ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-800' : 'text-white'}`} />
+                    <p className={`font-semibold text-xs truncate ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-900' : 'text-white'}`}>
+                        {template.name}
+                    </p>
+                </div>
+            </button>
+        )
+    }
+
     return (
         <div>
             <Label>🎨 Style Presets</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {STYLE_TEMPLATES.map(template => {
-                    const isSelected = selectedTemplateName === template.name;
-                    return (
-                        <button
-                            key={template.name}
-                            onClick={() => (isSelected ? onDeselect() : onSelect(template))}
-                            disabled={disabled}
-                            className={`relative text-left p-2.5 rounded-lg ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden h-16
-                                ${isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-inset ring-transparent hover:ring-primary/50'}`
-                            }
-                        >
-                            <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-70 group-hover:opacity-90 transition-opacity`}></div>
-                            <div className="relative flex items-center gap-2">
-                                <Icon name={template.icon} className={`w-5 h-5 ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-800' : 'text-white'}`} />
-                                <p className={`font-semibold text-xs truncate ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-900' : 'text-white'}`}>
-                                    {template.name}
-                                </p>
-                            </div>
-                        </button>
-                    )
-                })}
+                {STYLE_TEMPLATES.map(renderTemplate)}
             </div>
+
+            {customTemplates.length > 0 && (
+                <>
+                    <Label className="mt-4">My Styles</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {customTemplates.map(renderTemplate)}
+                    </div>
+                </>
+            )}
         </div>
     );
 };
@@ -240,10 +259,22 @@ const StyleTemplates: React.FC<{
 const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertToHistory' | 'onToggleFavorite' | 'brandKits' | 'setBrandKits' | 'activeBrandKitId' | 'setActiveBrandKitId'>> = ({
     onProductImageUpload, onClearProductImage, onStyleImageUpload, onClearStyleImage,
     settings, setSettings, finalPrompt, sceneTemplates, onGenerate, isLoading,
-    productImage, styleImage, activeBrandKit
+    productImage, styleImage, activeBrandKit, onEnhancePrompt, isEnhancingPrompt,
+    customStyleTemplates, onSaveCustomStyle
 }) => {
     
     const isPromptEdited = settings.editedPrompt !== null;
+    const [isSavingStyle, setIsSavingStyle] = useState(false);
+    const [newStyleName, setNewStyleName] = useState('');
+
+    const handleSaveStyle = () => {
+        if (newStyleName.trim()) {
+            onSaveCustomStyle(newStyleName.trim());
+            setIsSavingStyle(false);
+            setNewStyleName('');
+        }
+    };
+
 
     const handleSurpriseMe = () => {
         const randomLighting = LIGHTING_STYLES[Math.floor(Math.random() * LIGHTING_STYLES.length)];
@@ -284,19 +315,30 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
             selectedStyleTemplateName: null,
         }));
     };
+    
+    const handleAddNegativePreset = (preset: string) => {
+        setSettings(s => {
+            const current = s.negativePrompt.split(',').map(p => p.trim()).filter(Boolean);
+            if (current.includes(preset)) {
+                return s; // Already there
+            }
+            const newPrompt = [...current, preset].join(', ');
+            return { ...s, negativePrompt: newPrompt };
+        });
+    };
 
     return (
         <div className="flex flex-col space-y-4">
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Card className="flex flex-col">
-                    <CardHeader title="Upload Product" step={1}/>
+                    <CardHeader title={(settings.generationMode === 'social' || settings.generationMode === 'design') ? "Upload Reference Design" : "Upload Product"} step={1}/>
                     <CardContent className="flex-1 flex items-center justify-center">
-                        <FileUpload onFileUpload={onProductImageUpload} label="Upload Product Photo" uploadedFileName={productImage?.name} onClear={productImage ? onClearProductImage : undefined} />
+                        <FileUpload onFileUpload={onProductImageUpload} label={(settings.generationMode === 'social' || settings.generationMode === 'design') ? "Upload Reference Design" : "Upload Product Photo"} uploadedFileName={productImage?.name} onClear={productImage ? onClearProductImage : undefined} />
                     </CardContent>
                 </Card>
                 <Card className="flex flex-col">
                     <CardHeader title="Style Reference" step={2}/>
-                    <CardContent className="flex-1 flex items-center justify-center">
+                    <CardContent className="flex-1 flex flex-col items-center justify-center gap-2">
                          <FileUpload 
                             onFileUpload={onStyleImageUpload} 
                             label="Upload Style Photo" 
@@ -305,8 +347,24 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                                 onClearStyleImage();
                                 setSettings(s => ({...s, styleKeywords: ''}));
                             } : undefined}
-                            disabled={!!settings.selectedStyleTemplateName}
+                            disabled={!!settings.selectedStyleTemplateName || ['mockup', 'social', 'design'].includes(settings.generationMode)}
+                            disabledReason={settings.selectedStyleTemplateName ? 'Style preset selected' : 'Not applicable for this mode'}
                         />
+                        {isSavingStyle ? (
+                             <div className="w-full flex items-center gap-2 animate-fade-in mt-2">
+                                <Input value={newStyleName} onChange={e => setNewStyleName(e.target.value)} placeholder="Preset name..." />
+                                <Tooltip text="Save">
+                                    <button onClick={handleSaveStyle} className="p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90"><Icon name="check" className="w-4 h-4" /></button>
+                                </Tooltip>
+                                <Tooltip text="Cancel">
+                                    <button onClick={() => setIsSavingStyle(false)} className="p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-md bg-secondary text-secondary-foreground hover:bg-accent"><Icon name="close" className="w-4 h-4" /></button>
+                                </Tooltip>
+                             </div>
+                         ) : styleImage && settings.styleKeywords && (
+                             <button onClick={() => setIsSavingStyle(true)} className="text-xs font-medium text-primary hover:opacity-80 disabled:opacity-50 flex items-center gap-1 animate-fade-in mt-1">
+                                <Icon name="star" className="w-3 h-3" /> Save as Preset
+                             </button>
+                         )}
                     </CardContent>
                 </Card>
             </div>
@@ -318,21 +376,67 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                         <Label>Mode</Label>
                         <ToggleGroup
                             value={settings.generationMode}
-                            // Fix: Added type assertion to satisfy the GenerationSettings type.
-                            onValueChange={(mode) => setSettings(s => ({ ...s, generationMode: mode as 'image' | 'video' }))}
-                            options={[{value: 'image', label: 'Image'}, {value: 'video', label: 'Video'}]}
+                            onValueChange={(mode) => setSettings(s => ({ ...s, generationMode: mode as GenerationSettings['generationMode'], editedPrompt: null }))}
+                            options={[{value: 'product', label: 'Product'}, {value: 'video', label: 'Video'}, {value: 'mockup', label: 'Mockup'}, {value: 'social', label: 'Social'}, {value: 'design', label: 'Design'}]}
                             disabled={isLoading}
                         />
                     </div>
-                     <p className="text-center text-xs text-muted-foreground -mt-2">Upload a style photo OR select a preset below.</p>
+
+                    {settings.generationMode === 'product' && (
+                        <div className="animate-fade-in space-y-4">
+                            <p className="text-center text-xs text-muted-foreground -mt-2">Upload a style photo OR select a preset below.</p>
+                            <StyleTemplates
+                                selectedTemplateName={settings.selectedStyleTemplateName}
+                                onSelect={handleSelectStyleTemplate}
+                                onDeselect={handleDeselectStyleTemplate}
+                                disabled={isLoading || !!styleImage}
+                                customTemplates={customStyleTemplates}
+                            />
+                            <div><Label>Lighting Style</Label><Select value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} /></div>
+                            <div><Label>Camera Perspective</Label><Select value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} /></div>
+                            <button onClick={handleSurpriseMe} disabled={isLoading} className="w-full text-sm text-primary hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2 font-medium">
+                                <Icon name="dice" className="w-4 h-4"/> Surprise Me!
+                            </button>
+                            <SceneTemplates templates={sceneTemplates} onSelect={handleSelectTemplate} disabled={isLoading} />
+                        </div>
+                    )}
                      
-                    <StyleTemplates
-                        selectedTemplateName={settings.selectedStyleTemplateName}
-                        onSelect={handleSelectStyleTemplate}
-                        onDeselect={handleDeselectStyleTemplate}
-                        disabled={isLoading || !!styleImage}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
+                    {settings.generationMode === 'video' && (
+                        <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                             <div><Label>Video Length</Label><Select value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'], editedPrompt: null }))} options={VIDEO_LENGTHS} disabled={isLoading} /></div>
+                             <div><Label>Camera Motion</Label><Select value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'], editedPrompt: null }))} options={CAMERA_MOTIONS} disabled={isLoading} /></div>
+                        </div>
+                    )}
+
+                    {settings.generationMode === 'mockup' && (
+                         <div className="animate-fade-in">
+                            <Label>Mockup Type</Label>
+                            <Select value={settings.mockupType} onChange={(e) => setSettings(s => ({ ...s, mockupType: e.target.value, editedPrompt: null }))} options={MOCKUP_TYPES} disabled={isLoading} />
+                         </div>
+                    )}
+
+                    {settings.generationMode === 'social' && (
+                        <div className="animate-fade-in text-center p-3 bg-muted rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                                The AI will use the logo from your active brand kit to create a new post design.
+                            </p>
+                            {!activeBrandKit?.logo && (
+                                <p className="text-sm text-destructive mt-2 font-semibold">
+                                    Warning: No logo found in your active brand kit. Please add one in the 'Brand' tab.
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {settings.generationMode === 'design' && (
+                        <div className="animate-fade-in text-center p-3 bg-muted rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                                The AI will generate a creative alternative based on your reference design.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
                         <div>
                             <Label>Aspect Ratio</Label>
                             <ToggleGroup
@@ -342,7 +446,7 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                                 disabled={isLoading}
                             />
                         </div>
-                        {settings.generationMode === 'image' && (
+                        {settings.generationMode === 'product' && (
                             <div>
                                 <Label>Number of Images</Label>
                                 <ToggleGroup
@@ -354,19 +458,6 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                             </div>
                         )}
                     </div>
-                     {settings.generationMode === 'video' && (
-                        <div className="grid grid-cols-2 gap-4">
-                             <div><Label>Video Length</Label><Select value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'] }))} options={VIDEO_LENGTHS} disabled={isLoading} /></div>
-                             <div><Label>Camera Motion</Label><Select value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'] }))} options={CAMERA_MOTIONS} disabled={isLoading} /></div>
-                        </div>
-                    )}
-                    <div><Label>Lighting Style</Label><Select value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} /></div>
-                    <div><Label>Camera Perspective</Label><Select value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} /></div>
-                    
-                    <button onClick={handleSurpriseMe} disabled={isLoading} className="w-full text-sm text-primary hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2 font-medium">
-                        <Icon name="dice" className="w-4 h-4"/> Surprise Me!
-                    </button>
-                    <SceneTemplates templates={sceneTemplates} onSelect={handleSelectTemplate} disabled={isLoading} />
                 </CardContent>
             </Card>
 
@@ -376,13 +467,21 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                     <div className="relative">
                         <Textarea value={finalPrompt || 'Prompt will appear here...'} onChange={(e) => setSettings(s=>({...s, editedPrompt: e.target.value}))}
                             placeholder="Describe the image you want to create..." disabled={isLoading || !productImage} />
-                        {isPromptEdited && (
-                            <Tooltip text="Reset to auto-generated prompt">
-                                <button onClick={() => setSettings(s=>({...s, editedPrompt: null}))} className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:bg-accent" aria-label="Reset prompt">
-                                    <Icon name="restart" className="w-4 h-4" />
+                        
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                             {isPromptEdited && (
+                                <Tooltip text="Reset to auto-generated prompt">
+                                    <button onClick={() => setSettings(s=>({...s, editedPrompt: null}))} className="p-1.5 rounded-md text-muted-foreground hover:bg-accent" aria-label="Reset prompt">
+                                        <Icon name="restart" className="w-4 h-4" />
+                                    </button>
+                                </Tooltip>
+                            )}
+                             <Tooltip text="Enhance prompt with AI">
+                                <button onClick={onEnhancePrompt} disabled={isEnhancingPrompt || !finalPrompt} className="p-1.5 rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50" aria-label="Enhance prompt">
+                                    <Icon name={isEnhancingPrompt ? 'spinner' : 'wand'} className={`w-4 h-4 ${isEnhancingPrompt ? 'animate-spin' : ''}`} />
                                 </button>
                             </Tooltip>
-                        )}
+                        </div>
                     </div>
                  </CardContent>
                  <Accordion title="Advanced Options">
@@ -396,6 +495,18 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                             </div>
                             <Input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s=>({...s, negativePrompt: e.target.value}))}
                                 placeholder="e.g., text, watermarks, ugly" disabled={isLoading || !productImage} />
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                {NEGATIVE_PROMPT_PRESETS.map(preset => (
+                                    <button 
+                                        key={preset} 
+                                        onClick={() => handleAddNegativePreset(preset)} 
+                                        className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                                        title={`Add "${preset}" to negative prompt`}
+                                    >
+                                        + {preset}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                         <div>
                             <div className="flex items-center space-x-1 mb-1.5">
@@ -419,6 +530,9 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
 export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
     const { onGenerate, isLoading, productImage, settings, history } = props;
     const isVideoMode = settings.generationMode === 'video';
+    const isMockupMode = settings.generationMode === 'mockup';
+    const isSocialMode = settings.generationMode === 'social';
+    const isDesignMode = settings.generationMode === 'design';
 
     return (
         <Card className="flex flex-col h-full">
@@ -451,12 +565,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                             >
                                 {isLoading ? (
                                      <><Icon name="spinner" className="animate-spin mr-2" /> Generating...</>
+                                ) : isVideoMode ? (
+                                    <><Icon name="video" className="mr-2 w-5 h-5" /> Generate Video</>
+                                ) : isMockupMode ? (
+                                    <><Icon name="sparkles" className="mr-2"/> Generate Mockup</>
+                                ) : isSocialMode ? (
+                                    <><Icon name="sparkles" className="mr-2"/> Generate Post</>
+                                ) : isDesignMode ? (
+                                    <><Icon name="sparkles" className="mr-2"/> Generate Design</>
                                 ) : (
-                                    isVideoMode ? (
-                                        <><Icon name="video" className="mr-2 w-5 h-5" /> Generate Video</>
-                                    ) : (
-                                        <><Icon name="sparkles" className="mr-2" /> Generate Image{settings.numberOfImages > 1 ? 's' : ''}</>
-                                    )
+                                    <><Icon name="sparkles" className="mr-2" /> Generate Product Image{settings.numberOfImages > 1 ? 's' : ''}</>
                                 )}
                             </button>
                         </div>

@@ -7,9 +7,10 @@ interface FileUploadProps {
     uploadedFileName?: string;
     onClear?: () => void;
     disabled?: boolean;
+    disabledReason?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, uploadedFileName, onClear, disabled }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, uploadedFileName, onClear, disabled, disabledReason }) => {
     const [isDragging, setIsDragging] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +84,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
                 ) : disabled ? (
                      <>
                         <Icon name="sparkles" className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Style preset selected</p>
+                        <p className="text-xs text-muted-foreground">{disabledReason || 'Action disabled'}</p>
                     </>
                 ) : (
                     <>

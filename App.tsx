@@ -3,9 +3,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { nanoid } from 'nanoid';
 import { ControlPanel } from './components/ControlPanel';
 import { Canvas } from './components/Canvas';
-import { AspectRatio, GenerationSettings, HistoryItem, Theme, EditorMode, BrandKit, TextOverlay, SceneTemplate, MarketingCopy, VideoLength, CameraMotion } from './types';
-// Fix: Corrected typo LIGHTING_STYYLES to LIGHTING_STYLES.
-import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS } from './constants';
+import { AspectRatio, GenerationSettings, HistoryItem, Theme, EditorMode, BrandKit, TextOverlay, SceneTemplate, MarketingCopy, VideoLength, CameraMotion, StyleTemplate, GenerationMode } from './types';
+import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES } from './constants';
 import * as geminiService from './services/geminiService';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConfirmationModal } from './components/ConfirmationModal';
@@ -66,6 +65,19 @@ const getInitialBrandKits = (): { kits: BrandKit[], activeId: string | null } =>
     return { kits: [defaultKit], activeId: defaultKit.id };
 };
 
+const getInitialCustomStyleTemplates = (): StyleTemplate[] => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem('custom-style-templates');
+        try {
+            if (stored) return JSON.parse(stored);
+        } catch (e) {
+            console.error("Failed to parse custom style templates", e);
+            return [];
+        }
+    }
+    return [];
+};
+
 
 const MarketingCopyModal: React.FC<{
     isOpen: boolean;
@@ -88,7 +100,7 @@ const MarketingCopyModal: React.FC<{
             <div className="grid gap-2">
                  <label className="text-sm font-medium leading-none text-muted-foreground">{label}</label>
                 <div className="flex items-center space-x-2">
-                    <p className="flex-1 text-sm bg-secondary text-secondary-foreground p-3 rounded-md whitespace-pre-wrap font-mono">{value}</p>
+                    <p dir="auto" className="flex-1 text-sm bg-secondary text-secondary-foreground p-3 rounded-md whitespace-pre-wrap font-mono">{value}</p>
                     <Tooltip text={copied ? "Copied!" : "Copy"}>
                         <button onClick={handleCopy} className="p-2 rounded-md bg-secondary hover:bg-accent text-muted-foreground">
                             <Icon name={copied ? "check" : "copy"} className="w-4 h-4" />
@@ -134,6 +146,7 @@ const MarketingCopyModal: React.FC<{
                         <CopyField label="Tagline" value={copy.tagline} />
                         <CopyField label="Description" value={copy.description} />
                         <CopyField label="Social Media Post" value={copy.socialMediaPost} />
+                        <CopyField label="Social Media Post (Arabic)" value={copy.socialMediaPostArabic} />
                     </div>
                 )}
 
@@ -170,12 +183,13 @@ const App: React.FC = () => {
     // Settings state
     const [settings, setSettings] = useState<GenerationSettings>(() => {
         const initial: GenerationSettings = {
-            generationMode: 'image',
+            generationMode: 'product',
             aspectRatio: '1:1',
             lightingStyle: LIGHTING_STYLES[0],
             cameraPerspective: CAMERA_PERSPECTIVES[0],
             videoLength: VIDEO_LENGTHS[0],
             cameraMotion: CAMERA_MOTIONS[0],
+            mockupType: MOCKUP_TYPES[0],
             prompt: '',
             editedPrompt: null,
             negativePrompt: '',
@@ -205,6 +219,7 @@ const App: React.FC = () => {
     const [theme, setTheme] = useState<Theme>(getInitialTheme);
     const [editorMode, setEditorMode] = useState<EditorMode>('view');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
     
     // Brand Kit State
     const [initialBrandKitState] = useState(getInitialBrandKits);
@@ -215,6 +230,9 @@ const App: React.FC = () => {
     const [showCopyModal, setShowCopyModal] = useState(false);
     const [isCopyLoading, setIsCopyLoading] = useState(false);
     const [marketingCopy, setMarketingCopy] = useState<MarketingCopy | null>(null);
+
+    // Custom Style Templates State
+    const [customStyleTemplates, setCustomStyleTemplates] = useState<StyleTemplate[]>(getInitialCustomStyleTemplates);
 
     const activeBrandKit = useMemo(() => brandKits.find(kit => kit.id === activeBrandKitId), [brandKits, activeBrandKitId]);
 
@@ -230,12 +248,13 @@ const App: React.FC = () => {
         setTextOverlays([]);
         setSettings(s => ({
             ...s,
-            generationMode: 'image',
+            generationMode: 'product',
             aspectRatio: '1:1',
             lightingStyle: LIGHTING_STYLES[0],
             cameraPerspective: CAMERA_PERSPECTIVES[0],
             videoLength: VIDEO_LENGTHS[0],
             cameraMotion: CAMERA_MOTIONS[0],
+            mockupType: MOCKUP_TYPES[0],
             prompt: '',
             editedPrompt: null,
             negativePrompt: '',
@@ -295,16 +314,30 @@ const App: React.FC = () => {
         if (!settings.productDescription || settings.editedPrompt !== null) {
             return;
         }
-
-        const lightingClause = LIGHTING_STYLES.includes(settings.lightingStyle) ? `, lit with ${settings.lightingStyle.toLowerCase()}` : '';
-        const perspectiveClause = CAMERA_PERSPECTIVES.includes(settings.cameraPerspective) ? `, ${settings.cameraPerspective.toLowerCase()}` : '';
-        const styleClause = settings.styleKeywords ? `, in the style of ${settings.styleKeywords}` : '';
-
-        const modeClause = settings.generationMode === 'video'
-            ? `A ${settings.videoLength.split(' ')[0].toLowerCase()}-long video with ${settings.cameraMotion.toLowerCase()} camera movement`
-            : 'Professional product photography';
-
-        const prompt = `${modeClause} of ${settings.productDescription}${perspectiveClause}${lightingClause}${styleClause}.`;
+    
+        let prompt = '';
+        switch (settings.generationMode) {
+            case 'video':
+                prompt = `A ${settings.videoLength.split(' ')[0].toLowerCase()}-long video with ${settings.cameraMotion.toLowerCase()} camera movement of ${settings.productDescription}.`;
+                break;
+            case 'mockup':
+                 prompt = `A photorealistic lifestyle photo of a ${settings.mockupType}, featuring the product: ${settings.productDescription}.`;
+                break;
+            case 'social':
+                prompt = `A social media post for ${settings.productDescription}, in a style similar to the reference image, incorporating the provided brand logo.`;
+                break;
+            case 'design':
+                prompt = `Generate a creative and professional alternative graphic design or realistic social media design based on the provided reference image. Consider alternative layouts, color palettes, and typography while maintaining the original's core message and branding. The design should be suitable for a social media post for: ${settings.productDescription}.`;
+                break;
+            case 'product':
+            default:
+                const lightingClause = LIGHTING_STYLES.includes(settings.lightingStyle) ? `, lit with ${settings.lightingStyle.toLowerCase()}` : '';
+                const perspectiveClause = CAMERA_PERSPECTIVES.includes(settings.cameraPerspective) ? `, ${settings.cameraPerspective.toLowerCase()}` : '';
+                const styleClause = settings.styleKeywords ? `, in the style of ${settings.styleKeywords}` : '';
+                prompt = `Professional product photography of ${settings.productDescription}${perspectiveClause}${lightingClause}${styleClause}.`;
+                break;
+        }
+    
         setSettings(s => ({ ...s, prompt }));
     }, [
         settings.productDescription, 
@@ -315,6 +348,7 @@ const App: React.FC = () => {
         settings.generationMode,
         settings.videoLength,
         settings.cameraMotion,
+        settings.mockupType,
     ]);
 
     const handleImageGeneration = async () => {
@@ -414,13 +448,163 @@ const App: React.FC = () => {
             setLoadingMessage('');
         }
     };
+
+    const handleMockupGeneration = async () => {
+        if (!productImage || !finalPrompt) return;
+        setIsLoading(true);
+        setError(null);
+        setGeneratedImages([]);
+        setGeneratedVideoUrl(null);
+        setSelectedImageIndex(null);
+        setEditorMode('view');
+        setTextOverlays([]);
+        try {
+            setLoadingMessage('Step 1/2: Preparing product...');
+            const productWithoutBg = await geminiService.removeBackground(productImage);
+
+            setLoadingMessage('Step 2/2: Generating mockup...');
+            const resultBase64 = await geminiService.generateMockup(productWithoutBg, finalPrompt, settings.mockupType);
+            const finalImage = `data:image/png;base64,${resultBase64}`;
+            
+            setGeneratedImages([finalImage]);
+            setSelectedImageIndex(0);
+            
+            const newHistoryItem: HistoryItem = {
+                id: crypto.randomUUID(),
+                images: [finalImage],
+                settings: { ...settings, prompt: finalPrompt },
+                textOverlays: [],
+                isFavorite: false,
+                timestamp: Date.now()
+            };
+            setHistory(prev => [newHistoryItem, ...prev]);
+
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during mockup generation.');
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+        }
+    };
+
+    const handleSocialPostGeneration = async () => {
+        if (!productImage || !finalPrompt) return;
+
+        if (!activeBrandKit?.logo) {
+            setError("Please upload a logo to your active brand kit to generate a social media post.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setGeneratedImages([]);
+        setGeneratedVideoUrl(null);
+        setSelectedImageIndex(null);
+        setEditorMode('view');
+        setTextOverlays([]);
+        try {
+            setLoadingMessage('Generating social media post...');
+            
+            const resultBase64 = await geminiService.generateSocialPost(productImage, activeBrandKit.logo, finalPrompt);
+            const finalImage = `data:image/png;base64,${resultBase64}`;
+            
+            setGeneratedImages([finalImage]);
+            setSelectedImageIndex(0);
+            
+            const newHistoryItem: HistoryItem = {
+                id: crypto.randomUUID(),
+                images: [finalImage],
+                settings: { ...settings, prompt: finalPrompt },
+                textOverlays: [],
+                isFavorite: false,
+                timestamp: Date.now()
+            };
+            setHistory(prev => [newHistoryItem, ...prev]);
+
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during social post generation.');
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+        }
+    };
+
+    const handleDesignGeneration = async () => {
+        if (!productImage || !finalPrompt) return;
+
+        setIsLoading(true);
+        setError(null);
+        setGeneratedImages([]);
+        setGeneratedVideoUrl(null);
+        setSelectedImageIndex(null);
+        setEditorMode('view');
+        setTextOverlays([]);
+        try {
+            setLoadingMessage('Generating design alternative...');
+            
+            const resultBase64 = await geminiService.generateDesignAlternative(productImage, finalPrompt);
+            const finalImage = `data:image/png;base64,${resultBase64}`;
+            
+            setGeneratedImages([finalImage]);
+            setSelectedImageIndex(0);
+            
+            const newHistoryItem: HistoryItem = {
+                id: crypto.randomUUID(),
+                images: [finalImage],
+                settings: { ...settings, prompt: finalPrompt },
+                textOverlays: [],
+                isFavorite: false,
+                timestamp: Date.now()
+            };
+            setHistory(prev => [newHistoryItem, ...prev]);
+
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during design generation.');
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+        }
+    };
     
     // Main generate function
     const handleGenerate = async () => {
-        if (settings.generationMode === 'video') {
-            await handleVideoGeneration();
-        } else {
-            await handleImageGeneration();
+        switch (settings.generationMode) {
+            case 'video':
+                await handleVideoGeneration();
+                break;
+            case 'mockup':
+                await handleMockupGeneration();
+                break;
+            case 'social':
+                await handleSocialPostGeneration();
+                break;
+            case 'design':
+                await handleDesignGeneration();
+                break;
+            case 'product':
+            default:
+                await handleImageGeneration();
+                break;
+        }
+    };
+
+    // Generic function to update the currently selected image in state and history
+    const updateCurrentImage = (newImage: string) => {
+        if (selectedImageIndex === null) return;
+
+        const updatedImages = [...generatedImages];
+        updatedImages[selectedImageIndex] = newImage;
+        setGeneratedImages(updatedImages);
+
+        const latestHistoryItem = history[0];
+        if (latestHistoryItem) {
+            const updatedHistoryImages = [...(latestHistoryItem.images || [])];
+            updatedHistoryImages[selectedImageIndex] = newImage;
+            const updatedHistoryItem = { ...latestHistoryItem, images: updatedHistoryImages };
+            setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
         }
     };
     
@@ -434,20 +618,7 @@ const App: React.FC = () => {
 
         try {
             const inpaintedImageBase64 = await geminiService.magicEditImage(imageWithMaskBase64, inpaintPrompt);
-            const finalImage = `data:image/png;base64,${inpaintedImageBase64}`;
-            
-            const updatedImages = [...generatedImages];
-            updatedImages[selectedImageIndex] = finalImage;
-            setGeneratedImages(updatedImages);
-
-            const latestHistoryItem = history[0];
-            if (latestHistoryItem) {
-                const updatedHistoryImages = [...(latestHistoryItem.images || [])];
-                updatedHistoryImages[selectedImageIndex] = finalImage;
-                const updatedHistoryItem = { ...latestHistoryItem, images: updatedHistoryImages };
-                setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
-            }
-
+            updateCurrentImage(`data:image/png;base64,${inpaintedImageBase64}`);
         } catch (e) {
             console.error(e);
             setError(e instanceof Error ? e.message : 'An unknown error occurred during Magic Edit.');
@@ -457,6 +628,47 @@ const App: React.FC = () => {
             setEditorMode('view');
         }
     };
+
+    // Remove Object
+    const handleRemoveObject = async (imageWithMaskBase64: string) => {
+        setIsLoading(true);
+        setError(null);
+        setLoadingMessage('Removing object...');
+        try {
+            const prompt = "Remove the object in the erased area. Fill the space with a realistic background that matches the surrounding image content and style."
+            const resultImageBase64 = await geminiService.magicEditImage(imageWithMaskBase64, prompt);
+            updateCurrentImage(`data:image/png;base64,${resultImageBase64}`);
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during object removal.');
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setEditorMode('view');
+        }
+    };
+
+    // Expand Image
+    const handleExpandImage = async (direction: 'up' | 'down' | 'left' | 'right') => {
+        if (selectedImageIndex === null) return;
+        const originalImageBase64 = generatedImages[selectedImageIndex].split(',')[1];
+
+        setIsLoading(true);
+        setError(null);
+        setLoadingMessage(`Expanding image ${direction}...`);
+        try {
+            const expandedImageBase64 = await geminiService.expandImage(originalImageBase64, finalPrompt, direction);
+            updateCurrentImage(`data:image/png;base64,${expandedImageBase64}`);
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : 'An unknown error occurred during image expansion.');
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setEditorMode('view');
+        }
+    };
+
 
     // Enhance image
     const handleEnhance = async () => {
@@ -470,20 +682,7 @@ const App: React.FC = () => {
 
         try {
             const enhancedImageBase64 = await geminiService.enhanceImage(originalImageBase64, finalPrompt);
-            const finalImage = `data:image/png;base64,${enhancedImageBase64}`;
-
-            const updatedImages = [...generatedImages];
-            updatedImages[selectedImageIndex] = finalImage;
-            setGeneratedImages(updatedImages);
-
-            const latestHistoryItem = history[0];
-            if (latestHistoryItem) {
-                const updatedHistoryImages = [...(latestHistoryItem.images || [])];
-                updatedHistoryImages[selectedImageIndex] = finalImage;
-                const updatedHistoryItem = { ...latestHistoryItem, images: updatedHistoryImages };
-                setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
-            }
-
+            updateCurrentImage(`data:image/png;base64,${enhancedImageBase64}`);
         } catch (e) {
             console.error(e);
             setError(e instanceof Error ? e.message : 'An unknown error occurred during enhancement.');
@@ -515,6 +714,21 @@ const App: React.FC = () => {
             setIsCopyLoading(false);
         }
     };
+    
+    const handleEnhancePrompt = async () => {
+        if (!finalPrompt || isEnhancingPrompt) return;
+        setIsEnhancingPrompt(true);
+        setError(null);
+        try {
+            const enhancedPrompt = await geminiService.enhancePrompt(finalPrompt);
+            setSettings(s => ({...s, editedPrompt: enhancedPrompt}));
+        } catch(e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : "Failed to enhance prompt.");
+        } finally {
+            setIsEnhancingPrompt(false);
+        }
+    }
 
     const handleStartOver = () => {
         setShowConfirmModal(true);
@@ -561,16 +775,36 @@ const App: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    const handleSaveCustomStyle = (name: string) => {
+        if (!settings.styleKeywords) return;
+        const newTemplate: StyleTemplate = {
+            name,
+            icon: 'star',
+            keywords: settings.styleKeywords,
+            gradient: 'from-gray-400 to-gray-600',
+        };
+        setCustomStyleTemplates(prev => {
+            // Avoid duplicates by name
+            if (prev.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                alert("A style preset with this name already exists.");
+                return prev;
+            };
+            return [...prev, newTemplate];
+        });
+    };
     
     // Save text overlays to history
     useEffect(() => {
         if (!history.length) return;
         const latestHistoryItem = history[0];
-        if (latestHistoryItem.textOverlays !== textOverlays) {
+        // Simple stringify check to avoid deep object comparison on every render
+        if (JSON.stringify(latestHistoryItem.textOverlays) !== JSON.stringify(textOverlays)) {
             const updatedHistoryItem = { ...latestHistoryItem, textOverlays };
             setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
         }
     }, [textOverlays, history]);
+
 
     // Theme toggle effect
     useEffect(() => {
@@ -588,6 +822,14 @@ const App: React.FC = () => {
             window.localStorage.setItem('active-brand-kit-id', activeBrandKitId);
         }
     }, [activeBrandKitId]);
+
+    // Custom Style Templates persistence
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem('custom-style-templates', JSON.stringify(customStyleTemplates));
+        }
+    }, [customStyleTemplates]);
+
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -664,6 +906,10 @@ const App: React.FC = () => {
                         activeBrandKitId={activeBrandKitId}
                         setActiveBrandKitId={setActiveBrandKitId}
                         activeBrandKit={activeBrandKit}
+                        onEnhancePrompt={handleEnhancePrompt}
+                        isEnhancingPrompt={isEnhancingPrompt}
+                        customStyleTemplates={customStyleTemplates}
+                        onSaveCustomStyle={handleSaveCustomStyle}
                     />
                 </aside>
                 <div className="lg:col-span-8 xl:col-span-9 flex min-h-[60vh] lg:min-h-0">
@@ -680,6 +926,8 @@ const App: React.FC = () => {
                         onRetry={handleGenerate}
                         onEnhance={handleEnhance}
                         onMagicEdit={handleMagicEdit}
+                        onRemoveObject={handleRemoveObject}
+                        onExpandImage={handleExpandImage}
                         onGenerateCopy={handleGenerateCopy}
                         aspectRatio={settings.aspectRatio}
                         editorMode={editorMode}

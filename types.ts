@@ -1,8 +1,9 @@
+
 export type AspectRatio = "1:1" | "4:5" | "16:9";
 
 export type Theme = 'light' | 'dark';
 
-export type EditorMode = 'view' | 'magic-edit' | 'crop' | 'text';
+export type EditorMode = 'view' | 'magic-edit' | 'crop' | 'text' | 'remove-object' | 'expand';
 
 export type VideoLength = "Short (~5s)" | "Medium (~10s)" | "Long (~15s)";
 export type CameraMotion = "Static" | "Slow Pan" | "Dolly Zoom" | "Fly-through";
@@ -23,13 +24,16 @@ export interface StyleTemplate {
     gradient: string;
 }
 
+export type GenerationMode = 'product' | 'video' | 'mockup' | 'social' | 'design';
+
 export interface GenerationSettings {
-    generationMode: 'image' | 'video';
+    generationMode: GenerationMode;
     aspectRatio: AspectRatio;
     lightingStyle: string;
     cameraPerspective: string;
     videoLength: VideoLength;
     cameraMotion: CameraMotion;
+    mockupType: string;
 
     prompt: string; // The auto-generated prompt
     editedPrompt: string | null; // The user-edited prompt
@@ -52,6 +56,8 @@ export interface TextOverlay {
     color: string;
     fontSize: number; // percentage of image height
     fontFamily: string;
+    rotation: number; // degrees
+    width: number; // percentage of container width
 }
 
 export interface HistoryItem {
@@ -85,4 +91,5 @@ export interface MarketingCopy {
     tagline: string;
     description: string;
     socialMediaPost: string;
+    socialMediaPostArabic: string;
 }
