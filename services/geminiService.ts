@@ -91,9 +91,12 @@ export const removeBackground = async (imageFile: File): Promise<string> => {
         },
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Background removal failed: No image part in response.');
@@ -126,9 +129,12 @@ export const generateImage = async (
         config: config,
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Image generation failed: No image part in response.');
@@ -162,9 +168,12 @@ export const generateSocialPost = async (
         },
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Social post generation failed: No image part in response.');
@@ -189,9 +198,12 @@ export const generateDesignAlternative = async (
         },
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Design generation failed: No image part in response.');
@@ -218,9 +230,12 @@ export const generateMockup = async (
         },
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Mockup generation failed: No image part in response.');
@@ -284,9 +299,12 @@ export const magicEditImage = async (
         },
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Magic Edit failed: No image part in response.');
@@ -307,9 +325,12 @@ export const enhanceImage = async (
         },
     });
 
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Enhancement failed: No image part in response.');
@@ -454,9 +475,12 @@ export const expandImage = async (
          config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
     });
     
-    for (const part of result.candidates[0].content.parts) {
-        if (part.inlineData) {
-            return part.inlineData.data;
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
         }
     }
     throw new Error('Image expansion failed: No image part in response.');

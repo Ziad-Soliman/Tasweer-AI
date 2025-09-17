@@ -17,8 +17,8 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, children }) => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="border-b">
-                <nav className="-mb-px flex space-x-4 px-4" aria-label="Tabs">
+            <div className="border-b p-2">
+                <nav className="flex space-x-1" aria-label="Tabs">
                     {tabs.map((tab) => {
                         const baseName = tab.split(' ')[0];
                         const iconName = ICONS_MAP[baseName];
@@ -29,9 +29,9 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, children }) => {
                                 onClick={() => setActiveTab(tab)}
                                 className={`${
                                     activeTab === tab
-                                        ? 'border-primary text-primary'
-                                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors focus:outline-none`}
+                                        ? 'bg-muted text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                } flex-1 whitespace-nowrap py-2 px-1 font-medium text-sm flex items-center justify-center gap-2 transition-colors focus:outline-none rounded-md`}
                                 aria-current={activeTab === tab ? 'page' : undefined}
                             >
                                {iconName && <Icon name={iconName} className="w-4 h-4"/>}

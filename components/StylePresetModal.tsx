@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Preset, GenerationMode, PresetCategory } from '../types';
 import { Icon } from './Icon';
@@ -31,11 +32,9 @@ export const StylePresetModal: React.FC<StylePresetModalProps> = ({ isOpen, onCl
     const [activeCategory, setActiveCategory] = useState<PresetCategory | 'All'>('All');
 
     const filteredPresets = useMemo(() => {
-        const modeFiltered = presets.filter(p => p.applicableModes.includes(activeMode));
-        if (activeCategory === 'All') {
-            return modeFiltered;
-        }
-        return modeFiltered.filter(p => p.category === activeCategory);
+        return presets
+            .filter(p => p.applicableModes.includes(activeMode))
+            .filter(p => activeCategory === 'All' || p.category === activeCategory);
     }, [presets, activeMode, activeCategory]);
 
     if (!isOpen) return null;

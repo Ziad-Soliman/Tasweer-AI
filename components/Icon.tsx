@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface IconProps {
@@ -27,6 +26,7 @@ const ICONS: { [key: string]: JSX.Element } = {
     'text-size': <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />,
     trash: <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9M18.375 18H5.625m12.75 0-1.148-9M8.625 9 7.477 18" />,
     cog: <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.092 1.21-.138 2.43-.138 3.662s.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.092-1.21.138-2.43.138-3.662zM15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0z" />,
+    'settings-2': <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.943-8.657 12.657m18-8.657L6.01 18.01m-3.182-8.657a4.5 4.5 0 0 1 6.364 0l2.828 2.829a4.5 4.5 0 0 1 0 6.364l-2.828 2.829a4.5 4.5 0 0 1-6.364-6.364l2.828-2.829a4.5 4.5 0 0 1 0-6.364l-2.828-2.829a4.5 4.5 0 0 1 6.364 0Z" />,
     history: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     'star-filled': <path fillRule="evenodd" d="M10.788 3.212a.75.75 0 0 1 .424 0l2.429 1.223a.75.75 0 0 0 .358.09l2.67.19a.75.75 0 0 1 .417 1.285l-1.93 1.882a.75.75 0 0 0-.215.665l.455 2.659a.75.75 0 0 1-1.088.791l-2.388-1.256a.75.75 0 0 0-.702 0l-2.388 1.256a.75.75 0 0 1-1.088-.791l.455-2.659a.75.75 0 0 0-.215-.665l-1.93-1.882a.75.75 0 0 1 .417-1.285l2.67-.19a.75.75 0 0 0 .358.09l2.429-1.223Z" clipRule="evenodd" />,
     star: <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321 1.003l-4.123 3.55a.563.563 0 0 0-.162.593l1.234 5.395c.099.434-.364.79-.746.592L12 17.5l-4.937 2.92c-.382.2-.845-.158-.746-.592l1.234-5.395a.563.563 0 0 0-.162-.593l-4.123-3.55c-.38-.34-.178-.963.321-1.003l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />,
@@ -50,6 +50,9 @@ const ICONS: { [key: string]: JSX.Element } = {
     'arrow-left': <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />,
     'arrow-right': <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75 6.75M19.5 12l-6.75-6.75" />,
     'rotate-cw': <><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/></>,
+    'chevron-down': <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />,
+    'menu': <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />,
+    'aspect-ratio': <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15 15m0-6 6-6m-6 6-6-6" />,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, className, style }) => {

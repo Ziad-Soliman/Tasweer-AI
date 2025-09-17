@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from './Icon';
 import { AspectRatio, EditorMode, TextOverlay, BrandKit, WatermarkSettings, HistoryItem } from '../types';
@@ -6,6 +5,7 @@ import { EditorToolbar } from './EditorToolbar';
 import { ColorPalette } from './ColorPalette';
 import { ImageComparator } from './ImageComparator';
 import { Tooltip } from './Tooltip';
+import { FileUpload } from './FileUpload';
 
 interface CanvasProps {
     productImagePreview: string | null;
@@ -32,15 +32,28 @@ interface CanvasProps {
     watermarkSettings: WatermarkSettings;
     currentHistoryItem: HistoryItem | undefined;
     onExtractPalette: () => void;
+    onProductImageUpload: (file: File) => void;
+    onClearProductImage: () => void;
 }
 
 const Placeholder: React.FC = () => (
-    <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-border rounded-xl">
-        <Icon name="image" className="w-16 h-16 mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-semibold text-foreground">Your Creations Appear Here</h3>
-        <p className="text-sm text-muted-foreground">Upload a product photo and generate an image or video.</p>
+    <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 select-none">
+        <div className="relative w-full max-w-md h-64 flex items-center justify-center">
+            {/* Background decorative element */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-3xl transform -rotate-12 scale-105 opacity-50"></div>
+            <div className="absolute inset-0 bg-gradient-to-tl from-secondary to-transparent rounded-3xl transform rotate-6 scale-95 opacity-30"></div>
+            
+            <div className="relative z-10 bg-card/60 backdrop-blur-lg p-8 rounded-xl border border-border/50 shadow-2xl">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWRpZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBNTg1N0Y3Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8L2RlZnM+CiAgICA8cGF0aCBkPSJNMTIgMkwzIDIySDdMOC4yNSAxOEgxNS43NUwxNyAyMkgxMUwxMiAyWk0xMiA2LjhMMTQuMjUgMTRIMi43NUwxMiA2LjhaIiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiLz4KICAgIDxwYXRoIGQ9Ik0xOCAyTDE5LjUgNUwyMiA2TDE5LjUgN0wxOCAxMEwxNi41IDdMMTQgNkwxNi41IDVMMTggMloiIGZpbGw9InVybCgjbG9nb0dyYWRpZW50KSIvPgo8L3N2Zz4=" alt="AI Designer Logo" className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-foreground">AI Designer</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                    Upload a product photo in the left panel to begin creating.
+                </p>
+            </div>
+        </div>
     </div>
 );
+
 
 const LoadingOverlay: React.FC<{ message: string }> = ({ message }) => (
     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 rounded-xl">
@@ -65,7 +78,7 @@ const ErrorDisplay: React.FC<{ message: string; onRetry: () => void }> = ({ mess
 const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onSubmit, onCancel, brushSize, setBrushSize }) => {
     const [prompt, setPrompt] = useState('');
     return (
-        <div className="absolute bottom-20 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
+        <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg flex-wrap">
              <div className="flex items-center gap-2">
                 <label className="text-xs text-muted-foreground">Brush:</label>
                 <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
@@ -74,23 +87,25 @@ const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel
                 type="text"
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="Describe your edit (e.g. 'add a flower' or 'remove the scratch')..."
-                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                placeholder="Describe your edit (e.g. 'add a flower')..."
+                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex-1"
             />
-            <button onClick={() => onSubmit(prompt)} disabled={!prompt} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 disabled:opacity-50">Apply</button>
-            <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">Cancel</button>
+            <div className="flex gap-2 ml-auto">
+                <button onClick={() => onSubmit(prompt)} disabled={!prompt} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 disabled:opacity-50">Apply</button>
+                <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">Cancel</button>
+            </div>
         </div>
     );
 };
 
 const RemoveObjectControls: React.FC<{ onApply: () => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onApply, onCancel, brushSize, setBrushSize }) => (
-    <div className="absolute bottom-20 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
+    <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
          <div className="flex items-center gap-2">
             <label className="text-xs text-muted-foreground">Brush:</label>
             <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
         </div>
         <p className="flex-1 text-sm text-muted-foreground hidden sm:block">Erase the object you want to remove.</p>
-        <button onClick={onApply} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">Apply</button>
+        <button onClick={onApply} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 ml-auto">Apply</button>
         <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">Cancel</button>
     </div>
 );
@@ -102,7 +117,7 @@ const ExpandControls: React.FC<{ onExpand: (direction: 'up' | 'down' | 'left' | 
     return (
         <>
             <Tooltip text="Expand Up"><button onClick={() => onExpand('up')} className={`${buttonClass} top-2 left-1/2 -translate-x-1/2`}><Icon name="arrow-up" className={iconClass} /></button></Tooltip>
-            <Tooltip text="Expand Down"><button onClick={() => onExpand('down')} className={`${buttonClass} bottom-2 left-1/2 -translate-x-1/2`}><Icon name="arrow-down" className={iconClass} /></button></Tooltip>
+            <Tooltip text="Expand Down"><button onClick={() => onExpand('down')} className={`${buttonClass} bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2`}><Icon name="arrow-down" className={iconClass} /></button></Tooltip>
             <Tooltip text="Expand Left"><button onClick={() => onExpand('left')} className={`${buttonClass} left-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-left" className={iconClass} /></button></Tooltip>
             <Tooltip text="Expand Right"><button onClick={() => onExpand('right')} className={`${buttonClass} right-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-right" className={iconClass} /></button></Tooltip>
         </>
@@ -116,6 +131,71 @@ const IconButton: React.FC<{onClick: () => void; label: string; title: string; c
         </button>
     </Tooltip>
 );
+
+const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onStartOver: () => void; isVideo: boolean; onDownloadVideo: () => void; onEnhance: () => void; onGenerateCopy: () => void; onCompare: () => void; }> = (props) => {
+    const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsActionsMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const DropdownAction: React.FC<{ onClick: () => void; icon: string; label: string }> = ({ onClick, icon, label }) => (
+        <button
+            onClick={() => { onClick(); setIsActionsMenuOpen(false); }}
+            className="w-full flex items-center gap-3 text-left text-sm px-3 py-2 hover:bg-accent rounded-md"
+        >
+            <Icon name={icon} className="w-4 h-4 text-muted-foreground" />
+            <span>{label}</span>
+        </button>
+    );
+
+    return (
+        <div ref={menuRef} className="absolute top-4 right-4 flex gap-2 z-30">
+            {/* Desktop Buttons */}
+            <div className="hidden md:flex gap-2">
+                {!props.isVideo && <IconButton onClick={props.onCompare} label="Compare with Original" title="Compare with Original"><Icon name="compare" /></IconButton>}
+                {!props.isVideo && <IconButton onClick={props.onEnhance} label="Enhance Image" title="Enhance Image"><Icon name="wand" /></IconButton>}
+                {!props.isVideo && <IconButton onClick={props.onGenerateCopy} label="Generate Marketing Copy" title="Generate Marketing Copy"><Icon name="pencil" /></IconButton>}
+                {props.isVideo ? (
+                    <IconButton onClick={props.onDownloadVideo} label="Download Video" title="Download Video"><Icon name="download" /></IconButton>
+                ) : (
+                    <DropdownMenu onSelect={props.onDownload}>
+                        <IconButton onClick={() => {}} label="Download Image" title="Download Image"><Icon name="download" /></IconButton>
+                    </DropdownMenu>
+                )}
+                <IconButton onClick={props.onStartOver} label="Start Over" title="Start Over"><Icon name="restart" /></IconButton>
+            </div>
+            
+            {/* Mobile Dropdown */}
+            <div className="md:hidden relative">
+                <IconButton onClick={() => setIsActionsMenuOpen(o => !o)} label="More Actions" title="More Actions">
+                    <Icon name="cog" />
+                </IconButton>
+                {isActionsMenuOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-popover text-popover-foreground rounded-md shadow-lg z-50 animate-fade-in border p-1">
+                        {!props.isVideo && <DropdownAction onClick={props.onCompare} icon="compare" label="Compare" />}
+                        {!props.isVideo && <DropdownAction onClick={props.onEnhance} icon="wand" label="Enhance" />}
+                        {!props.isVideo && <DropdownAction onClick={props.onGenerateCopy} icon="pencil" label="Generate Copy" />}
+                        {props.isVideo ?
+                            <DropdownAction onClick={props.onDownloadVideo} icon="download" label="Download Video" />
+                            : <DropdownAction onClick={() => props.onDownload('png')} icon="download" label="Download Image" />
+                        }
+                        <div className="h-px bg-border/80 my-1"></div>
+                        <DropdownAction onClick={props.onStartOver} icon="restart" label="Start Over" />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 const DropdownMenu: React.FC<{ onSelect: (format: 'png' | 'jpeg') => void; children: React.ReactNode }> = ({ onSelect, children }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -162,9 +242,9 @@ export const Canvas: React.FC<CanvasProps> = ({
     productImagePreview, generatedImages, generatedVideoUrl, selectedImageIndex, onSelectImage,
     isLoading, loadingMessage, error, onStartOver, onRetry, onEnhance, onMagicEdit, onRemoveObject, onExpandImage, onGenerateCopy,
     aspectRatio, editorMode, setEditorMode, textOverlays, setTextOverlays, brandKit,
-    watermarkSettings, currentHistoryItem, onExtractPalette
+    watermarkSettings, currentHistoryItem, onExtractPalette, onProductImageUpload, onClearProductImage
 }) => {
-    const aspectMap: Record<AspectRatio, string> = { '1:1': 'aspect-square', '4:5': 'aspect-[4/5]', '16:9': 'aspect-video' };
+    const aspectMap: Record<AspectRatio, string> = { '1:1': 'aspect-square', '4:5': 'aspect-[4/5]', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]' };
     const hasContent = productImagePreview || generatedImages.length > 0 || generatedVideoUrl;
     const selectedImage = selectedImageIndex !== null ? generatedImages[selectedImageIndex] : null;
     const isVideoMode = !!generatedVideoUrl;
@@ -422,99 +502,89 @@ export const Canvas: React.FC<CanvasProps> = ({
     const isMaskingMode = editorMode === 'magic-edit' || editorMode === 'remove-object';
 
     return (
-        <div className="bg-card border rounded-xl p-2 sm:p-4 flex flex-col items-center justify-center relative w-full h-full shadow-sm">
+        <div className="p-4 flex flex-col items-center justify-center relative w-full h-full">
             {isLoading && <LoadingOverlay message={loadingMessage} />}
             {error && <ErrorDisplay message={error} onRetry={onRetry} />}
 
             {!hasContent && !isLoading && <Placeholder />}
             
             {hasContent && (
-                <div className="flex flex-col w-full h-full items-center justify-between">
-                    <div className={`relative w-full flex-1 flex items-center justify-center min-h-0`}>
-                        <div ref={imageContainerRef} onMouseDown={handleAddText} className={`relative transition-all duration-300 w-full h-full max-w-full max-h-full ${aspectMap[aspectRatio]} ${editorMode === 'text' ? 'cursor-text' : ''}`}>
-                             <div className="w-full h-full" onClick={() => editorMode === 'text' && setActiveTextOverlayId(null)}>
-                                {showComparison && productImagePreview && !isVideoMode ? (
-                                    <ImageComparator baseImage={productImagePreview} newImage={selectedImage || ''} />
-                                ) : isVideoMode ? (
-                                    <video src={generatedVideoUrl} controls autoPlay loop className="w-full h-full object-contain rounded-lg" />
-                                ) : selectedImage ? (
-                                    <>
-                                        <img ref={imageRef} src={selectedImage} alt={`AI Generated Product ${selectedImageIndex! + 1}`} className={`w-full h-full object-contain rounded-lg transition-opacity ${isMaskingMode ? 'opacity-30' : 'opacity-100'}`} />
-                                        {isMaskingMode && (
-                                            <canvas ref={canvasRef}
-                                                className="absolute top-0 left-0 w-full h-full"
-                                                onMouseDown={startDrawing} onMouseUp={stopDrawing} onMouseOut={stopDrawing} onMouseMove={draw}
-                                                onTouchStart={startDrawing} onTouchEnd={stopDrawing} onTouchMove={draw}
-                                                style={{ cursor: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${brushSize}" height="${brushSize}" viewBox="0 0 ${brushSize} ${brushSize}"><circle cx="${brushSize/2}" cy="${brushSize/2}" r="${brushSize/2 - 1}" fill="rgba(255,255,255,0.5)" stroke="black" stroke-width="1"/></svg>') ${brushSize/2} ${brushSize/2}, auto`}}
-                                            />
-                                        )}
-                                        {textOverlays.map(overlay => (
-                                            <InteractiveTextOverlay
-                                                key={overlay.id}
-                                                overlay={overlay}
-                                                containerRef={imageContainerRef}
-                                                isActive={activeTextOverlayId === overlay.id}
-                                                onActivate={() => setActiveTextOverlayId(overlay.id)}
-                                                onUpdate={updateTextOverlay}
-                                                onDelete={deleteOverlay}
-                                                brandKit={brandKit}
-                                                isTextMode={editorMode === 'text'}
-                                            />
-                                        ))}
-                                    </>
-                                ) : productImagePreview && (
-                                    <img src={productImagePreview} alt="Uploaded Product" className="w-full h-full object-contain rounded-lg" />
+                 <div ref={imageContainerRef} onMouseDown={handleAddText} className={`relative transition-all duration-300 w-full h-full flex items-center justify-center ${aspectMap[aspectRatio]} ${editorMode === 'text' ? 'cursor-text' : ''}`}>
+                     <div className="w-full h-full relative" onClick={() => editorMode === 'text' && setActiveTextOverlayId(null)}>
+                        {showComparison && productImagePreview && !isVideoMode ? (
+                            <ImageComparator baseImage={productImagePreview} newImage={selectedImage || ''} />
+                        ) : isVideoMode ? (
+                            <video src={generatedVideoUrl} controls autoPlay loop className="w-full h-full object-contain rounded-lg" />
+                        ) : selectedImage ? (
+                            <>
+                                <img ref={imageRef} src={selectedImage} alt={`AI Generated Product ${selectedImageIndex! + 1}`} className={`w-full h-full object-contain rounded-lg transition-opacity ${isMaskingMode ? 'opacity-30' : 'opacity-100'}`} />
+                                {isMaskingMode && (
+                                    <canvas ref={canvasRef}
+                                        className="absolute top-0 left-0 w-full h-full"
+                                        onMouseDown={startDrawing} onMouseUp={stopDrawing} onMouseOut={stopDrawing} onMouseMove={draw}
+                                        onTouchStart={startDrawing} onTouchEnd={stopDrawing} onTouchMove={draw}
+                                        style={{ cursor: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${brushSize}" height="${brushSize}" viewBox="0 0 ${brushSize} ${brushSize}"><circle cx="${brushSize/2}" cy="${brushSize/2}" r="${brushSize/2 - 1}" fill="rgba(255,255,255,0.5)" stroke="black" stroke-width="1"/></svg>') ${brushSize/2} ${brushSize/2}, auto`}}
+                                    />
                                 )}
-                             </div>
-                            
-                            {(selectedImage || generatedVideoUrl) && !isLoading && !showComparison && (
-                                <>
-                                 {!isVideoMode && <EditorToolbar mode={editorMode} setMode={setEditorMode} />}
-                                 <div className="absolute top-4 right-4 flex gap-2">
-                                    {!isVideoMode && <IconButton onClick={() => setShowComparison(true)} label="Compare with Original" title="Compare with Original"><Icon name="compare" /></IconButton>}
-                                    {!isVideoMode && <IconButton onClick={onEnhance} label="Enhance Image" title="Enhance Image"><Icon name="wand" /></IconButton>}
-                                    {!isVideoMode && <IconButton onClick={onGenerateCopy} label="Generate Marketing Copy" title="Generate Marketing Copy"><Icon name="pencil" /></IconButton>}
-                                    
-                                    {isVideoMode ? (
-                                        <IconButton onClick={handleDownloadVideo} label="Download Video" title="Download Video"><Icon name="download" /></IconButton>
-                                    ) : (
-                                        <DropdownMenu onSelect={handleDownloadImage}>
-                                             <IconButton onClick={() => {}} label="Download Image" title="Download Image"><Icon name="download" /></IconButton>
-                                        </DropdownMenu>
-                                    )}
-                                    <IconButton onClick={onStartOver} label="Start Over" title="Start Over"><Icon name="restart" /></IconButton>
-                                  </div>
-                                </>
-                            )}
-                             {showComparison && (
-                                <IconButton onClick={() => setShowComparison(false)} label="Exit Comparison" title="Exit Comparison"><Icon name="close" /></IconButton>
-                             )}
-                            {editorMode === 'magic-edit' && <MagicEditControls onSubmit={handleMagicEditSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
-                            {editorMode === 'remove-object' && <RemoveObjectControls onApply={handleRemoveObjectSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
-                            {editorMode === 'expand' && <ExpandControls onExpand={onExpandImage} />}
-
-                        </div>
-                    </div>
+                                {textOverlays.map(overlay => (
+                                    <InteractiveTextOverlay
+                                        key={overlay.id}
+                                        overlay={overlay}
+                                        containerRef={imageContainerRef}
+                                        isActive={activeTextOverlayId === overlay.id}
+                                        onActivate={() => setActiveTextOverlayId(overlay.id)}
+                                        onUpdate={updateTextOverlay}
+                                        onDelete={deleteOverlay}
+                                        brandKit={brandKit}
+                                        isTextMode={editorMode === 'text'}
+                                    />
+                                ))}
+                            </>
+                        ) : productImagePreview && (
+                            <img src={productImagePreview} alt="Uploaded Product" className="w-full h-full object-contain rounded-lg" />
+                        )}
+                     </div>
                     
-                    <div className="w-full flex-shrink-0 pt-4 flex justify-between items-end gap-4">
-                        <div className="flex-1">
-                            {generatedImages.length > 1 && !isVideoMode && (
-                                <div className="flex justify-center items-center gap-3">
+                    {(selectedImage || generatedVideoUrl) && !isLoading && !showComparison && (
+                        <>
+                         {!isVideoMode && <EditorToolbar mode={editorMode} setMode={setEditorMode} />}
+                         <ActionsMenu 
+                            onDownload={handleDownloadImage}
+                            onStartOver={onStartOver}
+                            isVideo={isVideoMode}
+                            onDownloadVideo={handleDownloadVideo}
+                            onEnhance={onEnhance}
+                            onGenerateCopy={onGenerateCopy}
+                            onCompare={() => setShowComparison(true)}
+                         />
+                        </>
+                    )}
+                     {showComparison && (
+                        <div className="absolute top-4 right-4 z-30"><IconButton onClick={() => setShowComparison(false)} label="Exit Comparison" title="Exit Comparison"><Icon name="close" /></IconButton></div>
+                     )}
+                    {editorMode === 'magic-edit' && <MagicEditControls onSubmit={handleMagicEditSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
+                    {editorMode === 'remove-object' && <RemoveObjectControls onApply={handleRemoveObjectSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
+                    {editorMode === 'expand' && <ExpandControls onExpand={onExpandImage} />}
+                    
+                     {generatedImages.length > 0 && !isVideoMode && (
+                        <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 z-20 flex justify-center items-end gap-4 w-full px-4 overflow-x-auto">
+                             {currentHistoryItem && (
+                                <div className="absolute left-4 bottom-0 hidden lg:block">
+                                    <ColorPalette palette={currentHistoryItem.palette} onExtract={onExtractPalette} />
+                                </div>
+                            )}
+                            {generatedImages.length > 1 && (
+                                <div className="flex justify-center items-center gap-3 p-2 bg-background/50 backdrop-blur-md rounded-xl border">
                                     {generatedImages.map((img, index) => (
                                         <button key={index} onClick={() => onSelectImage(index)}
-                                            className={`w-20 h-20 rounded-md overflow-hidden transition-all duration-200 ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${selectedImageIndex === index ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-border hover:ring-primary/50'}`}>
+                                            className={`w-16 h-16 rounded-md overflow-hidden transition-all duration-200 ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 flex-shrink-0 ${selectedImageIndex === index ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-border/50 hover:ring-primary/50'}`}>
                                             <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
                                         </button>
                                     ))}
                                 </div>
                             )}
                         </div>
-                         {currentHistoryItem && !isVideoMode && (
-                            <div className="flex-shrink-0">
-                                <ColorPalette palette={currentHistoryItem.palette} onExtract={onExtractPalette} />
-                            </div>
-                        )}
-                    </div>
+                    )}
 
                 </div>
             )}

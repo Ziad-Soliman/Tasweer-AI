@@ -54,7 +54,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
             onDragOver={handleDragOver}
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
-            className={`flex flex-col items-center justify-center w-full h-full min-h-[8rem] border-2 border-dashed rounded-lg transition-colors
+            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg transition-colors
                 ${disabled
                     ? 'bg-muted cursor-not-allowed opacity-70'
                     : isDragging 
@@ -65,7 +65,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
             <div className="flex flex-col items-center justify-center text-center px-2 w-full">
                 {uploadedFileName ? (
                     <div className="relative flex flex-col items-center justify-center w-full">
-                       <Icon name="check" className="w-8 h-8 mb-2 text-green-500"/>
+                       <Icon name="check" className="w-6 h-6 mb-2 text-green-500"/>
                        <p className="text-xs text-foreground truncate max-w-full px-5">{uploadedFileName}</p>
                        {onClear && (
                             <button
@@ -83,13 +83,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
                     </div>
                 ) : disabled ? (
                      <>
-                        <Icon name="sparkles" className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <Icon name="sparkles" className="w-6 h-6 mb-2 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">{disabledReason || 'Action disabled'}</p>
                     </>
                 ) : (
                     <>
-                        <Icon name="upload" className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">{label}</p>
+                        <Icon name="upload" className="w-6 h-6 mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">{label}</p>
                     </>
                 )}
             </div>

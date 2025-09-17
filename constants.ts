@@ -1,10 +1,12 @@
 
-import { AspectRatio, VideoLength, CameraMotion } from './types';
+
+import { AspectRatio, VideoLength, CameraMotion, SocialMediaTemplate } from './types';
 
 export const ASPECT_RATIOS: { label: string; value: AspectRatio }[] = [
   { label: '1:1 Square', value: '1:1' },
   { label: '4:5 Vertical', value: '4:5' },
-  { label: '16:9 Horizontal', value: '16:9' },
+  { label: '9:16 Story', value: '9:16' },
+  { label: '16:9 Wide', value: '16:9' },
 ];
 
 export const LIGHTING_STYLES: string[] = [
@@ -57,4 +59,12 @@ export const FONT_OPTIONS: string[] = [
 
 export const NEGATIVE_PROMPT_PRESETS: string[] = [
     'text', 'watermark', 'blurry', 'deformed', 'disfigured', 'ugly', 'low quality', 'pixelated'
+];
+
+export const SOCIAL_MEDIA_TEMPLATES: SocialMediaTemplate[] = [
+  { id: 'ig-post', name: 'Instagram Post', platform: 'Instagram', aspectRatio: '1:1', icon: 'image' },
+  { id: 'ig-story', name: 'Instagram Story', platform: 'Instagram', aspectRatio: '9:16', icon: 'image' },
+  { id: 'fb-post', name: 'Facebook Post', platform: 'Facebook', aspectRatio: '4:5', icon: 'image' },
+  { id: 'fb-cover', name: 'Facebook Cover', platform: 'Facebook', aspectRatio: '16:9', icon: 'image' },
+  { id: 'x-post', name: 'X (Twitter) Post', platform: 'X (Twitter)', aspectRatio: '16:9', icon: 'image' },
 ];

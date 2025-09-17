@@ -1,5 +1,6 @@
 
-export type AspectRatio = "1:1" | "4:5" | "16:9";
+
+export type AspectRatio = "1:1" | "4:5" | "16:9" | "9:16";
 
 export type Theme = 'light' | 'dark';
 
@@ -34,6 +35,13 @@ export interface Preset {
   applicableModes: GenerationMode[];
 }
 
+export interface SocialMediaTemplate {
+  id: string;
+  name: string;
+  platform: 'Instagram' | 'Facebook' | 'X (Twitter)';
+  aspectRatio: AspectRatio;
+  icon: string;
+}
 
 export interface GenerationSettings {
     generationMode: GenerationMode;
@@ -43,6 +51,7 @@ export interface GenerationSettings {
     videoLength: VideoLength;
     cameraMotion: CameraMotion;
     mockupType: string;
+    selectedSocialTemplateId: string | null;
 
     prompt: string; // The auto-generated prompt
     editedPrompt: string | null; // The user-edited prompt

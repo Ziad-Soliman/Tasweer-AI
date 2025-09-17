@@ -18,7 +18,7 @@ const TOOLS: { id: EditorMode; name: string; icon: string }[] = [
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({ mode, setMode }) => {
     return (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 z-20 border shadow-lg">
+        <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 z-20 border shadow-lg">
             {TOOLS.map((tool) => (
                 <Tooltip key={tool.id} text={tool.name}>
                     <button
