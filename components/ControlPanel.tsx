@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
-import { GenerationSettings, HistoryItem, BrandKit, SceneTemplate, StyleTemplate } from '../types';
-import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, STYLE_TEMPLATES, NEGATIVE_PROMPT_PRESETS, MOCKUP_TYPES } from '../constants';
+import { GenerationSettings, HistoryItem, BrandKit, SceneTemplate } from '../types';
+import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, NEGATIVE_PROMPT_PRESETS, MOCKUP_TYPES } from '../constants';
+import { PRESETS } from '../constants/presets';
 import { FileUpload } from './FileUpload';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -12,8 +12,6 @@ import { BrandKitPanel } from './BrandKitPanel';
 interface ControlPanelProps {
     onProductImageUpload: (file: File) => void;
     onClearProductImage: () => void;
-    onStyleImageUpload: (file: File) => void;
-    onClearStyleImage: () => void;
     
     settings: GenerationSettings;
     setSettings: React.Dispatch<React.SetStateAction<GenerationSettings>>;
@@ -24,8 +22,9 @@ interface ControlPanelProps {
     onEnhancePrompt: () => void;
     isLoading: boolean;
     isEnhancingPrompt: boolean;
+    isGeneratingPrompt: boolean;
+    promptGenerationMessage: string;
     productImage: File | null;
-    styleImage: File | null;
     
     history: HistoryItem[];
     onRevertToHistory: (item: HistoryItem) => void;
@@ -37,8 +36,7 @@ interface ControlPanelProps {
     setActiveBrandKitId: React.Dispatch<React.SetStateAction<string | null>>;
     activeBrandKit: BrandKit | undefined;
 
-    customStyleTemplates: StyleTemplate[];
-    onSaveCustomStyle: (name: string) => void;
+    onBrowsePresets: () => void;
 }
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
@@ -207,82 +205,25 @@ const SceneTemplates: React.FC<{ templates: SceneTemplate[], onSelect: (template
     );
 }
 
-const StyleTemplates: React.FC<{
-    selectedTemplateName: string | null;
-    onSelect: (template: StyleTemplate) => void;
-    onDeselect: () => void;
-    disabled: boolean;
-    customTemplates: StyleTemplate[];
-}> = ({ selectedTemplateName, onSelect, onDeselect, disabled, customTemplates }) => {
-
-    const renderTemplate = (template: StyleTemplate) => {
-        const isSelected = selectedTemplateName === template.name;
-        return (
-            <button
-                key={template.name}
-                onClick={() => (isSelected ? onDeselect() : onSelect(template))}
-                disabled={disabled}
-                className={`relative text-left p-2.5 rounded-lg ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden h-16
-                    ${isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-inset ring-transparent hover:ring-primary/50'}`
-                }
-            >
-                <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-70 group-hover:opacity-90 transition-opacity`}></div>
-                <div className="relative flex items-center gap-2">
-                    <Icon name={template.icon} className={`w-5 h-5 ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-800' : 'text-white'}`} />
-                    <p className={`font-semibold text-xs truncate ${template.name === 'Minimalist' || template.name === 'Vintage Film' ? 'text-gray-900' : 'text-white'}`}>
-                        {template.name}
-                    </p>
-                </div>
-            </button>
-        )
-    }
-
-    return (
-        <div>
-            <Label>🎨 Style Presets</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {STYLE_TEMPLATES.map(renderTemplate)}
-            </div>
-
-            {customTemplates.length > 0 && (
-                <>
-                    <Label className="mt-4">My Styles</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {customTemplates.map(renderTemplate)}
-                    </div>
-                </>
-            )}
-        </div>
-    );
-};
 
 const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertToHistory' | 'onToggleFavorite' | 'brandKits' | 'setBrandKits' | 'activeBrandKitId' | 'setActiveBrandKitId'>> = ({
-    onProductImageUpload, onClearProductImage, onStyleImageUpload, onClearStyleImage,
+    onProductImageUpload, onClearProductImage,
     settings, setSettings, finalPrompt, sceneTemplates, onGenerate, isLoading,
-    productImage, styleImage, activeBrandKit, onEnhancePrompt, isEnhancingPrompt,
-    customStyleTemplates, onSaveCustomStyle
+    productImage, activeBrandKit, onEnhancePrompt, isEnhancingPrompt, isGeneratingPrompt, promptGenerationMessage, onBrowsePresets,
 }) => {
     
     const isPromptEdited = settings.editedPrompt !== null;
-    const [isSavingStyle, setIsSavingStyle] = useState(false);
-    const [newStyleName, setNewStyleName] = useState('');
-
-    const handleSaveStyle = () => {
-        if (newStyleName.trim()) {
-            onSaveCustomStyle(newStyleName.trim());
-            setIsSavingStyle(false);
-            setNewStyleName('');
-        }
-    };
-
+    const selectedPreset = PRESETS.find(p => p.id === settings.selectedPresetId);
 
     const handleSurpriseMe = () => {
         const randomLighting = LIGHTING_STYLES[Math.floor(Math.random() * LIGHTING_STYLES.length)];
         const randomPerspective = CAMERA_PERSPECTIVES[Math.floor(Math.random() * CAMERA_PERSPECTIVES.length)];
+        const randomPreset = PRESETS[Math.floor(Math.random() * PRESETS.length)];
         setSettings(s => ({
             ...s,
             lightingStyle: randomLighting,
             cameraPerspective: randomPerspective,
+            selectedPresetId: randomPreset.id,
             editedPrompt: null, // Allow prompt to be regenerated
         }));
     };
@@ -293,26 +234,6 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
             editedPrompt: template.prompt,
             lightingStyle: LIGHTING_STYLES.includes(template.lighting) ? template.lighting : s.lightingStyle,
             cameraPerspective: CAMERA_PERSPECTIVES.includes(template.perspective) ? template.perspective : s.cameraPerspective,
-        }));
-    };
-
-    const handleSelectStyleTemplate = (template: StyleTemplate) => {
-        setSettings(s => ({
-            ...s,
-            styleKeywords: template.keywords,
-            selectedStyleTemplateName: template.name,
-        }));
-        // If a style image was present, clear it, as the template takes precedence.
-        if (styleImage) {
-            onClearStyleImage();
-        }
-    };
-
-    const handleDeselectStyleTemplate = () => {
-        setSettings(s => ({
-            ...s,
-            styleKeywords: '', // Clear keywords when deselecting
-            selectedStyleTemplateName: null,
         }));
     };
     
@@ -329,48 +250,15 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
 
     return (
         <div className="flex flex-col space-y-4">
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card className="flex flex-col">
-                    <CardHeader title={(settings.generationMode === 'social' || settings.generationMode === 'design') ? "Upload Reference Design" : "Upload Product"} step={1}/>
-                    <CardContent className="flex-1 flex items-center justify-center">
-                        <FileUpload onFileUpload={onProductImageUpload} label={(settings.generationMode === 'social' || settings.generationMode === 'design') ? "Upload Reference Design" : "Upload Product Photo"} uploadedFileName={productImage?.name} onClear={productImage ? onClearProductImage : undefined} />
-                    </CardContent>
-                </Card>
-                <Card className="flex flex-col">
-                    <CardHeader title="Style Reference" step={2}/>
-                    <CardContent className="flex-1 flex flex-col items-center justify-center gap-2">
-                         <FileUpload 
-                            onFileUpload={onStyleImageUpload} 
-                            label="Upload Style Photo" 
-                            uploadedFileName={styleImage?.name} 
-                            onClear={styleImage ? () => {
-                                onClearStyleImage();
-                                setSettings(s => ({...s, styleKeywords: ''}));
-                            } : undefined}
-                            disabled={!!settings.selectedStyleTemplateName || ['mockup', 'social', 'design'].includes(settings.generationMode)}
-                            disabledReason={settings.selectedStyleTemplateName ? 'Style preset selected' : 'Not applicable for this mode'}
-                        />
-                        {isSavingStyle ? (
-                             <div className="w-full flex items-center gap-2 animate-fade-in mt-2">
-                                <Input value={newStyleName} onChange={e => setNewStyleName(e.target.value)} placeholder="Preset name..." />
-                                <Tooltip text="Save">
-                                    <button onClick={handleSaveStyle} className="p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90"><Icon name="check" className="w-4 h-4" /></button>
-                                </Tooltip>
-                                <Tooltip text="Cancel">
-                                    <button onClick={() => setIsSavingStyle(false)} className="p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-md bg-secondary text-secondary-foreground hover:bg-accent"><Icon name="close" className="w-4 h-4" /></button>
-                                </Tooltip>
-                             </div>
-                         ) : styleImage && settings.styleKeywords && (
-                             <button onClick={() => setIsSavingStyle(true)} className="text-xs font-medium text-primary hover:opacity-80 disabled:opacity-50 flex items-center gap-1 animate-fade-in mt-1">
-                                <Icon name="star" className="w-3 h-3" /> Save as Preset
-                             </button>
-                         )}
-                    </CardContent>
-                </Card>
-            </div>
+            <Card>
+                <CardHeader title={(settings.generationMode === 'social' || settings.generationMode === 'design') ? "Upload Reference Design" : "Upload Product"} step={1}/>
+                <CardContent>
+                    <FileUpload onFileUpload={onProductImageUpload} label={(settings.generationMode === 'social' || settings.generationMode === 'design') ? "Upload Reference Design" : "Upload Product Photo"} uploadedFileName={productImage?.name} onClear={productImage ? onClearProductImage : undefined} />
+                </CardContent>
+            </Card>
 
             <Card>
-                <CardHeader title="Customize Scene" step={3}/>
+                <CardHeader title="Customize Scene" step={2}/>
                 <CardContent className="space-y-4">
                      <div>
                         <Label>Mode</Label>
@@ -381,22 +269,34 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                             disabled={isLoading}
                         />
                     </div>
+                     <div>
+                        <Label>Style & Presets</Label>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 h-10 px-3 flex items-center rounded-md border border-input bg-muted">
+                                {selectedPreset ? (
+                                    <div className="flex items-center gap-2">
+                                        <Icon name={selectedPreset.preview.icon} className="w-4 h-4 text-muted-foreground" />
+                                        <span className="text-sm font-medium text-foreground">{selectedPreset.name}</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-sm text-muted-foreground">Default</span>
+                                )}
+                            </div>
+                            {selectedPreset && (
+                                <Tooltip text="Clear Style">
+                                    <button onClick={() => setSettings(s => ({ ...s, selectedPresetId: null, editedPrompt: null }))} className="h-10 w-10 shrink-0 flex items-center justify-center bg-secondary hover:bg-accent rounded-md" aria-label="Clear selected style"><Icon name="close" className="w-4 h-4"/></button>
+                                </Tooltip>
+                            )}
+                            <button onClick={onBrowsePresets} className="h-10 shrink-0 px-4 flex items-center justify-center bg-secondary hover:bg-accent rounded-md text-sm font-medium" aria-label="Browse presets">
+                                Browse
+                            </button>
+                        </div>
+                    </div>
 
                     {settings.generationMode === 'product' && (
                         <div className="animate-fade-in space-y-4">
-                            <p className="text-center text-xs text-muted-foreground -mt-2">Upload a style photo OR select a preset below.</p>
-                            <StyleTemplates
-                                selectedTemplateName={settings.selectedStyleTemplateName}
-                                onSelect={handleSelectStyleTemplate}
-                                onDeselect={handleDeselectStyleTemplate}
-                                disabled={isLoading || !!styleImage}
-                                customTemplates={customStyleTemplates}
-                            />
                             <div><Label>Lighting Style</Label><Select value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} /></div>
                             <div><Label>Camera Perspective</Label><Select value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} /></div>
-                            <button onClick={handleSurpriseMe} disabled={isLoading} className="w-full text-sm text-primary hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2 font-medium">
-                                <Icon name="dice" className="w-4 h-4"/> Surprise Me!
-                            </button>
                             <SceneTemplates templates={sceneTemplates} onSelect={handleSelectTemplate} disabled={isLoading} />
                         </div>
                     )}
@@ -458,15 +358,30 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                             </div>
                         )}
                     </div>
+                     <button onClick={handleSurpriseMe} disabled={isLoading} className="w-full text-sm text-primary hover:opacity-80 disabled:opacity-50 flex items-center justify-center gap-2 font-medium">
+                        <Icon name="dice" className="w-4 h-4"/> Surprise Me!
+                    </button>
                 </CardContent>
             </Card>
 
             <Card>
-                <CardHeader title="Final Prompt" step={4} />
+                <CardHeader title="Final Prompt" step={3} />
                  <CardContent>
                     <div className="relative">
-                        <Textarea value={finalPrompt || 'Prompt will appear here...'} onChange={(e) => setSettings(s=>({...s, editedPrompt: e.target.value}))}
-                            placeholder="Describe the image you want to create..." disabled={isLoading || !productImage} />
+                        <Textarea 
+                            value={finalPrompt}
+                            onChange={(e) => setSettings(s=>({...s, editedPrompt: e.target.value}))}
+                            placeholder="AI will generate a prompt here based on your settings." 
+                            disabled={isLoading || !productImage || isGeneratingPrompt} 
+                        />
+                        
+                        {isGeneratingPrompt && (
+                            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-md text-center p-4 z-10 animate-fade-in">
+                                <Icon name="sparkles" className="w-8 h-8 text-primary mb-3 animate-pulse" />
+                                <p className="text-sm font-semibold text-foreground">{promptGenerationMessage || 'AI is writing...'}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Crafting the perfect prompt for you...</p>
+                            </div>
+                        )}
                         
                         <div className="absolute top-2 right-2 flex items-center gap-1">
                              {isPromptEdited && (
@@ -477,7 +392,7 @@ const GeneratorControls: React.FC<Omit<ControlPanelProps, 'history' | 'onRevertT
                                 </Tooltip>
                             )}
                              <Tooltip text="Enhance prompt with AI">
-                                <button onClick={onEnhancePrompt} disabled={isEnhancingPrompt || !finalPrompt} className="p-1.5 rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50" aria-label="Enhance prompt">
+                                <button onClick={onEnhancePrompt} disabled={isEnhancingPrompt || !finalPrompt || isGeneratingPrompt} className="p-1.5 rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50" aria-label="Enhance prompt">
                                     <Icon name={isEnhancingPrompt ? 'spinner' : 'wand'} className={`w-4 h-4 ${isEnhancingPrompt ? 'animate-spin' : ''}`} />
                                 </button>
                             </Tooltip>

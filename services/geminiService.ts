@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Modality, Part, Type } from "@google/genai";
 import { SceneTemplate, MarketingCopy } from "../types";
 import { LIGHTING_STYLES, CAMERA_PERSPECTIVES } from '../constants';
@@ -38,15 +37,6 @@ export const describeProduct = async (imageFile: File): Promise<string> => {
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts: [imagePart, { text: "Describe this product in a concise phrase for an image generation prompt, for example: 'a white bottle with a pump'." }] },
-    });
-    return result.text.trim();
-};
-
-export const describeStyle = async (imageFile: File): Promise<string> => {
-    const imagePart = await fileToGenerativePart(imageFile);
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: { parts: [imagePart, { text: "Describe the key aesthetic keywords of this image for an image generation prompt, for example: 'minimalist, pastel color palette, marble background, soft shadows'." }] },
     });
     return result.text.trim();
 };
@@ -112,7 +102,6 @@ export const removeBackground = async (imageFile: File): Promise<string> => {
 export const generateImage = async (
     productImageBase64: string, 
     prompt: string, 
-    styleImageFile: File | null,
     negativePrompt: string,
     seed: number | null
 ): Promise<string> => {
@@ -122,11 +111,6 @@ export const generateImage = async (
         base64ToGenerativePart(productImageBase64),
         { text: fullPrompt },
     ];
-
-    if (styleImageFile) {
-        const styleImagePart = await fileToGenerativePart(styleImageFile);
-        parts.splice(1, 0, styleImagePart);
-    }
     
     const config: { responseModalities: Modality[], seed?: number } = {
         responseModalities: [Modality.IMAGE, Modality.TEXT],
@@ -263,6 +247,12 @@ export const generateVideo = async (
         // Wait for 10 seconds before polling again
         await new Promise(resolve => setTimeout(resolve, 10000));
         operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+
+    if (operation.error) {
+        const error = operation.error as { message?: string };
+        const errorMessage = error.message || JSON.stringify(operation.error);
+        throw new Error(`Video generation failed: ${errorMessage}`);
     }
 
     const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;

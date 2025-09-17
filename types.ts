@@ -17,14 +17,23 @@ export interface WatermarkSettings {
     opacity: number; // 0-100
 }
 
-export interface StyleTemplate {
-    name: string;
+export type GenerationMode = 'product' | 'video' | 'mockup' | 'social' | 'design';
+
+export type PresetCategory = 'Photorealistic' | 'Artistic' | 'Futuristic' | 'Vintage' | 'Abstract';
+
+export interface Preset {
+  id: string;
+  name: string;
+  category: PresetCategory;
+  preview: {
+    type: 'gradient';
+    value: string; // tailwind gradient class
     icon: string;
-    keywords: string;
-    gradient: string;
+  };
+  promptFragment: string;
+  applicableModes: GenerationMode[];
 }
 
-export type GenerationMode = 'product' | 'video' | 'mockup' | 'social' | 'design';
 
 export interface GenerationSettings {
     generationMode: GenerationMode;
@@ -43,8 +52,7 @@ export interface GenerationSettings {
     numberOfImages: 1 | 4;
     
     productDescription: string;
-    styleKeywords: string;
-    selectedStyleTemplateName: string | null;
+    selectedPresetId: string | null;
     watermark: WatermarkSettings;
 }
 

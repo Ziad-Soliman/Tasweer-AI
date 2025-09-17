@@ -6,7 +6,6 @@ import { FileUpload } from './FileUpload';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
 
-// Fix: Added the missing BrandKitPanelProps interface.
 interface BrandKitPanelProps {
     brandKits: BrandKit[];
     setBrandKits: React.Dispatch<React.SetStateAction<BrandKit[]>>;

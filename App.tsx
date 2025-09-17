@@ -3,13 +3,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { nanoid } from 'nanoid';
 import { ControlPanel } from './components/ControlPanel';
 import { Canvas } from './components/Canvas';
-import { AspectRatio, GenerationSettings, HistoryItem, Theme, EditorMode, BrandKit, TextOverlay, SceneTemplate, MarketingCopy, VideoLength, CameraMotion, StyleTemplate, GenerationMode } from './types';
+import { AspectRatio, GenerationSettings, HistoryItem, Theme, EditorMode, BrandKit, TextOverlay, SceneTemplate, MarketingCopy, VideoLength, CameraMotion, GenerationMode, Preset } from './types';
 import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES } from './constants';
+import { PRESETS } from './constants/presets';
 import * as geminiService from './services/geminiService';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { Icon } from './components/Icon';
 import { Tooltip } from './components/Tooltip';
+import { StylePresetModal } from './components/StylePresetModal';
 
 // Helper function to get initial theme
 const getInitialTheme = (): Theme => {
@@ -64,20 +66,6 @@ const getInitialBrandKits = (): { kits: BrandKit[], activeId: string | null } =>
     const defaultKit = { id: nanoid(), name: 'Default Kit', logo: null, primaryColor: '#60A5FA', font: 'Inter' };
     return { kits: [defaultKit], activeId: defaultKit.id };
 };
-
-const getInitialCustomStyleTemplates = (): StyleTemplate[] => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-        const stored = window.localStorage.getItem('custom-style-templates');
-        try {
-            if (stored) return JSON.parse(stored);
-        } catch (e) {
-            console.error("Failed to parse custom style templates", e);
-            return [];
-        }
-    }
-    return [];
-};
-
 
 const MarketingCopyModal: React.FC<{
     isOpen: boolean;
@@ -178,7 +166,6 @@ const App: React.FC = () => {
     // Core state
     const [productImage, setProductImage] = useState<File | null>(null);
     const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
-    const [styleImage, setStyleImage] = useState<File | null>(null);
     
     // Settings state
     const [settings, setSettings] = useState<GenerationSettings>(() => {
@@ -196,8 +183,7 @@ const App: React.FC = () => {
             seed: '',
             numberOfImages: 1,
             productDescription: '',
-            styleKeywords: '',
-            selectedStyleTemplateName: null,
+            selectedPresetId: null,
             watermark: { enabled: false, text: '', position: 'bottom-right', scale: 5, opacity: 70, useLogo: false }
         };
         return initial;
@@ -220,6 +206,9 @@ const App: React.FC = () => {
     const [editorMode, setEditorMode] = useState<EditorMode>('view');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
+    const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+    const [promptGenerationMessage, setPromptGenerationMessage] = useState<string>('');
+    const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
     
     // Brand Kit State
     const [initialBrandKitState] = useState(getInitialBrandKits);
@@ -231,16 +220,12 @@ const App: React.FC = () => {
     const [isCopyLoading, setIsCopyLoading] = useState(false);
     const [marketingCopy, setMarketingCopy] = useState<MarketingCopy | null>(null);
 
-    // Custom Style Templates State
-    const [customStyleTemplates, setCustomStyleTemplates] = useState<StyleTemplate[]>(getInitialCustomStyleTemplates);
-
     const activeBrandKit = useMemo(() => brandKits.find(kit => kit.id === activeBrandKitId), [brandKits, activeBrandKitId]);
 
     // Derived state for the final prompt
     const finalPrompt = settings.editedPrompt ?? settings.prompt;
 
     const resetForNewProduct = () => {
-        setStyleImage(null);
         setGeneratedImages([]);
         setGeneratedVideoUrl(null);
         setSelectedImageIndex(null);
@@ -261,8 +246,7 @@ const App: React.FC = () => {
             seed: '',
             numberOfImages: 1,
             productDescription: '',
-            styleKeywords: '',
-            selectedStyleTemplateName: null,
+            selectedPresetId: null,
         }));
         setSceneTemplates([]);
     };
@@ -290,66 +274,86 @@ const App: React.FC = () => {
             setLoadingMessage('');
         }
     }, []);
-    
-    // Style image analysis
-    const handleStyleImageUpload = useCallback(async (file: File) => {
-        setStyleImage(file);
-        setError(null);
-        setIsLoading(true);
-        setLoadingMessage('Analyzing style reference...');
-        try {
-            const keywords = await geminiService.describeStyle(file);
-            setSettings(s => ({ ...s, styleKeywords: keywords, selectedStyleTemplateName: null }));
-        } catch (e) {
-            setError('Failed to get style keywords.');
-            console.error(e);
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-        }
-    }, []);
 
-    // Effect to auto-generate the prompt from settings
+    // Effect to auto-generate and enhance the prompt from settings
     useEffect(() => {
         if (!settings.productDescription || settings.editedPrompt !== null) {
+            // If there's no product, ensure the prompt is empty.
+            if (!settings.productDescription && settings.prompt) {
+                setSettings(s => ({ ...s, prompt: '' }));
+            }
             return;
         }
     
-        let prompt = '';
-        switch (settings.generationMode) {
-            case 'video':
-                prompt = `A ${settings.videoLength.split(' ')[0].toLowerCase()}-long video with ${settings.cameraMotion.toLowerCase()} camera movement of ${settings.productDescription}.`;
-                break;
-            case 'mockup':
-                 prompt = `A photorealistic lifestyle photo of a ${settings.mockupType}, featuring the product: ${settings.productDescription}.`;
-                break;
-            case 'social':
-                prompt = `A social media post for ${settings.productDescription}, in a style similar to the reference image, incorporating the provided brand logo.`;
-                break;
-            case 'design':
-                prompt = `Generate a creative and professional alternative graphic design or realistic social media design based on the provided reference image. Consider alternative layouts, color palettes, and typography while maintaining the original's core message and branding. The design should be suitable for a social media post for: ${settings.productDescription}.`;
-                break;
-            case 'product':
-            default:
-                const lightingClause = LIGHTING_STYLES.includes(settings.lightingStyle) ? `, lit with ${settings.lightingStyle.toLowerCase()}` : '';
-                const perspectiveClause = CAMERA_PERSPECTIVES.includes(settings.cameraPerspective) ? `, ${settings.cameraPerspective.toLowerCase()}` : '';
-                const styleClause = settings.styleKeywords ? `, in the style of ${settings.styleKeywords}` : '';
-                prompt = `Professional product photography of ${settings.productDescription}${perspectiveClause}${lightingClause}${styleClause}.`;
-                break;
-        }
+        const enhance = async () => {
+            const selectedPreset = PRESETS.find(p => p.id === settings.selectedPresetId);
+            const styleClause = selectedPreset ? `, Style: ${selectedPreset.name} (${selectedPreset.promptFragment})` : '';
+            let concept = '';
     
-        setSettings(s => ({ ...s, prompt }));
+            switch (settings.generationMode) {
+                case 'video':
+                    concept = `A ${settings.videoLength.split(' ')[0]} video of ${settings.productDescription}. Camera Motion: ${settings.cameraMotion}${styleClause}.`;
+                    break;
+                case 'mockup':
+                    concept = `A mockup on a ${settings.mockupType}, featuring the product: ${settings.productDescription}${styleClause}.`;
+                    break;
+                case 'social':
+                    concept = `A social media post for ${settings.productDescription}${styleClause}.`;
+                    break;
+                case 'design':
+                    concept = `A creative graphic design for: ${settings.productDescription}${styleClause}.`;
+                    break;
+                case 'product':
+                default:
+                    concept = `Product photography of ${settings.productDescription}. Perspective: ${settings.cameraPerspective}, Lighting: ${settings.lightingStyle}${styleClause}.`;
+                    break;
+            }
+    
+            setIsGeneratingPrompt(true);
+            const message = selectedPreset
+                ? `Analyzing '${selectedPreset.name}' style and writing prompt...`
+                : 'Drafting a creative prompt...';
+            setPromptGenerationMessage(message);
+
+            try {
+                const enhancedPrompt = await geminiService.enhancePrompt(concept);
+                setSettings(s => {
+                    // Only update if the user hasn't started editing in the meantime
+                    if (s.editedPrompt === null) {
+                        return { ...s, prompt: enhancedPrompt };
+                    }
+                    return s;
+                });
+            } catch (e) {
+                console.error("Failed to auto-generate and enhance prompt:", e);
+                setError("AI prompt generation failed. Using a basic prompt.");
+                // Fallback to the basic concept if enhancement fails
+                setSettings(s => {
+                    if (s.editedPrompt === null) {
+                        return { ...s, prompt: concept };
+                    }
+                    return s;
+                });
+            } finally {
+                setIsGeneratingPrompt(false);
+                setPromptGenerationMessage('');
+            }
+        };
+    
+        enhance();
+    
     }, [
-        settings.productDescription, 
-        settings.styleKeywords, 
-        settings.lightingStyle, 
-        settings.cameraPerspective, 
+        settings.productDescription,
+        settings.lightingStyle,
+        settings.cameraPerspective,
         settings.editedPrompt,
         settings.generationMode,
         settings.videoLength,
         settings.cameraMotion,
         settings.mockupType,
+        settings.selectedPresetId,
     ]);
+
 
     const handleImageGeneration = async () => {
         if (!productImage || !finalPrompt) return;
@@ -368,7 +372,7 @@ const App: React.FC = () => {
             
             const generationPromises = Array.from({ length: settings.numberOfImages }).map((_, i) => {
                  const currentSeed = settings.seed ? parseInt(settings.seed, 10) + i : null;
-                 return geminiService.generateImage(productWithoutBg, finalPrompt, styleImage, settings.negativePrompt, currentSeed);
+                 return geminiService.generateImage(productWithoutBg, finalPrompt, settings.negativePrompt, currentSeed);
             });
 
             const results = await Promise.all(generationPromises);
@@ -728,7 +732,7 @@ const App: React.FC = () => {
         } finally {
             setIsEnhancingPrompt(false);
         }
-    }
+    };
 
     const handleStartOver = () => {
         setShowConfirmModal(true);
@@ -776,24 +780,11 @@ const App: React.FC = () => {
         }
     };
 
-    const handleSaveCustomStyle = (name: string) => {
-        if (!settings.styleKeywords) return;
-        const newTemplate: StyleTemplate = {
-            name,
-            icon: 'star',
-            keywords: settings.styleKeywords,
-            gradient: 'from-gray-400 to-gray-600',
-        };
-        setCustomStyleTemplates(prev => {
-            // Avoid duplicates by name
-            if (prev.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-                alert("A style preset with this name already exists.");
-                return prev;
-            };
-            return [...prev, newTemplate];
-        });
+    const handleSelectPreset = (preset: Preset) => {
+        setSettings(s => ({ ...s, selectedPresetId: preset.id, editedPrompt: null }));
+        setIsPresetModalOpen(false);
     };
-    
+
     // Save text overlays to history
     useEffect(() => {
         if (!history.length) return;
@@ -822,14 +813,6 @@ const App: React.FC = () => {
             window.localStorage.setItem('active-brand-kit-id', activeBrandKitId);
         }
     }, [activeBrandKitId]);
-
-    // Custom Style Templates persistence
-    useEffect(() => {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            window.localStorage.setItem('custom-style-templates', JSON.stringify(customStyleTemplates));
-        }
-    }, [customStyleTemplates]);
-
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -870,6 +853,13 @@ const App: React.FC = () => {
                 isLoading={isCopyLoading}
                 onRegenerate={handleGenerateCopy}
             />
+            <StylePresetModal
+                isOpen={isPresetModalOpen}
+                onClose={() => setIsPresetModalOpen(false)}
+                presets={PRESETS}
+                onSelect={handleSelectPreset}
+                activeMode={settings.generationMode}
+            />
             <header className="w-full mx-auto p-4 border-b">
                  <div className="max-w-screen-2xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -877,7 +867,7 @@ const App: React.FC = () => {
                              <Icon name="sparkles" className="w-5 h-5 text-white"/>
                         </div>
                         <h1 className="text-xl font-semibold text-foreground">
-                            ProductGenius AI
+                            AI Designer by Ziad Ashraf
                         </h1>
                     </div>
                     <ThemeToggle theme={theme} setTheme={setTheme} />
@@ -888,15 +878,12 @@ const App: React.FC = () => {
                     <ControlPanel
                         onProductImageUpload={handleProductImageUpload}
                         onClearProductImage={handleStartOver}
-                        onStyleImageUpload={handleStyleImageUpload}
-                        onClearStyleImage={() => setStyleImage(null)}
                         settings={settings}
                         setSettings={setSettings}
                         sceneTemplates={sceneTemplates}
                         onGenerate={handleGenerate}
                         isLoading={isLoading}
                         productImage={productImage}
-                        styleImage={styleImage}
                         history={history}
                         onRevertToHistory={handleRevertToHistory}
                         onToggleFavorite={handleToggleFavorite}
@@ -908,8 +895,9 @@ const App: React.FC = () => {
                         activeBrandKit={activeBrandKit}
                         onEnhancePrompt={handleEnhancePrompt}
                         isEnhancingPrompt={isEnhancingPrompt}
-                        customStyleTemplates={customStyleTemplates}
-                        onSaveCustomStyle={handleSaveCustomStyle}
+                        isGeneratingPrompt={isGeneratingPrompt}
+                        promptGenerationMessage={promptGenerationMessage}
+                        onBrowsePresets={() => setIsPresetModalOpen(true)}
                     />
                 </aside>
                 <div className="lg:col-span-8 xl:col-span-9 flex min-h-[60vh] lg:min-h-0">
