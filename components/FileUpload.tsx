@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Icon } from './Icon';
+import { useTranslation } from '../App';
 
 interface FileUploadProps {
     onFileUpload: (file: File) => void;
@@ -12,6 +13,7 @@ interface FileUploadProps {
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, uploadedFileName, onClear, disabled, disabledReason }) => {
     const [isDragging, setIsDragging] = useState(false);
+    const { t } = useTranslation();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (disabled) return;
@@ -74,8 +76,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
                                     e.stopPropagation();
                                     if (!disabled) onClear();
                                 }}
-                                className="absolute -top-2 -right-2 bg-secondary hover:bg-accent text-muted-foreground rounded-full p-0.5 transition-colors"
-                                aria-label="Clear file"
+                                className="absolute -top-2 -end-2 bg-secondary hover:bg-accent text-muted-foreground rounded-full p-0.5 transition-colors"
+                                aria-label={t('clearFile')}
                             >
                                 <Icon name="close" className="w-3.5 h-3.5" />
                             </button>
@@ -84,7 +86,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
                 ) : disabled ? (
                      <>
                         <Icon name="sparkles" className="w-6 h-6 mb-2 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">{disabledReason || 'Action disabled'}</p>
+                        <p className="text-xs text-muted-foreground">{disabledReason || t('actionDisabled')}</p>
                     </>
                 ) : (
                     <>

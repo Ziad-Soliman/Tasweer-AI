@@ -78,7 +78,7 @@ export interface TextOverlay {
 }
 
 export interface HistoryItem {
-    id: string;
+    id:string;
     images?: string[];
     videoUrl?: string;
     settings: GenerationSettings;
@@ -109,4 +109,101 @@ export interface MarketingCopy {
     description: string;
     socialMediaPost: string;
     socialMediaPostArabic: string;
+}
+
+// Mini-app specific types
+export interface ProductNameSuggestion {
+    name: string;
+    reasoning: string;
+}
+
+export interface VideoAdScene {
+    sceneNumber: number;
+    visual: string;
+    voiceover: string;
+    onScreenText: string;
+    duration: string;
+}
+
+export interface VideoAdScript {
+    title: string;
+    platform: string;
+    targetAudience: string;
+    hook: string;
+    scenes: VideoAdScene[];
+    callToAction: string;
+    musicSuggestion: string;
+}
+
+export interface PhotoshootScene {
+    title: string;
+    description: string;
+    lighting: string;
+    props: string[];
+    cameraAngle: string;
+}
+
+export interface PhotoshootConcept {
+    conceptTitle: string;
+    moodboardDescription: string;
+    colorPalette: { hex: string, name: string }[];
+    scenes: PhotoshootScene[];
+}
+
+export interface BrandVoiceGuide {
+    voiceName: string;
+    description: string;
+    characteristics: string[];
+    messagingMatrix: {
+        do: string[];
+        dont: string[];
+    };
+    exampleCopy: {
+        scenario: string;
+        copy: string;
+    }[];
+}
+
+// YouTube Thumbnail Generator types
+export interface ThumbnailElement {
+  id: string;
+  type: 'text' | 'image' | 'shape' | 'background';
+  x: number; // percentage
+  y: number; // percentage
+  width: number; // percentage
+  height: number; // percentage
+  rotation: number; // degrees
+  zIndex: number;
+  
+  // Text specific
+  text?: string;
+  fontSize?: number; // percentage of canvas height
+  fontFamily?: string;
+  color?: string;
+  fontWeight?: 'normal' | 'bold';
+  textAlign?: 'left' | 'center' | 'right';
+  
+  // Image specific
+  src?: string;
+  
+  // Shape/Background specific
+  backgroundColor?: string;
+  shapeType?: 'rectangle' | 'ellipse';
+}
+
+export interface AISuggestions {
+    titles: string[];
+    imagePrompts: string[];
+    colorPalette: string[];
+    fontPairing: { heading: string; body: string };
+}
+
+export interface Recipe {
+    recipeName: string;
+    description: string;
+    prepTime: string;
+    cookTime: string;
+    servings: string;
+    ingredients: string[];
+    instructions: string[];
 }

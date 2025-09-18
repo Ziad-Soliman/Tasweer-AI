@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from './Icon';
+import { useTranslation } from '../App';
 
 interface ConfirmationModalProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface ConfirmationModalProps {
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
     if (!isOpen) return null;
+    const { t } = useTranslation();
 
     return (
         <div 
@@ -27,7 +29,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, on
                     <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-destructive/10 sm:mx-0 sm:h-10 sm:w-10">
                         <Icon name="error" className="h-6 w-6 text-destructive" />
                     </div>
-                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                    <div className="mt-3 text-center sm:ms-4 sm:mt-0 sm:text-left">
                         <h3 className="text-base font-semibold leading-6 text-foreground" id="modal-title">
                             {title}
                         </h3>
@@ -41,17 +43,17 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, on
                 <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                     <button
                         type="button"
-                        className="inline-flex w-full justify-center rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90 sm:ml-3 sm:w-auto"
+                        className="inline-flex w-full justify-center rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90 sm:ms-3 sm:w-auto"
                         onClick={onConfirm}
                     >
-                        Confirm
+                        {t('confirm')}
                     </button>
                     <button
                         type="button"
                         className="mt-3 inline-flex w-full justify-center rounded-md bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-accent sm:mt-0 sm:w-auto"
                         onClick={onClose}
                     >
-                        Cancel
+                        {t('cancel')}
                     </button>
                 </div>
             </div>

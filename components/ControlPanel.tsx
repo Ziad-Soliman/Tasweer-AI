@@ -3,6 +3,7 @@ import { GenerationSettings, BrandKit } from '../types';
 import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES, SOCIAL_MEDIA_TEMPLATES } from '../constants';
 import { Icon } from './Icon';
 import { FileUpload } from './FileUpload';
+import { useTranslation } from '../App';
 
 interface ControlPanelProps {
     onProductImageUpload: (file: File) => void;
@@ -23,25 +24,28 @@ const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
     <label className={`block text-sm font-medium text-foreground mb-1.5 ${className}`}>{children}</label>
 );
 
-const Section: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = true }) => (
+const Section: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = true }) => {
+    const { t } = useTranslation();
+    return (
     <details className="border-b border-border/80 group" open={defaultOpen}>
         <summary className="font-semibold text-foreground cursor-pointer list-none flex justify-between items-center p-4">
-            <span>{title}</span>
+            <span>{t(title as any)}</span>
             <Icon name="chevron-down" className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="p-4 pt-0 space-y-4">
             {children}
         </div>
     </details>
-);
+)};
 
 const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSettings' | 'isLoading'>> = ({ settings, setSettings, isLoading }) => {
+    const { t } = useTranslation();
     const modes = [
-        { value: 'product', label: 'Product' },
-        { value: 'video', label: 'Video' },
-        { value: 'mockup', label: 'Mockup' },
-        { value: 'social', label: 'Social' },
-        { value: 'design', label: 'Design' }
+        { value: 'product', labelKey: 'modeProduct' },
+        { value: 'video', labelKey: 'modeVideo' },
+        { value: 'mockup', labelKey: 'modeMockup' },
+        { value: 'social', labelKey: 'modeSocial' },
+        { value: 'design', labelKey: 'modeDesign' }
     ];
 
     return (
@@ -49,30 +53,32 @@ const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSe
             {modes.map(mode => (
                  <button
                     key={mode.value}
-                    onClick={() => setSettings(s => ({ ...s, generationMode: mode.value as GenerationSettings['generationMode'], editedPrompt: null }))}
+                    onClick={() => setSettings(s => ({ ...s, generationMode: mode.value as GenerationSettings['generationMode'], editedPrompt: null, selectedPresetId: null }))}
                     disabled={isLoading}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${settings.generationMode === mode.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                    {mode.label}
+                    {t(mode.labelKey as any)}
                 </button>
             ))}
         </div>
     );
 };
 
-const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly string[]; disabled?: boolean; label: string }> = ({ value, onChange, options, disabled, label }) => (
+const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly string[]; disabled?: boolean; label: string }> = ({ value, onChange, options, disabled, label }) => {
+    const { t } = useTranslation();
+    return (
     <div>
-        <Label>{label}</Label>
+        <Label>{t(label as any)}</Label>
         <select
             value={value}
             onChange={onChange}
             disabled={disabled}
             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
-            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            {options.map(opt => <option key={opt} value={opt}>{t(opt as any)}</option>)}
         </select>
     </div>
-);
+)};
 
 const ToggleGroup: React.FC<{
     options: { value: string; label: string }[];
@@ -99,7 +105,7 @@ const ToggleGroup: React.FC<{
 const Switch: React.FC<{ checked: boolean; onCheckedChange: (checked: boolean) => void; id: string }> = ({ checked, onCheckedChange, id }) => (
      <label htmlFor={id} className="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" id={id} className="sr-only peer" checked={checked} onChange={e => onCheckedChange(e.target.checked)} />
-        <div className="w-9 h-5 bg-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+        <div className="w-9 h-5 bg-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
     </label>
 );
 
@@ -112,6 +118,7 @@ const Input: React.FC<{ value: string | number; onChange: (e: React.ChangeEvent<
 
 const AdvancedSettingsPanel: React.FC<Pick<ControlPanelProps, 'settings' | 'setSettings' | 'isLoading' | 'activeBrandKit'>> = ({ settings, setSettings, isLoading, activeBrandKit }) => {
     const { watermark } = settings;
+    const { t } = useTranslation();
     const updateWatermark = (updates: Partial<GenerationSettings['watermark']>) => {
         setSettings(s => ({ ...s, watermark: { ...s.watermark, ...updates } }));
     };
@@ -119,19 +126,19 @@ const AdvancedSettingsPanel: React.FC<Pick<ControlPanelProps, 'settings' | 'setS
     return (
         <div className="space-y-4">
             <div>
-                <Label>Seed</Label>
+                <Label>{t('seed')}</Label>
                 <Input type="number" value={settings.seed} onChange={(e) => setSettings(s=>({...s, seed: e.target.value}))}
-                    placeholder="Any number for reproducible results" disabled={isLoading} />
+                    placeholder={t('seedPlaceholder')} disabled={isLoading} />
             </div>
              <div className="border-t pt-4 mt-4 space-y-4">
                 <div className="flex items-center justify-between">
-                    <Label className="mb-0">Enable Watermark</Label>
+                    <Label className="mb-0">{t('enableWatermark')}</Label>
                     <Switch checked={watermark.enabled} onCheckedChange={enabled => updateWatermark({ enabled })} id="enable-watermark" />
                 </div>
                 {watermark.enabled && (
                     <div className="space-y-3 animate-fade-in">
-                        <ToggleGroup value={watermark.useLogo ? 'logo' : 'text'} onValueChange={(val) => updateWatermark({ useLogo: val === 'logo' })} options={[{value: 'text', label: 'Text'}, {value: 'logo', label: 'Logo'}]} disabled={!activeBrandKit?.logo} />
-                        {!watermark.useLogo && ( <Input value={watermark.text} onChange={e => updateWatermark({ text: e.target.value })} placeholder="Your brand name" /> )}
+                        <ToggleGroup value={watermark.useLogo ? 'logo' : 'text'} onValueChange={(val) => updateWatermark({ useLogo: val === 'logo' })} options={[{value: 'text', label: t('watermarkText')}, {value: 'logo', label: t('watermarkLogo')}]} disabled={!activeBrandKit?.logo} />
+                        {!watermark.useLogo && ( <Input value={watermark.text} onChange={e => updateWatermark({ text: e.target.value })} placeholder={t('watermarkPlaceholder')} /> )}
                     </div>
                 )}
             </div>
@@ -142,44 +149,45 @@ const AdvancedSettingsPanel: React.FC<Pick<ControlPanelProps, 'settings' | 'setS
 
 export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
     const { settings, setSettings, isLoading, onProductImageUpload, onClearProductImage, productImage } = props;
+    const { t } = useTranslation();
     const isPromptEdited = settings.editedPrompt !== null;
 
     return (
          <div className="h-full flex flex-col bg-card">
             <div className="p-4 border-b border-border/80 flex items-center h-[65px]">
-                <h2 className="text-lg font-semibold">Controls</h2>
+                <h2 className="text-lg font-semibold">{t('controls')}</h2>
             </div>
             <div className="flex-1 overflow-y-auto">
-                <Section title="Upload" defaultOpen={true}>
+                <Section title="upload" defaultOpen={true}>
                     <FileUpload 
                         onFileUpload={onProductImageUpload} 
-                        label="Upload Photo" 
+                        label={t('uploadPhoto')}
                         uploadedFileName={productImage?.name} 
                         onClear={onClearProductImage}
                     />
                 </Section>
-                <Section title="Generation Mode" defaultOpen={true}>
+                <Section title="generationMode" defaultOpen={true}>
                     <GenerationModeToggle {...props} />
                 </Section>
-                 <Section title="Settings" defaultOpen={true}>
+                 <Section title="settings" defaultOpen={true}>
                     {settings.generationMode === 'product' && (
                         <>
-                            <Select label="Lighting" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
-                            <Select label="Perspective" value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} />
+                            <Select label="lighting" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
+                            <Select label="perspective" value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} />
                         </>
                     )}
                     {settings.generationMode === 'video' && (
                         <>
-                            <Select label="Length" value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'], editedPrompt: null }))} options={VIDEO_LENGTHS} disabled={isLoading} />
-                            <Select label="Motion" value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'], editedPrompt: null }))} options={CAMERA_MOTIONS} disabled={isLoading} />
+                            <Select label="length" value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'], editedPrompt: null }))} options={VIDEO_LENGTHS} disabled={isLoading} />
+                            <Select label="motion" value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'], editedPrompt: null }))} options={CAMERA_MOTIONS} disabled={isLoading} />
                         </>
                     )}
                     {settings.generationMode === 'mockup' && (
-                        <Select label="Mockup Type" value={settings.mockupType} onChange={(e) => setSettings(s => ({ ...s, mockupType: e.target.value, editedPrompt: null }))} options={MOCKUP_TYPES} disabled={isLoading} />
+                        <Select label="mockupType" value={settings.mockupType} onChange={(e) => setSettings(s => ({ ...s, mockupType: e.target.value, editedPrompt: null }))} options={MOCKUP_TYPES} disabled={isLoading} />
                     )}
                      {settings.generationMode === 'social' && (
                         <div className="space-y-2">
-                            <Label>Social Media Template</Label>
+                            <Label>{t('socialMediaTemplate')}</Label>
                             <div className="grid grid-cols-2 gap-2">
                                 {SOCIAL_MEDIA_TEMPLATES.map(template => (
                                     <button
@@ -200,7 +208,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                                         }`}
                                     >
                                         <div>
-                                            <p className="text-sm font-semibold text-foreground">{template.name}</p>
+                                            <p className="text-sm font-semibold text-foreground">{t(template.name as any)}</p>
                                             <p className="text-xs text-muted-foreground">{template.platform}</p>
                                         </div>
                                         <div className="flex items-center text-xs text-muted-foreground gap-1 mt-auto pt-2">
@@ -214,23 +222,23 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                     )}
                     {settings.generationMode === 'design' && (
                         <div className="text-sm text-muted-foreground text-center p-4 bg-muted rounded-md">
-                            Use the prompt bar at the bottom to guide the AI for this mode.
+                            {t('designModePromptInfo')}
                         </div>
                     )}
                  </Section>
-                 <Section title="Output">
+                 <Section title="output">
                     <div>
-                        <Label>Aspect Ratio</Label>
-                        <ToggleGroup value={settings.aspectRatio} onValueChange={(val) => setSettings(s => ({...s, aspectRatio: val as GenerationSettings['aspectRatio']}))} options={ASPECT_RATIOS.map(ar => ({value: ar.value, label: ar.label}))} disabled={isLoading || settings.generationMode === 'social'}/>
+                        <Label>{t('aspectRatio')}</Label>
+                        <ToggleGroup value={settings.aspectRatio} onValueChange={(val) => setSettings(s => ({...s, aspectRatio: val as GenerationSettings['aspectRatio']}))} options={ASPECT_RATIOS.map(ar => ({value: ar.value, label: t(ar.labelKey as any)}))} disabled={isLoading || settings.generationMode === 'social'}/>
                     </div>
                     {settings.generationMode === 'product' && (
                         <div>
-                            <Label>Number of Images</Label>
+                            <Label>{t('numberOfImages')}</Label>
                             <ToggleGroup value={String(settings.numberOfImages)} onValueChange={(val) => setSettings(s => ({...s, numberOfImages: Number(val) as 1 | 4}))} options={[{value: '1', label: '1'}, {value: '4', label: '4'}]} disabled={isLoading} />
                         </div>
                     )}
                 </Section>
-                <Section title="Advanced" defaultOpen={false}>
+                <Section title="advanced" defaultOpen={false}>
                     <AdvancedSettingsPanel {...props} />
                 </Section>
             </div>

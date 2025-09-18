@@ -5,7 +5,7 @@ import { EditorToolbar } from './EditorToolbar';
 import { ColorPalette } from './ColorPalette';
 import { ImageComparator } from './ImageComparator';
 import { Tooltip } from './Tooltip';
-import { FileUpload } from './FileUpload';
+import { useTranslation } from '../App';
 
 interface CanvasProps {
     productImagePreview: string | null;
@@ -32,27 +32,28 @@ interface CanvasProps {
     watermarkSettings: WatermarkSettings;
     currentHistoryItem: HistoryItem | undefined;
     onExtractPalette: () => void;
-    onProductImageUpload: (file: File) => void;
-    onClearProductImage: () => void;
 }
 
-const Placeholder: React.FC = () => (
-    <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 select-none">
-        <div className="relative w-full max-w-md h-64 flex items-center justify-center">
-            {/* Background decorative element */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-3xl transform -rotate-12 scale-105 opacity-50"></div>
-            <div className="absolute inset-0 bg-gradient-to-tl from-secondary to-transparent rounded-3xl transform rotate-6 scale-95 opacity-30"></div>
-            
-            <div className="relative z-10 bg-card/60 backdrop-blur-lg p-8 rounded-xl border border-border/50 shadow-2xl">
-                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWRpZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBNTg1N0Y3Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8L2RlZnM+CiAgICA8cGF0aCBkPSJNMTIgMkwzIDIySDdMOC4yNSAxOEgxNS43NUwxNyAyMkgxMUwxMiAyWk0xMiA2LjhMMTQuMjUgMTRIMi43NUwxMiA2LjhaIiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiLz4KICAgIDxwYXRoIGQ9Ik0xOCAyTDE5LjUgNUwyMiA2TDE5LjUgN0wxOCAxMEwxNi41IDdMMTQgNkwxNi41IDVMMTggMloiIGZpbGw9InVybCgjbG9nb0dyYWRpZW50KSIvPgo8L3N2Zz4=" alt="AI Designer Logo" className="w-16 h-16 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-foreground">AI Designer</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                    Upload a product photo in the left panel to begin creating.
-                </p>
+const Placeholder: React.FC = () => {
+    const { t } = useTranslation();
+    return (
+        <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 select-none">
+            <div className="relative w-full max-w-md h-64 flex items-center justify-center">
+                {/* Background decorative element */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-3xl transform -rotate-12 scale-105 opacity-50"></div>
+                <div className="absolute inset-0 bg-gradient-to-tl from-secondary to-transparent rounded-3xl transform rotate-6 scale-95 opacity-30"></div>
+                
+                <div className="relative z-10 bg-card/60 backdrop-blur-lg p-8 rounded-xl border border-border/50 shadow-2xl">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWRpZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBNTg1N0Y3Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8L2RlZnM+CiAgICA8cGF0aCBkPSJNMTIgMkwzIDIySDdMOC4yNSAxOEgxNS43NUwxNyAyMkgxMUwxMiAyWk0xMiA2LjhMMTQuMjUgMTRIMi43NUwxMiA2LjhaIiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiLz4KICAgIDxwYXRoIGQ9Ik0xOCAyTDE5LjUgNUwyMiA2TDE5LjUgN0wxOCAxMEwxNi41IDdMMTQgNkwxNi41IDVMMTggMloiIGZpbGw9InVybCgjbG9nb0dyYWRpZW50KSIvPgo8L3N2Zz4=" alt="AI Designer Logo" className="w-16 h-16 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-foreground">{t('placeholderTitle')}</h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        {t('placeholderDescription')}
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 
 const LoadingOverlay: React.FC<{ message: string }> = ({ message }) => (
@@ -62,64 +63,72 @@ const LoadingOverlay: React.FC<{ message: string }> = ({ message }) => (
     </div>
 );
 
-const ErrorDisplay: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
-    <div className="absolute inset-0 bg-destructive/20 backdrop-blur-sm flex flex-col items-center justify-center z-50 rounded-xl p-4 text-center">
-        <div className="bg-destructive/80 p-6 rounded-lg border border-destructive">
-            <Icon name="error" className="w-10 h-10 text-destructive-foreground mx-auto mb-3" />
-            <h3 className="font-bold text-destructive-foreground">Generation Failed</h3>
-            <p className="text-sm text-destructive-foreground/80 mb-4 max-w-xs">{message}</p>
-            <button onClick={onRetry} className="bg-destructive-foreground/20 hover:bg-destructive-foreground/30 text-destructive-foreground font-semibold py-2 px-4 rounded-md transition-colors text-sm">
-                Try Again
-            </button>
+const ErrorDisplay: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="absolute inset-0 bg-destructive/20 backdrop-blur-sm flex flex-col items-center justify-center z-50 rounded-xl p-4 text-center">
+            <div className="bg-destructive/80 p-6 rounded-lg border border-destructive">
+                <Icon name="error" className="w-10 h-10 text-destructive-foreground mx-auto mb-3" />
+                <h3 className="font-bold text-destructive-foreground">{t('generationFailed')}</h3>
+                <p className="text-sm text-destructive-foreground/80 mb-4 max-w-xs">{message}</p>
+                <button onClick={onRetry} className="bg-destructive-foreground/20 hover:bg-destructive-foreground/30 text-destructive-foreground font-semibold py-2 px-4 rounded-md transition-colors text-sm">
+                    {t('tryAgain')}
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onSubmit, onCancel, brushSize, setBrushSize }) => {
     const [prompt, setPrompt] = useState('');
+    const { t } = useTranslation();
     return (
         <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg flex-wrap">
              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Brush:</label>
+                <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                 <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
             </div>
             <input 
                 type="text"
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="Describe your edit (e.g. 'add a flower')..."
+                placeholder={t('magicEditPlaceholder')}
                 className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex-1"
             />
-            <div className="flex gap-2 ml-auto">
-                <button onClick={() => onSubmit(prompt)} disabled={!prompt} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 disabled:opacity-50">Apply</button>
-                <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">Cancel</button>
+            <div className="flex gap-2 ms-auto">
+                <button onClick={() => onSubmit(prompt)} disabled={!prompt} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 disabled:opacity-50">{t('magicEditApply')}</button>
+                <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">{t('magicEditCancel')}</button>
             </div>
         </div>
     );
 };
 
-const RemoveObjectControls: React.FC<{ onApply: () => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onApply, onCancel, brushSize, setBrushSize }) => (
-    <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
-         <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground">Brush:</label>
-            <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
+const RemoveObjectControls: React.FC<{ onApply: () => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onApply, onCancel, brushSize, setBrushSize }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
+            <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
+                <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
+            </div>
+            <p className="flex-1 text-sm text-muted-foreground hidden sm:block">{t('removeObjectInfo')}</p>
+            <button onClick={onApply} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 ms-auto">{t('magicEditApply')}</button>
+            <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">{t('magicEditCancel')}</button>
         </div>
-        <p className="flex-1 text-sm text-muted-foreground hidden sm:block">Erase the object you want to remove.</p>
-        <button onClick={onApply} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 ml-auto">Apply</button>
-        <button onClick={onCancel} className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-accent h-9 px-4">Cancel</button>
-    </div>
-);
+    );
+};
 
 const ExpandControls: React.FC<{ onExpand: (direction: 'up' | 'down' | 'left' | 'right') => void }> = ({ onExpand }) => {
+    const { t } = useTranslation();
     const buttonClass = "absolute bg-background/70 backdrop-blur-md p-2 rounded-full text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200 z-30";
     const iconClass = "w-6 h-6";
 
     return (
         <>
-            <Tooltip text="Expand Up"><button onClick={() => onExpand('up')} className={`${buttonClass} top-2 left-1/2 -translate-x-1/2`}><Icon name="arrow-up" className={iconClass} /></button></Tooltip>
-            <Tooltip text="Expand Down"><button onClick={() => onExpand('down')} className={`${buttonClass} bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2`}><Icon name="arrow-down" className={iconClass} /></button></Tooltip>
-            <Tooltip text="Expand Left"><button onClick={() => onExpand('left')} className={`${buttonClass} left-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-left" className={iconClass} /></button></Tooltip>
-            <Tooltip text="Expand Right"><button onClick={() => onExpand('right')} className={`${buttonClass} right-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-right" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandUp')}><button onClick={() => onExpand('up')} className={`${buttonClass} top-2 left-1/2 -translate-x-1/2`}><Icon name="arrow-up" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandDown')}><button onClick={() => onExpand('down')} className={`${buttonClass} bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2`}><Icon name="arrow-down" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandLeft')}><button onClick={() => onExpand('left')} className={`${buttonClass} left-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-left" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandRight')}><button onClick={() => onExpand('right')} className={`${buttonClass} right-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-right" className={iconClass} /></button></Tooltip>
         </>
     );
 };
@@ -135,6 +144,7 @@ const IconButton: React.FC<{onClick: () => void; label: string; title: string; c
 const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onStartOver: () => void; isVideo: boolean; onDownloadVideo: () => void; onEnhance: () => void; onGenerateCopy: () => void; onCompare: () => void; }> = (props) => {
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -157,38 +167,38 @@ const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onSt
     );
 
     return (
-        <div ref={menuRef} className="absolute top-4 right-4 flex gap-2 z-30">
+        <div ref={menuRef} className="absolute top-4 end-4 flex gap-2 z-30">
             {/* Desktop Buttons */}
             <div className="hidden md:flex gap-2">
-                {!props.isVideo && <IconButton onClick={props.onCompare} label="Compare with Original" title="Compare with Original"><Icon name="compare" /></IconButton>}
-                {!props.isVideo && <IconButton onClick={props.onEnhance} label="Enhance Image" title="Enhance Image"><Icon name="wand" /></IconButton>}
-                {!props.isVideo && <IconButton onClick={props.onGenerateCopy} label="Generate Marketing Copy" title="Generate Marketing Copy"><Icon name="pencil" /></IconButton>}
+                {!props.isVideo && <IconButton onClick={props.onCompare} label={t('compareWithOriginal')} title={t('compareWithOriginal')}><Icon name="compare" /></IconButton>}
+                {!props.isVideo && <IconButton onClick={props.onEnhance} label={t('enhanceImage')} title={t('enhanceImage')}><Icon name="wand" /></IconButton>}
+                {!props.isVideo && <IconButton onClick={props.onGenerateCopy} label={t('generateMarketingCopy')} title={t('generateMarketingCopy')}><Icon name="pencil" /></IconButton>}
                 {props.isVideo ? (
-                    <IconButton onClick={props.onDownloadVideo} label="Download Video" title="Download Video"><Icon name="download" /></IconButton>
+                    <IconButton onClick={props.onDownloadVideo} label={t('downloadVideo')} title={t('downloadVideo')}><Icon name="download" /></IconButton>
                 ) : (
                     <DropdownMenu onSelect={props.onDownload}>
-                        <IconButton onClick={() => {}} label="Download Image" title="Download Image"><Icon name="download" /></IconButton>
+                        <IconButton onClick={() => {}} label={t('downloadImage')} title={t('downloadImage')}><Icon name="download" /></IconButton>
                     </DropdownMenu>
                 )}
-                <IconButton onClick={props.onStartOver} label="Start Over" title="Start Over"><Icon name="restart" /></IconButton>
+                <IconButton onClick={props.onStartOver} label={t('startOver')} title={t('startOver')}><Icon name="restart" /></IconButton>
             </div>
             
             {/* Mobile Dropdown */}
             <div className="md:hidden relative">
-                <IconButton onClick={() => setIsActionsMenuOpen(o => !o)} label="More Actions" title="More Actions">
+                <IconButton onClick={() => setIsActionsMenuOpen(o => !o)} label={t('moreActions')} title={t('moreActions')}>
                     <Icon name="cog" />
                 </IconButton>
                 {isActionsMenuOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-popover text-popover-foreground rounded-md shadow-lg z-50 animate-fade-in border p-1">
-                        {!props.isVideo && <DropdownAction onClick={props.onCompare} icon="compare" label="Compare" />}
-                        {!props.isVideo && <DropdownAction onClick={props.onEnhance} icon="wand" label="Enhance" />}
-                        {!props.isVideo && <DropdownAction onClick={props.onGenerateCopy} icon="pencil" label="Generate Copy" />}
+                    <div className="absolute top-full end-0 mt-2 w-48 bg-popover text-popover-foreground rounded-md shadow-lg z-50 animate-fade-in border p-1">
+                        {!props.isVideo && <DropdownAction onClick={props.onCompare} icon="compare" label={t('compare')} />}
+                        {!props.isVideo && <DropdownAction onClick={props.onEnhance} icon="wand" label={t('enhance')} />}
+                        {!props.isVideo && <DropdownAction onClick={props.onGenerateCopy} icon="pencil" label={t('generateCopy')} />}
                         {props.isVideo ?
-                            <DropdownAction onClick={props.onDownloadVideo} icon="download" label="Download Video" />
-                            : <DropdownAction onClick={() => props.onDownload('png')} icon="download" label="Download Image" />
+                            <DropdownAction onClick={props.onDownloadVideo} icon="download" label={t('downloadVideo')} />
+                            : <DropdownAction onClick={() => props.onDownload('png')} icon="download" label={t('downloadImage')} />
                         }
                         <div className="h-px bg-border/80 my-1"></div>
-                        <DropdownAction onClick={props.onStartOver} icon="restart" label="Start Over" />
+                        <DropdownAction onClick={props.onStartOver} icon="restart" label={t('startOver')} />
                     </div>
                 )}
             </div>
@@ -200,6 +210,7 @@ const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onSt
 const DropdownMenu: React.FC<{ onSelect: (format: 'png' | 'jpeg') => void; children: React.ReactNode }> = ({ onSelect, children }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
     
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -215,35 +226,39 @@ const DropdownMenu: React.FC<{ onSelect: (format: 'png' | 'jpeg') => void; child
         <div className="relative" ref={menuRef}>
             <div onClick={() => setIsOpen(o => !o)}>{children}</div>
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-32 bg-popover text-popover-foreground rounded-md shadow-lg z-20 animate-fade-in border">
-                    <button onClick={() => { onSelect('png'); setIsOpen(false); }} className="w-full text-left text-sm px-3 py-2 hover:bg-accent rounded-t-md">Save as PNG</button>
-                    <button onClick={() => { onSelect('jpeg'); setIsOpen(false); }} className="w-full text-left text-sm px-3 py-2 hover:bg-accent rounded-b-md">Save as JPG</button>
+                <div className="absolute top-full end-0 mt-2 w-32 bg-popover text-popover-foreground rounded-md shadow-lg z-20 animate-fade-in border">
+                    <button onClick={() => { onSelect('png'); setIsOpen(false); }} className="w-full text-left text-sm px-3 py-2 hover:bg-accent rounded-t-md">{t('saveAsPNG')}</button>
+                    <button onClick={() => { onSelect('jpeg'); setIsOpen(false); }} className="w-full text-left text-sm px-3 py-2 hover:bg-accent rounded-b-md">{t('saveAsJPG')}</button>
                 </div>
             )}
         </div>
     );
 };
 
-const InlineTextToolbar: React.FC<{ overlay: TextOverlay, onUpdate: (id: string, updates: Partial<TextOverlay>) => void, onDelete: (id: string) => void, brandKit: BrandKit | undefined }> = ({ overlay, onUpdate, onDelete, brandKit }) => (
-    <div className="bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 border shadow-lg animate-fade-in">
-        <input type="color" value={overlay.color} onChange={e => onUpdate(overlay.id, { color: e.target.value })} className="p-0 h-9 w-9 bg-transparent rounded-full cursor-pointer border-none"/>
-        <Tooltip text="Use brand color">
-            <button onClick={() => onUpdate(overlay.id, { color: brandKit?.primaryColor || '#FFFFFF' })} className="p-2 h-9 w-9 text-foreground bg-secondary rounded-full hover:bg-accent"><Icon name="brand" className="w-4 h-4" style={{color: brandKit?.primaryColor}} /></button>
-        </Tooltip>
-        <div className="flex items-center gap-2 px-2">
-            <Icon name="text-size" className="w-5 h-5 text-muted-foreground" />
-            <input type="range" min="1" max="15" step="0.5" value={overlay.fontSize} onChange={e => onUpdate(overlay.id, { fontSize: Number(e.target.value)})} className="w-24 accent-primary"/>
+const InlineTextToolbar: React.FC<{ overlay: TextOverlay, onUpdate: (id: string, updates: Partial<TextOverlay>) => void, onDelete: (id: string) => void, brandKit: BrandKit | undefined }> = ({ overlay, onUpdate, onDelete, brandKit }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 border shadow-lg animate-fade-in">
+            <input type="color" value={overlay.color} onChange={e => onUpdate(overlay.id, { color: e.target.value })} className="p-0 h-9 w-9 bg-transparent rounded-full cursor-pointer border-none"/>
+            <Tooltip text={t('useBrandColor')}>
+                <button onClick={() => onUpdate(overlay.id, { color: brandKit?.primaryColor || '#FFFFFF' })} className="p-2 h-9 w-9 text-foreground bg-secondary rounded-full hover:bg-accent"><Icon name="brand" className="w-4 h-4" style={{color: brandKit?.primaryColor}} /></button>
+            </Tooltip>
+            <div className="flex items-center gap-2 px-2">
+                <Icon name="text-size" className="w-5 h-5 text-muted-foreground" />
+                <input type="range" min="1" max="15" step="0.5" value={overlay.fontSize} onChange={e => onUpdate(overlay.id, { fontSize: Number(e.target.value)})} className="w-24 accent-primary"/>
+            </div>
+            <button onClick={() => onDelete(overlay.id)} className="p-2 h-9 w-9 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded-full"><Icon name="trash" className="w-5 h-5"/></button>
         </div>
-        <button onClick={() => onDelete(overlay.id)} className="p-2 h-9 w-9 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded-full"><Icon name="trash" className="w-5 h-5"/></button>
-    </div>
-);
+    );
+};
 
 export const Canvas: React.FC<CanvasProps> = ({
     productImagePreview, generatedImages, generatedVideoUrl, selectedImageIndex, onSelectImage,
     isLoading, loadingMessage, error, onStartOver, onRetry, onEnhance, onMagicEdit, onRemoveObject, onExpandImage, onGenerateCopy,
     aspectRatio, editorMode, setEditorMode, textOverlays, setTextOverlays, brandKit,
-    watermarkSettings, currentHistoryItem, onExtractPalette, onProductImageUpload, onClearProductImage
+    watermarkSettings, currentHistoryItem, onExtractPalette
 }) => {
+    const { t } = useTranslation();
     const aspectMap: Record<AspectRatio, string> = { '1:1': 'aspect-square', '4:5': 'aspect-[4/5]', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]' };
     const hasContent = productImagePreview || generatedImages.length > 0 || generatedVideoUrl;
     const selectedImage = selectedImageIndex !== null ? generatedImages[selectedImageIndex] : null;
@@ -477,7 +492,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
         const newText: TextOverlay = {
             id: crypto.randomUUID(),
-            text: 'Your Text Here',
+            text: t('yourTextHere'),
             x, y,
             color: brandKit?.primaryColor || '#FFFFFF',
             fontSize: 5,
@@ -498,7 +513,6 @@ export const Canvas: React.FC<CanvasProps> = ({
         setActiveTextOverlayId(null);
     };
     
-    const activeOverlay = textOverlays.find(o => o.id === activeTextOverlayId);
     const isMaskingMode = editorMode === 'magic-edit' || editorMode === 'remove-object';
 
     return (
@@ -560,7 +574,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                         </>
                     )}
                      {showComparison && (
-                        <div className="absolute top-4 right-4 z-30"><IconButton onClick={() => setShowComparison(false)} label="Exit Comparison" title="Exit Comparison"><Icon name="close" /></IconButton></div>
+                        <div className="absolute top-4 end-4 z-30"><IconButton onClick={() => setShowComparison(false)} label={t('exitComparison')} title={t('exitComparison')}><Icon name="close" /></IconButton></div>
                      )}
                     {editorMode === 'magic-edit' && <MagicEditControls onSubmit={handleMagicEditSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
                     {editorMode === 'remove-object' && <RemoveObjectControls onApply={handleRemoveObjectSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
@@ -569,7 +583,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                      {generatedImages.length > 0 && !isVideoMode && (
                         <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 z-20 flex justify-center items-end gap-4 w-full px-4 overflow-x-auto">
                              {currentHistoryItem && (
-                                <div className="absolute left-4 bottom-0 hidden lg:block">
+                                <div className="absolute start-4 bottom-0 hidden lg:block">
                                     <ColorPalette palette={currentHistoryItem.palette} onExtract={onExtractPalette} />
                                 </div>
                             )}
@@ -712,7 +726,7 @@ const InteractiveTextOverlay: React.FC<{
                          <Icon name="rotate-cw" className="w-3 h-3 text-primary" />
                     </div>
                     <div 
-                        className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-primary rounded-sm cursor-se-resize border-2 border-background shadow-md"
+                        className="absolute -bottom-1.5 -end-1.5 w-3.5 h-3.5 bg-primary rounded-sm cursor-se-resize border-2 border-background shadow-md"
                         onMouseDown={e => handleMouseDown(e, 'resize')}
                     />
                 </>

@@ -1,12 +1,10 @@
-
-
 import { AspectRatio, VideoLength, CameraMotion, SocialMediaTemplate } from './types';
 
-export const ASPECT_RATIOS: { label: string; value: AspectRatio }[] = [
-  { label: '1:1 Square', value: '1:1' },
-  { label: '4:5 Vertical', value: '4:5' },
-  { label: '9:16 Story', value: '9:16' },
-  { label: '16:9 Wide', value: '16:9' },
+export const ASPECT_RATIOS: { labelKey: keyof typeof import('./lib/translations').translations.en; value: AspectRatio }[] = [
+  { labelKey: 'aspectRatioSquare', value: '1:1' },
+  { labelKey: 'aspectRatioVertical', value: '4:5' },
+  { labelKey: 'aspectRatioStory', value: '9:16' },
+  { labelKey: 'aspectRatioWide', value: '16:9' },
 ];
 
 export const LIGHTING_STYLES: string[] = [

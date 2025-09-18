@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { ControlPanel } from '../components/ControlPanel';
@@ -172,10 +173,15 @@ const RightSidebar: React.FC<{
                     </button>
                  )}
              </div>
-             <Tabs tabs={[`History (${props.history.length})`, 'Brand']}>
+             {/* FIX: Pass tabs as an array of objects with key and label properties. */}
+             <Tabs tabs={[
+                { key: 'History', label: `History (${props.history.length})` },
+                { key: 'Brand', label: 'Brand' }
+             ]}>
                 {(activeTab) => (
                     <div className="p-4 flex-1 flex flex-col overflow-y-auto">
-                        {activeTab === `History (${props.history.length})` && 
+                        {/* FIX: Check activeTab against the key 'History'. */}
+                        {activeTab === 'History' && 
                             <HistoryPanel 
                                 history={props.history}
                                 onRevert={props.onRevertToHistory}
@@ -1100,8 +1106,6 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
                         watermarkSettings={settings.watermark}
                         currentHistoryItem={history[0]}
                         onExtractPalette={handleExtractPalette}
-                        onProductImageUpload={handleProductImageUpload}
-                        onClearProductImage={handleStartOver}
                     />
                     <PromptBar
                         finalPrompt={finalPrompt}

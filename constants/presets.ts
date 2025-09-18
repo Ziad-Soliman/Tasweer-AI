@@ -1,4 +1,3 @@
-
 import { Preset } from '../types';
 
 export const ALL_MODES: Preset['applicableModes'] = ['product', 'video', 'mockup', 'social', 'design'];

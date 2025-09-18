@@ -16,8 +16,8 @@ import YouTubeThumbnailGenerator from './miniapps/YouTubeThumbnailGenerator';
 import AIInteriorDesigner from './miniapps/AIInteriorDesigner';
 import AITattooDesigner from './miniapps/AITattooDesigner';
 import AIRecipeGenerator from './miniapps/AIRecipeGenerator';
-import { useTranslation } from '../App';
-import { translations } from '../lib/translations';
+import { useTranslation } from '../../App';
+import { translations } from '../../lib/translations';
 
 const miniApps: {
     id: string;

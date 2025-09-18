@@ -1,6 +1,6 @@
 import { GoogleGenAI, Modality, Part, Type } from "@google/genai";
-import { SceneTemplate, MarketingCopy } from "../types";
-import { LIGHTING_STYLES, CAMERA_PERSPECTIVES } from '../constants';
+import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe } from "../types";
+import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, FONT_OPTIONS } from '../constants';
 
 
 if (!process.env.API_KEY) {
@@ -484,4 +484,410 @@ export const expandImage = async (
         }
     }
     throw new Error('Image expansion failed: No image part in response.');
+};
+
+
+export const generateProductNames = async (description: string, keywords: string): Promise<ProductNameSuggestion[]> => {
+    const prompt = `Generate 5 creative and brandable product names for the following product. For each name, provide a short reasoning.
+    Product Description: "${description}"
+    Keywords to incorporate: "${keywords}"`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING, description: "The product name." },
+                        reasoning: { type: Type.STRING, description: "A brief explanation of why this name is suitable." }
+                    },
+                    required: ["name", "reasoning"]
+                }
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as ProductNameSuggestion[];
+    } catch (e) {
+        console.error("Failed to parse product names:", e);
+        throw new Error("Could not generate product names.");
+    }
+};
+
+export const generateLogoConcepts = async (prompt: string, count: number = 4): Promise<string[]> => {
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: `${prompt}, on a clean white background, vector style, simple, modern`,
+        config: {
+          numberOfImages: count,
+          outputMimeType: 'image/png',
+          aspectRatio: '1:1',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Logo generation failed: No images were returned.');
+};
+
+export const generateVideoAdScript = async (productDescription: string, targetAudience: string, platform: string): Promise<VideoAdScript> => {
+    const prompt = `Create a short, engaging video ad script for a product.
+    Product: "${productDescription}"
+    Target Audience: "${targetAudience}"
+    Platform: "${platform}"
+    The script should be concise, visually driven, and optimized for the platform's format (e.g., vertical video, quick cuts). It must include a hook, scenes with visual descriptions, voiceover, on-screen text, music suggestions, and a clear call to action. The total video length should be around 15-30 seconds.`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING },
+                    platform: { type: Type.STRING },
+                    targetAudience: { type: Type.STRING },
+                    hook: { type: Type.STRING, description: "A strong opening line to grab attention in the first 2 seconds." },
+                    scenes: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                sceneNumber: { type: Type.INTEGER },
+                                visual: { type: Type.STRING, description: "Description of the visual elements in the scene." },
+                                voiceover: { type: Type.STRING, description: "The voiceover script for the scene. Can be empty." },
+                                onScreenText: { type: Type.STRING, description: "Text overlay for the scene. Can be empty." },
+                                duration: { type: Type.STRING, description: "Estimated duration of the scene in seconds." }
+                            },
+                            required: ["sceneNumber", "visual", "voiceover", "onScreenText", "duration"]
+                        }
+                    },
+                    callToAction: { type: Type.STRING },
+                    musicSuggestion: { type: Type.STRING }
+                },
+                required: ["title", "platform", "targetAudience", "hook", "scenes", "callToAction", "musicSuggestion"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as VideoAdScript;
+    } catch (e) {
+        console.error("Failed to parse video script:", e);
+        throw new Error("Could not generate video ad script.");
+    }
+};
+
+export const generatePhotoshootConcept = async (productDescription: string, brandStyle: string): Promise<PhotoshootConcept> => {
+     const prompt = `Create a detailed and creative photoshoot concept for a product.
+    Product: "${productDescription}"
+    Brand Style: "${brandStyle}"
+    The concept should include a title, a moodboard description, a 5-color palette with hex codes and names, and details for two distinct scenes (title, description, lighting, props, camera angle).`;
+    
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    conceptTitle: { type: Type.STRING },
+                    moodboardDescription: { type: Type.STRING },
+                    colorPalette: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                hex: { type: Type.STRING },
+                                name: { type: Type.STRING }
+                            },
+                            required: ["hex", "name"]
+                        }
+                    },
+                    scenes: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.STRING },
+                                description: { type: Type.STRING },
+                                lighting: { type: Type.STRING },
+                                props: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                cameraAngle: { type: Type.STRING }
+                            },
+                             required: ["title", "description", "lighting", "props", "cameraAngle"]
+                        }
+                    }
+                },
+                required: ["conceptTitle", "moodboardDescription", "colorPalette", "scenes"]
+            }
+        }
+    });
+
+     try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as PhotoshootConcept;
+    } catch (e) {
+        console.error("Failed to parse photoshoot concept:", e);
+        throw new Error("Could not generate photoshoot concept.");
+    }
+};
+
+export const generateBrandVoiceGuide = async (brandDescription: string, targetAudience: string, values: string): Promise<BrandVoiceGuide> => {
+    const prompt = `Generate a brand voice and tone guide based on the following information.
+    Brand Description: "${brandDescription}"
+    Target Audience: "${targetAudience}"
+    Brand Values/Keywords: "${values}"
+    The guide should include a catchy name for the voice, a description, key characteristics, a "Do's and Don'ts" matrix, and two specific examples of the voice in action.`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    voiceName: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    characteristics: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    messagingMatrix: {
+                        type: Type.OBJECT,
+                        properties: {
+                            do: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            dont: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        },
+                        required: ["do", "dont"]
+                    },
+                    exampleCopy: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                scenario: { type: Type.STRING },
+                                copy: { type: Type.STRING }
+                            },
+                            required: ["scenario", "copy"]
+                        }
+                    }
+                },
+                required: ["voiceName", "description", "characteristics", "messagingMatrix", "exampleCopy"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as BrandVoiceGuide;
+    } catch (e) {
+        console.error("Failed to parse brand voice guide:", e);
+        throw new Error("Could not generate brand voice guide.");
+    }
+};
+
+export const generateThumbnailSuggestions = async (videoTitle: string): Promise<AISuggestions> => {
+    const prompt = `You are a YouTube expert specializing in creating viral, clickable thumbnails.
+    Based on the following video title, generate creative assets and ideas for a thumbnail.
+
+    Video Title: "${videoTitle}"
+
+    Your response must be a JSON object with the following structure:
+    - titles: An array of 3 catchy, high-CTR title variations for the video.
+    - imagePrompts: An array of 4 descriptive prompts for an AI image generator to create compelling background images or key visual elements for the thumbnail. These should be visually exciting and relevant.
+    - colorPalette: An array of 5 hex color codes for a vibrant and eye-catching color palette that fits the video's theme.
+    - fontPairing: An object with a "heading" and "body" property. Choose two contrasting but complementary fonts from this list for thumbnail text: ${FONT_OPTIONS.join(', ')}. The heading font should be bold and attention-grabbing.
+    `;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    titles: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                    },
+                    imagePrompts: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                    },
+                    colorPalette: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                    },
+                    fontPairing: {
+                        type: Type.OBJECT,
+                        properties: {
+                            heading: { type: Type.STRING },
+                            body: { type: Type.STRING }
+                        },
+                        required: ["heading", "body"]
+                    }
+                },
+                required: ["titles", "imagePrompts", "colorPalette", "fontPairing"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as AISuggestions;
+    } catch (e) {
+        console.error("Failed to parse thumbnail suggestions:", e);
+        throw new Error("Could not generate thumbnail suggestions.");
+    }
+};
+
+export const generateThumbnailSuggestionsFromImage = async (imageFile: File, videoTitle: string): Promise<AISuggestions> => {
+    const imagePart = await fileToGenerativePart(imageFile);
+    const prompt = `You are a YouTube expert specializing in creating viral, clickable thumbnails.
+    Based on the following reference image and video title, generate creative assets and ideas for a new thumbnail.
+
+    Video Title: "${videoTitle}"
+
+    Your response must be a JSON object with the following structure:
+    - titles: An array of 3 catchy, high-CTR title variations for the video.
+    - imagePrompts: An array of 4 descriptive prompts for an AI image generator to create compelling background images or key visual elements for the thumbnail. These should be visually exciting and relevant.
+    - colorPalette: An array of 5 hex color codes for a vibrant and eye-catching color palette that fits the video's theme, inspired by the reference image.
+    - fontPairing: An object with a "heading" and "body" property. Choose two contrasting but complementary fonts from this list for thumbnail text: ${FONT_OPTIONS.join(', ')}. The heading font should be bold and attention-grabbing.
+    `;
+    
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts: [imagePart, { text: prompt }] },
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    titles: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    imagePrompts: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    colorPalette: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    fontPairing: {
+                        type: Type.OBJECT,
+                        properties: {
+                            heading: { type: Type.STRING },
+                            body: { type: Type.STRING }
+                        },
+                        required: ["heading", "body"]
+                    }
+                },
+                required: ["titles", "imagePrompts", "colorPalette", "fontPairing"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as AISuggestions;
+    } catch (e) {
+        console.error("Failed to parse thumbnail suggestions from image:", e);
+        throw new Error("Could not generate thumbnail suggestions from image.");
+    }
+};
+
+export const redesignRoom = async (imageFile: File, style: string): Promise<string> => {
+    const imagePart = await fileToGenerativePart(imageFile);
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: {
+            parts: [
+                imagePart,
+                { text: `Redesign this room in a ${style} style. Keep the original room layout, windows, and major architectural features, but change the furniture, wall color, flooring, and decorations to match the new style. The result should be a photorealistic image.` }
+            ]
+        },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
+        }
+    }
+    throw new Error('Room redesign failed: No image part in response.');
+};
+
+export const generateRecipe = async (data: { imageFile?: File, ingredientsText?: string, restrictions: string }): Promise<Recipe> => {
+    const parts: Part[] = [];
+    let promptText = `Generate a creative recipe based on the following.`;
+
+    if (data.imageFile) {
+        parts.push(await fileToGenerativePart(data.imageFile));
+        promptText += ` The image contains the available ingredients. Identify them and create a recipe.`;
+    } else if (data.ingredientsText) {
+        promptText += ` The available ingredients are: ${data.ingredientsText}.`;
+    }
+
+    if (data.restrictions) {
+        promptText += ` Keep in mind these dietary restrictions: ${data.restrictions}.`;
+    }
+    
+    parts.push({ text: promptText });
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts },
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    recipeName: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    prepTime: { type: Type.STRING },
+                    cookTime: { type: Type.STRING },
+                    servings: { type: Type.STRING },
+                    ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    instructions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                },
+                required: ["recipeName", "description", "prepTime", "cookTime", "servings", "ingredients", "instructions"]
+            }
+        }
+    });
+    
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as Recipe;
+    } catch (e) {
+        console.error("Failed to parse recipe:", e);
+        throw new Error("Could not generate recipe.");
+    }
+};
+
+export const generateTattooDesigns = async (description: string, style: string): Promise<string[]> => {
+    const prompt = `A ${style} tattoo design of ${description}. The design should be clean, high-contrast line art, suitable for a tattoo stencil, on a plain white background.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '1:1',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Tattoo generation failed: No images were returned.');
 };

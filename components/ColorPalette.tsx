@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
+import { useTranslation } from '../App';
 
 interface ColorPaletteProps {
     palette: string[] | undefined;
@@ -9,6 +10,7 @@ interface ColorPaletteProps {
 
 export const ColorPalette: React.FC<ColorPaletteProps> = ({ palette, onExtract }) => {
     const [copiedColor, setCopiedColor] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const handleCopy = (color: string) => {
         navigator.clipboard.writeText(color);
@@ -18,7 +20,7 @@ export const ColorPalette: React.FC<ColorPaletteProps> = ({ palette, onExtract }
 
     if (!palette) {
         return (
-            <Tooltip text="Extract Color Palette with AI">
+            <Tooltip text={t('extractPalette')}>
                 <button onClick={onExtract} className="h-10 w-10 flex items-center justify-center bg-secondary hover:bg-accent text-muted-foreground rounded-full transition-colors">
                     <Icon name="palette" className="w-5 h-5" />
                 </button>

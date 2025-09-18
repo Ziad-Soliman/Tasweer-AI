@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { HistoryItem, GenerationMode } from '../types';
 import { Icon } from './Icon';
+import { useTranslation } from '../App';
 
 interface HistoryPanelProps {
     history: HistoryItem[];
@@ -52,21 +53,28 @@ const HistoryThumbnail: React.FC<{ item: HistoryItem }> = ({ item }) => {
 
 
 const HistoryCard: React.FC<{ item: HistoryItem, onRevert: () => void, onToggleFavorite: () => void }> = ({ item, onRevert, onToggleFavorite }) => {
+    const { t } = useTranslation();
     const { settings, timestamp, isFavorite } = item;
     
     const timeAgo = (date: number) => {
         const seconds = Math.floor((new Date().getTime() - date) / 1000);
-        let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + " years ago";
-        interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + " months ago";
-        interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + " days ago";
-        interval = seconds / 3600;
-        if (interval > 1) return Math.floor(interval) + " hours ago";
-        interval = seconds / 60;
-        if (interval > 1) return Math.floor(interval) + " minutes ago";
-        return "Just now";
+        
+        if (seconds < 60) return t('justNow');
+        
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return t(minutes === 1 ? 'minuteAgo' : 'minutesAgo', { count: minutes });
+
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return t(hours === 1 ? 'hourAgo' : 'hoursAgo', { count: hours });
+
+        const days = Math.floor(hours / 24);
+        if (days < 30) return t(days === 1 ? 'dayAgo' : 'daysAgo', { count: days });
+
+        const months = Math.floor(days / 30);
+        if (months < 12) return t(months === 1 ? 'monthAgo' : 'monthsAgo', { count: months });
+
+        const years = Math.floor(days / 365);
+        return t(years === 1 ? 'yearAgo' : 'yearsAgo', { count: years });
     };
 
     return (
@@ -86,9 +94,9 @@ const HistoryCard: React.FC<{ item: HistoryItem, onRevert: () => void, onToggleF
                 </p>
                 <div className="mt-2 flex items-center justify-between">
                      <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary dark:bg-primary/20 font-medium rounded-full capitalize">
-                        {settings.generationMode}
+                        {t(`mode${settings.generationMode.charAt(0).toUpperCase() + settings.generationMode.slice(1)}` as any, {})}
                      </span>
-                     <button onClick={onToggleFavorite} className="text-muted-foreground hover:text-yellow-400" title={isFavorite ? 'Unfavorite' : 'Favorite'}>
+                     <button onClick={onToggleFavorite} className="text-muted-foreground hover:text-yellow-400" title={t(isFavorite ? 'unfavorite' : 'favorite')}>
                         <Icon name={isFavorite ? 'star-filled' : 'star'} className={`w-5 h-5 ${isFavorite ? 'text-yellow-400' : ''}`}/>
                      </button>
                 </div>
@@ -100,6 +108,7 @@ const HistoryCard: React.FC<{ item: HistoryItem, onRevert: () => void, onToggleF
 export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRevert, onToggleFavorite }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showFavorites, setShowFavorites] = useState(false);
+    const { t } = useTranslation();
 
     const filteredHistory = useMemo(() => {
         return history.filter(item => {
@@ -113,8 +122,8 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRevert, o
         return (
             <div className="text-center text-muted-foreground py-10">
                 <Icon name="history" className="mx-auto w-12 h-12 mb-2"/>
-                <p className="font-semibold">No History Yet</p>
-                <p className="text-sm">Your generated images will appear here.</p>
+                <p className="font-semibold">{t('noHistoryYet')}</p>
+                <p className="text-sm">{t('noHistoryDescription')}</p>
             </div>
         );
     }
@@ -125,23 +134,23 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRevert, o
                 <div className="relative flex-1">
                     <input 
                         type="text"
-                        placeholder="Search by prompt..."
+                        placeholder={t('searchByPrompt')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="flex h-10 w-full rounded-md border border-input bg-transparent ps-9 pe-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
-                    <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
+                    <Icon name="search" className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
                 </div>
                 <button 
                     onClick={() => setShowFavorites(!showFavorites)}
                     className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10 transition-colors ${showFavorites ? 'bg-yellow-400/20 text-yellow-500' : 'bg-secondary text-muted-foreground'}`}
-                    title="Filter Favorites"
+                    title={t('filterFavorites')}
                 >
                     <Icon name={showFavorites ? 'star-filled' : 'star'} className="w-5 h-5"/>
                 </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-3 pe-1">
                 {filteredHistory.length > 0 ? (
                     filteredHistory.map(item => (
                         <HistoryCard 
@@ -153,7 +162,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRevert, o
                     ))
                 ) : (
                     <div className="text-center text-muted-foreground py-10">
-                        <p>No results found.</p>
+                        <p>{t('noResultsFound')}</p>
                     </div>
                 )}
             </div>

@@ -51,8 +51,10 @@ const ICONS: { [key: string]: JSX.Element } = {
     'arrow-right': <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75 6.75M19.5 12l-6.75-6.75" />,
     'rotate-cw': <><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/></>,
     'chevron-down': <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />,
-    'menu': <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />,
+    'menu': <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-1.5-6.75h1.5" />,
     'aspect-ratio': <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15 15m0-6 6-6m-6 6-6-6" />,
+    'undo': <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />,
+    'redo': <path strokeLinecap="round" strokeLinejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" />,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, className, style }) => {

@@ -5,6 +5,8 @@ import { FONT_OPTIONS } from '../constants';
 import { FileUpload } from './FileUpload';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
+import { useTranslation } from '../App';
+
 
 interface BrandKitPanelProps {
     brandKits: BrandKit[];
@@ -17,7 +19,7 @@ const Label: React.FC<{ children: React.ReactNode; htmlFor?: string }> = ({ chil
     <label htmlFor={htmlFor} className="block text-sm font-medium text-muted-foreground mb-1.5">{children}</label>
 );
 
-const Input: React.FC<{ value: string | number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; id?: string; }> = (props) => (
+const Input: React.FC<{ value: string | number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; id?: string; 'aria-label'?: string }> = (props) => (
     <input
         {...props}
         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -35,7 +37,7 @@ const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSele
 
 
 export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ brandKits, setBrandKits, activeBrandKitId, setActiveBrandKitId }) => {
-    
+    const { t } = useTranslation();
     const activeKit = brandKits.find(k => k.id === activeBrandKitId);
 
     const updateActiveKit = (updates: Partial<Omit<BrandKit, 'id'>>) => {
@@ -93,26 +95,26 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ brandKits, setBran
     return (
         <div className="space-y-6">
             <div>
-                <Label>Brand Kit Presets</Label>
+                <Label>{t('brandKitPresets')}</Label>
                 <div className="flex items-center gap-2">
                     <Select
                         value={activeBrandKitId || ''}
                         onChange={(e) => setActiveBrandKitId(e.target.value)}
-                        aria-label="Select Brand Kit Preset"
+                        aria-label={t('selectBrandKitPreset')}
                     >
                         {brandKits.map(kit => <option key={kit.id} value={kit.id}>{kit.name}</option>)}
                     </Select>
-                    <Tooltip text="Add New Preset">
-                        <button onClick={handleAddKit} className="h-10 w-10 shrink-0 flex items-center justify-center bg-secondary hover:bg-accent rounded-md" aria-label="Add New Brand Kit Preset"><Icon name="sparkles" className="w-5 h-5"/></button>
+                    <Tooltip text={t('addNewPreset')}>
+                        <button onClick={handleAddKit} className="h-10 w-10 shrink-0 flex items-center justify-center bg-secondary hover:bg-accent rounded-md" aria-label={t('addNewPreset')}><Icon name="sparkles" className="w-5 h-5"/></button>
                     </Tooltip>
-                    <Tooltip text="Delete Preset">
-                        <button onClick={handleDeleteKit} disabled={brandKits.length <= 1} className="h-10 w-10 shrink-0 flex items-center justify-center bg-secondary hover:bg-accent rounded-md disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Delete Selected Brand Kit Preset"><Icon name="trash" className="w-5 h-5"/></button>
+                    <Tooltip text={t('deletePreset')}>
+                        <button onClick={handleDeleteKit} disabled={brandKits.length <= 1} className="h-10 w-10 shrink-0 flex items-center justify-center bg-secondary hover:bg-accent rounded-md disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('deletePreset')}><Icon name="trash" className="w-5 h-5"/></button>
                     </Tooltip>
                 </div>
             </div>
 
             <div>
-                <Label htmlFor="kit-name">Preset Name</Label>
+                <Label htmlFor="kit-name">{t('presetName')}</Label>
                 <Input
                     id="kit-name"
                     value={activeKit.name}
@@ -121,10 +123,10 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ brandKits, setBran
             </div>
             
             <div>
-                <Label>Brand Logo</Label>
+                <Label>{t('brandLogo')}</Label>
                 <FileUpload 
                     onFileUpload={handleLogoUpload}
-                    label="Upload Logo (PNG)"
+                    label={t('uploadLogo')}
                     uploadedFileName={activeKit.logo ? 'logo.png' : undefined}
                     onClear={activeKit.logo ? handleClearLogo : undefined}
                 />
@@ -136,7 +138,7 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ brandKits, setBran
             </div>
 
             <div>
-                <Label htmlFor="primary-color">Primary Color</Label>
+                <Label htmlFor="primary-color">{t('primaryColor')}</Label>
                 <div className="flex items-center gap-3">
                     <input 
                         id="primary-color"
@@ -144,18 +146,18 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ brandKits, setBran
                         value={activeKit.primaryColor}
                         onChange={(e) => updateActiveKit({ primaryColor: e.target.value })}
                         className="p-0 h-10 w-10 block bg-transparent border border-input cursor-pointer rounded-lg"
-                        title="Select brand color"
+                        title={t('selectBrandColor')}
                     />
                     <Input 
                         value={activeKit.primaryColor}
                         onChange={(e) => updateActiveKit({ primaryColor: e.target.value })}
-                        aria-label="Primary color hex value"
+                        aria-label={t('primaryColorHex')}
                     />
                 </div>
             </div>
 
              <div>
-                <Label htmlFor="brand-font">Brand Font</Label>
+                <Label htmlFor="brand-font">{t('brandFont')}</Label>
                  <Select
                     id="brand-font"
                     value={activeKit.font}

@@ -1,8 +1,7 @@
-
-
 import React, { useState, useMemo } from 'react';
 import { Preset, GenerationMode, PresetCategory } from '../types';
 import { Icon } from './Icon';
+import { useTranslation } from '../App';
 
 interface StylePresetModalProps {
     isOpen: boolean;
@@ -30,6 +29,7 @@ const PresetCard: React.FC<{ preset: Preset; onSelect: () => void }> = ({ preset
 
 export const StylePresetModal: React.FC<StylePresetModalProps> = ({ isOpen, onClose, presets, onSelect, activeMode }) => {
     const [activeCategory, setActiveCategory] = useState<PresetCategory | 'All'>('All');
+    const { t } = useTranslation();
 
     const filteredPresets = useMemo(() => {
         return presets
@@ -54,10 +54,10 @@ export const StylePresetModal: React.FC<StylePresetModalProps> = ({ isOpen, onCl
                 <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
                     <div className="flex flex-col">
                          <h3 className="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                            <Icon name="sparkles" /> Style & Preset Browser
+                            <Icon name="sparkles" /> {t('stylePresetBrowser')}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Choose a style to apply to your generation.
+                            {t('stylePresetDescription')}
                         </p>
                     </div>
                      <button onClick={onClose} className="p-2 rounded-md bg-secondary hover:bg-accent text-muted-foreground">
@@ -68,14 +68,14 @@ export const StylePresetModal: React.FC<StylePresetModalProps> = ({ isOpen, onCl
                 {/* Content */}
                 <div className="flex-1 flex min-h-0">
                     {/* Sidebar */}
-                    <nav className="w-48 border-r p-4 flex-shrink-0">
+                    <nav className="w-48 border-e p-4 flex-shrink-0">
                         <ul className="space-y-1">
                             <li>
                                 <button
                                     onClick={() => setActiveCategory('All')}
                                     className={`w-full text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeCategory === 'All' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
                                 >
-                                    All Styles
+                                    {t('allStyles')}
                                 </button>
                             </li>
                             {CATEGORIES.map(category => (
@@ -84,7 +84,7 @@ export const StylePresetModal: React.FC<StylePresetModalProps> = ({ isOpen, onCl
                                         onClick={() => setActiveCategory(category)}
                                         className={`w-full text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeCategory === category ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
                                     >
-                                        {category}
+                                        {t(category)}
                                     </button>
                                 </li>
                             ))}
@@ -104,7 +104,7 @@ export const StylePresetModal: React.FC<StylePresetModalProps> = ({ isOpen, onCl
                         </div>
                          {filteredPresets.length === 0 && (
                             <div className="flex items-center justify-center h-full text-muted-foreground">
-                                <p>No presets available for this category or mode.</p>
+                                <p>{t('noPresetsAvailable')}</p>
                             </div>
                         )}
                     </div>

@@ -4,6 +4,7 @@ import { FileUpload } from '../../components/FileUpload';
 import { Icon } from '../../components/Icon';
 import { ImageComparator } from '../../components/ImageComparator';
 import * as geminiService from '../../services/geminiService';
+import { useTranslation } from '../../App';
 
 interface MiniAppProps {
     onBack: () => void;
@@ -15,6 +16,7 @@ const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const handleFileUpload = (file: File) => {
         setImageFile(file);
@@ -50,15 +52,15 @@ const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
 
     return (
         <MiniAppLayout
-            title="Background Remover"
-            description="Upload an image to instantly remove its background."
+            title={t('background-remover-title')}
+            description={t('bgRemoverDescription')}
             onBack={onBack}
         >
             <div className="max-w-4xl mx-auto flex flex-col gap-8">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                     <FileUpload
                         onFileUpload={handleFileUpload}
-                        label="Upload Photo"
+                        label={t('uploadPhoto')}
                         uploadedFileName={imageFile?.name}
                         onClear={() => { setImageFile(null); setImagePreview(null); }}
                     />
@@ -73,7 +75,7 @@ const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
                             ) : (
                                 <Icon name="eraser" className="w-5 h-5" />
                             )}
-                            <span>{isLoading ? 'Processing...' : 'Remove Background'}</span>
+                            <span>{isLoading ? t('bgRemoverProcessing') : t('bgRemoverButton')}</span>
                         </button>
                          {error && <p className="text-sm text-destructive text-center">{error}</p>}
                     </div>
@@ -81,7 +83,7 @@ const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
                 
                 {resultImage && imagePreview && (
                     <div className="animate-fade-in space-y-4">
-                        <h3 className="text-lg font-semibold text-center text-foreground">Result</h3>
+                        <h3 className="text-lg font-semibold text-center text-foreground">{t('result')}</h3>
                          <div className="aspect-square w-full max-w-lg mx-auto">
                             <ImageComparator baseImage={imagePreview} newImage={resultImage} />
                         </div>
@@ -91,7 +93,7 @@ const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
                                 className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-accent gap-2"
                             >
                                 <Icon name="download" className="w-4 h-4" />
-                                Download PNG
+                                {t('downloadPNG')}
                             </button>
                         </div>
                     </div>

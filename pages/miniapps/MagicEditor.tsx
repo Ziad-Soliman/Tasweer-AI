@@ -3,6 +3,7 @@ import MiniAppLayout from './shared/MiniAppLayout';
 import { FileUpload } from '../../components/FileUpload';
 import { Icon } from '../../components/Icon';
 import * as geminiService from '../../services/geminiService';
+import { useTranslation } from '../../App';
 
 interface MiniAppProps {
     onBack: () => void;
@@ -16,6 +17,7 @@ const MagicEditor: React.FC<MiniAppProps> = ({ onBack }) => {
     const [brushSize, setBrushSize] = useState(40);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const isDrawing = useRef(false);
@@ -99,13 +101,13 @@ const MagicEditor: React.FC<MiniAppProps> = ({ onBack }) => {
 
     return (
         <MiniAppLayout
-            title="Magic Editor"
-            description="Erase part of an image and tell the AI what to fill it with."
+            title={t('magic-editor-title')}
+            description={t('magicEditorDesc')}
             onBack={onBack}
         >
             {!imagePreview ? (
                 <div className="max-w-md mx-auto">
-                    <FileUpload onFileUpload={handleFileUpload} label="Upload a Photo to Edit" />
+                    <FileUpload onFileUpload={handleFileUpload} label={t('uploadToEdit')} />
                 </div>
             ) : (
                 <div className="flex flex-col gap-4 items-center">
@@ -124,27 +126,27 @@ const MagicEditor: React.FC<MiniAppProps> = ({ onBack }) => {
 
                     <div className="w-full max-w-2xl p-4 bg-card border rounded-lg shadow-lg flex flex-col md:flex-row items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <label className="text-xs text-muted-foreground">Brush:</label>
+                            <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                             <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
                         </div>
                         <input
                             type="text"
                             value={prompt}
                             onChange={e => setPrompt(e.target.value)}
-                            placeholder="Describe your edit (e.g., 'add a cat')"
+                            placeholder={t('magicEditorPrompt')}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex-1"
                             disabled={isLoading}
                         />
                         <button onClick={handleApply} disabled={!prompt || isLoading} className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 w-full md:w-auto">
                             {isLoading ? (<Icon name="spinner" className="animate-spin w-5 h-5" />) : (<Icon name="sparkles" className="w-5 h-5" />)}
-                            Apply
+                            {t('magicEditApply')}
                         </button>
                     </div>
                      {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
                      {resultImage && (
                         <div className="w-full max-w-2xl animate-fade-in">
-                            <h3 className="text-lg font-semibold text-center text-foreground my-4">Result</h3>
+                            <h3 className="text-lg font-semibold text-center text-foreground my-4">{t('result')}</h3>
                             <img src={resultImage} alt="Magic Edit Result" className="w-full rounded-lg shadow-md" />
                         </div>
                      )}

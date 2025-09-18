@@ -4,6 +4,7 @@ import { FileUpload } from '../../components/FileUpload';
 import { Icon } from '../../components/Icon';
 import { ImageComparator } from '../../components/ImageComparator';
 import * as geminiService from '../../services/geminiService';
+import { useTranslation } from '../../App';
 
 interface MiniAppProps {
     onBack: () => void;
@@ -16,6 +17,7 @@ const ImageEnhancer: React.FC<MiniAppProps> = ({ onBack }) => {
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const handleFileUpload = (file: File) => {
         setImageFile(file);
@@ -47,15 +49,15 @@ const ImageEnhancer: React.FC<MiniAppProps> = ({ onBack }) => {
 
     return (
         <MiniAppLayout
-            title="AI Image Enhancer"
-            description="Upscale and add detail to your images for a professional look."
+            title={t('image-enhancer-title')}
+            description={t('image-enhancer-desc')}
             onBack={onBack}
         >
             <div className="max-w-4xl mx-auto flex flex-col gap-8">
                 <div className="grid md:grid-cols-2 gap-8 items-start">
                     <FileUpload
                         onFileUpload={handleFileUpload}
-                        label="Upload Photo to Enhance"
+                        label={t('uploadToEnhance')}
                         uploadedFileName={imageFile?.name}
                         onClear={() => { setImageFile(null); setImagePreview(null); }}
                     />
@@ -64,7 +66,7 @@ const ImageEnhancer: React.FC<MiniAppProps> = ({ onBack }) => {
                             type="text"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Optional: Describe original image style..."
+                            placeholder={t('optionalDescribeStyle')}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             disabled={!imageFile}
                         />
@@ -74,7 +76,7 @@ const ImageEnhancer: React.FC<MiniAppProps> = ({ onBack }) => {
                             className="inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2"
                         >
                             {isLoading ? ( <Icon name="spinner" className="animate-spin w-5 h-5" /> ) : ( <Icon name="wand" className="w-5 h-5" /> )}
-                            <span>{isLoading ? 'Enhancing...' : 'Enhance Image'}</span>
+                            <span>{isLoading ? t('enhancing') : t('enhanceButton')}</span>
                         </button>
                          {error && <p className="text-sm text-destructive text-center">{error}</p>}
                     </div>
@@ -82,7 +84,7 @@ const ImageEnhancer: React.FC<MiniAppProps> = ({ onBack }) => {
                 
                 {resultImage && imagePreview && (
                     <div className="animate-fade-in space-y-4">
-                        <h3 className="text-lg font-semibold text-center text-foreground">Result</h3>
+                        <h3 className="text-lg font-semibold text-center text-foreground">{t('result')}</h3>
                          <div className="aspect-square w-full max-w-lg mx-auto">
                             <ImageComparator baseImage={imagePreview} newImage={resultImage} />
                         </div>

@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWRpZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBNTg1N0Y3Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8L2RlZnM+CiAgICA8cGF0aCBkPSJNMTIgMkwzIDIySDdMOC4yNSAxOEgxNS43NUwxNyAyMkgxMUwxMiAyWk0xMiA2LjhMMTQuMjUgMTRIMi43NUwxMiA2LjhaIiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiLz4KICAgIDxwYXRoIGQ9Ik0xOCAyTDE5LjUgNUwyMiA2TDE5LjUgN0wxOCAxMEwxNi41IDdMMTQgNkwxNi41IDVMMTggMloiIGZpbGw9InVybCgjbG9nb0dyYWRpZW50KSIvPgo8L3N2Zz4=" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWRpZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBNTg1N0Y3Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8L2RlZnM+CiAgICA8cGF0aCBkPSJNMTIgMkwzIDIySDdMOC4yNSAxOEgxNS43NUwxNyAyMkgxMUwxMiAyWk0xMiA2LjhMMTQuMjUgMTRIMi47NUwxMiA2LjhaIiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiLz4KICAgIDxwYXRoIGQ9Ik0xOCAyTDE5LjUgNUwyMiA2TDE5LjUgN0wxOCAxMEwxNi41IDdMMTQgNkwxNi41IDVMMTggMloiIGZpbGw9InVybCgjbG9nb0dyYWRpZW50KSIvPgo8L3N2Zz4=" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Designer by Ziad Ashraf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
 {
@@ -68,6 +71,10 @@
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+            cairo: ['Cairo', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+          },
           colors: {
             border: 'hsl(var(--border))',
             input: 'hsl(var(--input))',
@@ -137,7 +144,7 @@
     }
   </script>
 </head>
-  <body class="bg-background text-foreground transition-colors duration-300 dark" style="background-image: radial-gradient(circle at top, hsl(var(--border)/0.15), transparent 30%)">
+  <body class="bg-background text-foreground transition-colors duration-300 dark font-sans" style="background-image: radial-gradient(circle at top, hsl(var(--border)/0.15), transparent 30%)">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
