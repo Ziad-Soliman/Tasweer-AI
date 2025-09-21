@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { ControlPanel } from '../components/ControlPanel';
@@ -16,6 +13,7 @@ import { StylePresetModal } from '../components/StylePresetModal';
 import { Tabs } from '../components/Tabs';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { BrandKitPanel } from '../components/BrandKitPanel';
+import { useTranslation } from '../App';
 
 // Helper function to get initial theme
 const getInitialTheme = (): Theme => 'dark'; // Force dark theme for modern UI
@@ -66,6 +64,7 @@ const MarketingCopyModal: React.FC<{
     isLoading: boolean;
     onRegenerate: () => void;
 }> = ({ isOpen, onClose, copy, isLoading, onRegenerate }) => {
+    const { t } = useTranslation();
     if (!isOpen) return null;
 
     const CopyField: React.FC<{ label: string; value: string }> = ({ label, value }) => {
@@ -105,10 +104,10 @@ const MarketingCopyModal: React.FC<{
                 {/* Dialog Header */}
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6">
                      <h3 className="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                        <Icon name="pencil" /> AI Generated Marketing Copy
+                        <Icon name="pencil" /> {t('aiGeneratedMarketingCopy')}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                        Review, copy, and use this AI-generated content for your marketing.
+                        {t('marketingCopyDescription')}
                     </p>
                 </div>
 
@@ -116,17 +115,17 @@ const MarketingCopyModal: React.FC<{
                 {isLoading && (
                     <div className="h-72 flex flex-col items-center justify-center text-center">
                         <Icon name="spinner" className="w-8 h-8 animate-spin text-primary" />
-                        <p className="mt-3 text-muted-foreground">Generating brilliant copy...</p>
+                        <p className="mt-3 text-muted-foreground">{t('loadingGeneratingCopy')}</p>
                     </div>
                 )}
                 
                 {!isLoading && copy && (
                     <div className="space-y-4">
-                        <CopyField label="Product Name" value={copy.productName} />
-                        <CopyField label="Tagline" value={copy.tagline} />
-                        <CopyField label="Description" value={copy.description} />
-                        <CopyField label="Social Media Post" value={copy.socialMediaPost} />
-                        <CopyField label="Social Media Post (Arabic)" value={copy.socialMediaPostArabic} />
+                        <CopyField label={t('productName')} value={copy.productName} />
+                        <CopyField label={t('tagline')} value={copy.tagline} />
+                        <CopyField label={t('description')} value={copy.description} />
+                        <CopyField label={t('socialMediaPost')} value={copy.socialMediaPost} />
+                        <CopyField label={t('socialMediaPostArabic')} value={copy.socialMediaPostArabic} />
                     </div>
                 )}
 
@@ -137,7 +136,7 @@ const MarketingCopyModal: React.FC<{
                         className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-accent"
                         onClick={onClose}
                     >
-                        Close
+                        {t('close')}
                     </button>
                     <button
                         type="button"
@@ -145,7 +144,7 @@ const MarketingCopyModal: React.FC<{
                         className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 mb-2 sm:mb-0"
                         onClick={onRegenerate}
                     >
-                        <Icon name="restart" className="w-4 h-4" /> Regenerate
+                        <Icon name="restart" className="w-4 h-4" /> {t('regenerate')}
                     </button>
                 </div>
             </div>
@@ -155,7 +154,7 @@ const MarketingCopyModal: React.FC<{
 
 const RightSidebar: React.FC<{
     history: HistoryItem[];
-    onRevertToHistory: (item: HistoryItem) => void;
+    onRestoreHistory: (item: HistoryItem) => void;
     onToggleFavorite: (id: string) => void;
     brandKits: BrandKit[];
     setBrandKits: React.Dispatch<React.SetStateAction<BrandKit[]>>;
@@ -163,28 +162,27 @@ const RightSidebar: React.FC<{
     setActiveBrandKitId: React.Dispatch<React.SetStateAction<string | null>>;
     onClose?: () => void;
 }> = (props) => {
+    const { t } = useTranslation();
     return (
         <>
              <div className="p-4 border-b border-border/80 flex items-center justify-between h-[65px]">
-                 <h2 className="text-lg font-semibold">Workspace</h2>
+                 <h2 className="text-lg font-semibold">{t('workspace')}</h2>
                  {props.onClose && (
                     <button onClick={props.onClose} className="p-2 rounded-md hover:bg-accent text-muted-foreground lg:hidden" aria-label="Close Workspace Panel">
                         <Icon name="close" className="w-5 h-5" />
                     </button>
                  )}
              </div>
-             {/* FIX: Pass tabs as an array of objects with key and label properties. */}
              <Tabs tabs={[
-                { key: 'History', label: `History (${props.history.length})` },
-                { key: 'Brand', label: 'Brand' }
+                { key: 'History', label: `${t('history')} (${props.history.length})` },
+                { key: 'Brand', label: t('brand') }
              ]}>
                 {(activeTab) => (
                     <div className="p-4 flex-1 flex flex-col overflow-y-auto">
-                        {/* FIX: Check activeTab against the key 'History'. */}
                         {activeTab === 'History' && 
                             <HistoryPanel 
                                 history={props.history}
-                                onRevert={props.onRevertToHistory}
+                                onRestore={props.onRestoreHistory}
                                 onToggleFavorite={props.onToggleFavorite}
                             />
                         }
@@ -217,6 +215,7 @@ const PromptBar: React.FC<{
     onEnhancePrompt: () => void;
     isEnhancingPrompt: boolean;
 }> = ({ finalPrompt, settings, setSettings, onGenerate, isLoading, productImage, onBrowsePresets, isFocused, setIsFocused, onEnhancePrompt, isEnhancingPrompt }) => {
+    const { t } = useTranslation();
     const isVideoMode = settings.generationMode === 'video';
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -268,14 +267,14 @@ const PromptBar: React.FC<{
                     <textarea
                         value={settings.negativePrompt}
                         onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))}
-                        placeholder="Negative prompt (e.g. text, watermarks, ugly)..."
+                        placeholder={t('negativePromptPlaceholder')}
                         disabled={isLoading || !productImage}
                         rows={2}
                         className="w-full bg-secondary text-secondary-foreground p-2 rounded-md text-sm placeholder:text-muted-foreground disabled:opacity-50 resize-none focus:outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
                     />
                 </div>
                 <div className="p-2 flex items-start gap-2">
-                    <Tooltip text="Browse Presets">
+                    <Tooltip text={t('browsePresets')}>
                         <button onClick={onBrowsePresets} className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-secondary hover:bg-accent rounded-md"><Icon name="sparkles" className="w-5 h-5"/></button>
                     </Tooltip>
                     
@@ -284,7 +283,7 @@ const PromptBar: React.FC<{
                             ref={textAreaRef}
                             value={finalPrompt}
                             onChange={handlePromptChange}
-                            placeholder={productImage ? "Describe the scene for your product..." : "Upload a product to start..."}
+                            placeholder={productImage ? t('promptPlaceholder') : t('promptPlaceholderNoImage')}
                             disabled={isLoading || !productImage} 
                             rows={1}
                             onFocus={() => setIsFocused(true)}
@@ -297,19 +296,19 @@ const PromptBar: React.FC<{
                             onClick={enableEditing}
                         >
                             <p className={`text-sm ${finalPrompt ? 'text-foreground' : 'text-muted-foreground'} line-clamp-3`}>
-                                {finalPrompt || (productImage ? "Describe the scene for your product..." : "Upload a product to start...")}
+                                {finalPrompt || (productImage ? t('promptPlaceholder') : t('promptPlaceholderNoImage'))}
                             </p>
                         </div>
                     )}
                     
-                     <Tooltip text="Enhance Prompt with AI">
+                     <Tooltip text={t('enhancePrompt')}>
                         <button onClick={onEnhancePrompt} disabled={isEnhancingPrompt || !finalPrompt} className="self-end flex-shrink-0 h-10 w-10 flex items-center justify-center bg-secondary hover:bg-accent rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
                             <Icon name={isEnhancingPrompt ? 'spinner' : 'wand'} className={`w-5 h-5 ${isEnhancingPrompt ? 'animate-spin' : ''}`}/>
                         </button>
                     </Tooltip>
 
                     {!isEditingPrompt && (
-                        <Tooltip text="Edit Prompt">
+                        <Tooltip text={t('editPrompt')}>
                             <button
                                 onClick={enableEditing}
                                 disabled={!productImage || isLoading}
@@ -331,7 +330,7 @@ const PromptBar: React.FC<{
                         ) : (
                             <span className="flex items-center gap-2">
                                 <Icon name={isVideoMode ? 'video' : 'wand'} className="w-4 h-4" />
-                                Generate
+                                {t('generate')}
                             </span>
                         )}
                     </button>
@@ -345,9 +344,20 @@ interface ProductGenerationPageProps {
     isLeftSidebarOpen: boolean;
     isRightSidebarOpen: boolean;
     setIsRightSidebarOpen: (value: React.SetStateAction<boolean>) => void;
+    // Unified History Props
+    history: HistoryItem[];
+    addHistoryItem: (itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => void;
+    onToggleFavorite: (id: string) => void;
+    onRestoreHistory: (item: HistoryItem) => void;
+    restoredState: HistoryItem | null;
+    clearRestoredState: () => void;
 }
 
-export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ isLeftSidebarOpen, isRightSidebarOpen, setIsRightSidebarOpen }) => {
+export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ 
+    isLeftSidebarOpen, isRightSidebarOpen, setIsRightSidebarOpen,
+    history, addHistoryItem, onToggleFavorite, onRestoreHistory, restoredState, clearRestoredState
+}) => {
+    const { t } = useTranslation();
     // Core state
     const [productImage, setProductImage] = useState<File | null>(null);
     const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
@@ -381,8 +391,8 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
     const [generatedImages, setGeneratedImages] = useState<string[]>([]);
     const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-    const [history, setHistory] = useState<HistoryItem[]>([]);
     const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
+    const [currentPalette, setCurrentPalette] = useState<string[] | undefined>(undefined);
     
     // UI/App state
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -412,27 +422,38 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
     // Derived state for the final prompt
     const finalPrompt = settings.editedPrompt ?? settings.prompt;
 
+    // State restoration from history
+    useEffect(() => {
+        if (restoredState && restoredState.source.page === 'product-generation') {
+            const { payload } = restoredState;
+            setSettings(payload.settings);
+            setGeneratedImages(payload.images || []);
+            setGeneratedVideoUrl(payload.videoUrl || null);
+            setTextOverlays(payload.textOverlays || []);
+            setCurrentPalette(payload.palette);
+            // This is tricky, we can't restore the File object, but we can restore the preview
+            if (payload.productImagePreview) {
+                setProductImagePreview(payload.productImagePreview);
+                setProductImage(null); // Mark that we don't have the original file
+            }
+            setSelectedImageIndex(0);
+            setError(null);
+            clearRestoredState();
+        }
+    }, [restoredState, clearRestoredState]);
+
+
     const resetForNewProduct = () => {
         setGeneratedImages([]);
         setGeneratedVideoUrl(null);
         setSelectedImageIndex(null);
         setError(null);
         setTextOverlays([]);
+        setCurrentPalette(undefined);
         setSettings(s => ({
             ...s,
-            generationMode: 'product',
-            aspectRatio: '1:1',
-            lightingStyle: LIGHTING_STYLES[0],
-            cameraPerspective: CAMERA_PERSPECTIVES[0],
-            videoLength: VIDEO_LENGTHS[0],
-            cameraMotion: CAMERA_MOTIONS[0],
-            mockupType: MOCKUP_TYPES[0],
-            selectedSocialTemplateId: SOCIAL_MEDIA_TEMPLATES[0].id,
             prompt: '',
             editedPrompt: null,
-            negativePrompt: '',
-            seed: '',
-            numberOfImages: 1,
             productDescription: '',
             selectedPresetId: null,
         }));
@@ -446,11 +467,11 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         setProductImagePreview(URL.createObjectURL(file));
         setIsLoading(true);
         try {
-            setLoadingMessage('Analyzing product...');
+            setLoadingMessage(t('loadingAnalyzing'));
             const description = await geminiService.describeProduct(file);
             setSettings(s => ({ ...s, productDescription: description }));
 
-            setLoadingMessage('Generating scene templates...');
+            setLoadingMessage(t('loadingGeneratingTemplates'));
             const templates = await geminiService.generateSceneTemplates(description);
             setSceneTemplates(templates);
 
@@ -461,12 +482,11 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
             setIsLoading(false);
             setLoadingMessage('');
         }
-    }, []);
+    }, [t]);
 
     // Effect to auto-generate and enhance the prompt from settings
     useEffect(() => {
         if (!settings.productDescription || settings.editedPrompt !== null) {
-            // If there's no product, ensure the prompt is empty.
             if (!settings.productDescription && settings.prompt) {
                 setSettings(s => ({ ...s, prompt: '' }));
             }
@@ -508,20 +528,14 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
             try {
                 const enhancedPrompt = await geminiService.enhancePrompt(concept);
                 setSettings(s => {
-                    // Only update if the user hasn't started editing in the meantime
-                    if (s.editedPrompt === null) {
-                        return { ...s, prompt: enhancedPrompt };
-                    }
+                    if (s.editedPrompt === null) return { ...s, prompt: enhancedPrompt };
                     return s;
                 });
             } catch (e) {
                 console.error("Failed to auto-generate and enhance prompt:", e);
                 setError("AI prompt generation failed. Using a basic prompt.");
-                // Fallback to the basic concept if enhancement fails
                 setSettings(s => {
-                    if (s.editedPrompt === null) {
-                        return { ...s, prompt: concept };
-                    }
+                    if (s.editedPrompt === null) return { ...s, prompt: concept };
                     return s;
                 });
             } finally {
@@ -533,15 +547,9 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         enhance();
     
     }, [
-        settings.productDescription,
-        settings.lightingStyle,
-        settings.cameraPerspective,
-        settings.editedPrompt,
-        settings.generationMode,
-        settings.videoLength,
-        settings.cameraMotion,
-        settings.mockupType,
-        settings.selectedPresetId,
+        settings.productDescription, settings.lightingStyle, settings.cameraPerspective,
+        settings.editedPrompt, settings.generationMode, settings.videoLength,
+        settings.cameraMotion, settings.mockupType, settings.selectedPresetId,
         settings.selectedSocialTemplateId,
     ]);
 
@@ -555,11 +563,12 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         setSelectedImageIndex(null);
         setEditorMode('view');
         setTextOverlays([]);
+        setCurrentPalette(undefined);
         try {
-            setLoadingMessage('Step 1/2: Removing background...');
+            setLoadingMessage(t('loadingRemovingBackground'));
             const productWithoutBg = await geminiService.removeBackground(productImage);
 
-            setLoadingMessage(`Step 2/2: Generating ${settings.numberOfImages} image variations...`);
+            setLoadingMessage(t('loadingGeneratingImages', { count: settings.numberOfImages }));
             
             const generationPromises = Array.from({ length: settings.numberOfImages }).map((_, i) => {
                  const currentSeed = settings.seed ? parseInt(settings.seed, 10) + i : null;
@@ -572,15 +581,18 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
             setGeneratedImages(finalImages);
             setSelectedImageIndex(0);
             
-            const newHistoryItem: HistoryItem = {
-                id: crypto.randomUUID(),
-                images: finalImages,
-                settings: { ...settings, prompt: finalPrompt },
-                textOverlays: [],
-                isFavorite: false,
-                timestamp: Date.now()
-            };
-            setHistory(prev => [newHistoryItem, ...prev]);
+            addHistoryItem({
+                source: { page: 'product-generation', appName: t('productGeneration') },
+                thumbnail: { type: 'image', value: finalImages[0] },
+                title: finalPrompt,
+                payload: {
+                    images: finalImages,
+                    settings: { ...settings, prompt: finalPrompt },
+                    textOverlays: [],
+                    palette: undefined,
+                    productImagePreview,
+                },
+            });
 
         } catch (e) {
             console.error(e);
@@ -602,13 +614,8 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         setEditorMode('view');
         
         const videoLoadingMessages = [
-            'Warming up the digital cameras...',
-            'Setting up the virtual dolly tracks...',
-            'AI Director is calling "Action!"...',
-            'Rendering the first few frames...',
-            'Applying cinematic color grading...',
-            'Adding the final polish...',
-            'Almost ready for the premiere!'
+            t('videoLoadingMessage1'), t('videoLoadingMessage2'), t('videoLoadingMessage3'),
+            t('videoLoadingMessage4'), t('videoLoadingMessage5'), t('videoLoadingMessage6'), t('videoLoadingMessage7')
         ];
         let messageIndex = 0;
         setLoadingMessage(videoLoadingMessages[messageIndex]);
@@ -618,21 +625,22 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }, 5000);
 
         try {
-            setLoadingMessage('Removing background...');
+            setLoadingMessage(t('loadingRemovingBackground'));
             const productWithoutBg = await geminiService.removeBackground(productImage);
 
             const videoUrl = await geminiService.generateVideo(productWithoutBg, finalPrompt);
             setGeneratedVideoUrl(videoUrl);
 
-            const newHistoryItem: HistoryItem = {
-                id: crypto.randomUUID(),
-                videoUrl: videoUrl,
-                settings: { ...settings, prompt: finalPrompt },
-                textOverlays: [],
-                isFavorite: false,
-                timestamp: Date.now()
-            };
-            setHistory(prev => [newHistoryItem, ...prev]);
+            addHistoryItem({
+                source: { page: 'product-generation', appName: t('productGeneration') },
+                thumbnail: { type: 'video', value: 'video' }, // icon name
+                title: finalPrompt,
+                payload: {
+                    videoUrl: videoUrl,
+                    settings: { ...settings, prompt: finalPrompt },
+                    productImagePreview,
+                },
+            });
 
         } catch (e) {
             console.error(e);
@@ -653,73 +661,34 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         setSelectedImageIndex(null);
         setEditorMode('view');
         setTextOverlays([]);
+        setCurrentPalette(undefined);
         try {
-            setLoadingMessage('Step 1/2: Preparing product...');
+            setLoadingMessage(t('loadingPreparingProduct'));
             const productWithoutBg = await geminiService.removeBackground(productImage);
 
-            setLoadingMessage('Step 2/2: Generating mockup...');
+            setLoadingMessage(t('loadingGeneratingMockup'));
             const resultBase64 = await geminiService.generateMockup(productWithoutBg, finalPrompt, settings.mockupType);
             const finalImage = `data:image/png;base64,${resultBase64}`;
             
             setGeneratedImages([finalImage]);
             setSelectedImageIndex(0);
             
-            const newHistoryItem: HistoryItem = {
-                id: crypto.randomUUID(),
-                images: [finalImage],
-                settings: { ...settings, prompt: finalPrompt },
-                textOverlays: [],
-                isFavorite: false,
-                timestamp: Date.now()
-            };
-            setHistory(prev => [newHistoryItem, ...prev]);
+            addHistoryItem({
+                source: { page: 'product-generation', appName: t('productGeneration') },
+                thumbnail: { type: 'image', value: finalImage },
+                title: finalPrompt,
+                payload: {
+                    images: [finalImage],
+                    settings: { ...settings, prompt: finalPrompt },
+                    textOverlays: [],
+                    palette: undefined,
+                    productImagePreview,
+                },
+            });
 
         } catch (e) {
             console.error(e);
             setError(e instanceof Error ? e.message : 'An unknown error occurred during mockup generation.');
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-        }
-    };
-
-    const handleSocialPostGeneration = async () => {
-        if (!productImage || !finalPrompt) return;
-
-        if (!activeBrandKit?.logo) {
-            setError("Please upload a logo to your active brand kit to generate a social media post.");
-            return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-        setGeneratedImages([]);
-        setGeneratedVideoUrl(null);
-        setSelectedImageIndex(null);
-        setEditorMode('view');
-        setTextOverlays([]);
-        try {
-            setLoadingMessage('Generating social media post...');
-            
-            const resultBase64 = await geminiService.generateSocialPost(productImage, activeBrandKit.logo, finalPrompt);
-            const finalImage = `data:image/png;base64,${resultBase64}`;
-            
-            setGeneratedImages([finalImage]);
-            setSelectedImageIndex(0);
-            
-            const newHistoryItem: HistoryItem = {
-                id: crypto.randomUUID(),
-                images: [finalImage],
-                settings: { ...settings, prompt: finalPrompt },
-                textOverlays: [],
-                isFavorite: false,
-                timestamp: Date.now()
-            };
-            setHistory(prev => [newHistoryItem, ...prev]);
-
-        } catch (e) {
-            console.error(e);
-            setError(e instanceof Error ? e.message : 'An unknown error occurred during social post generation.');
         } finally {
             setIsLoading(false);
             setLoadingMessage('');
@@ -736,8 +705,9 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         setSelectedImageIndex(null);
         setEditorMode('view');
         setTextOverlays([]);
+        setCurrentPalette(undefined);
         try {
-            setLoadingMessage('Generating design alternative...');
+            setLoadingMessage(t('loadingGeneratingDesign'));
             
             const resultBase64 = await geminiService.generateDesignAlternative(productImage, finalPrompt);
             const finalImage = `data:image/png;base64,${resultBase64}`;
@@ -745,15 +715,18 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
             setGeneratedImages([finalImage]);
             setSelectedImageIndex(0);
             
-            const newHistoryItem: HistoryItem = {
-                id: crypto.randomUUID(),
-                images: [finalImage],
-                settings: { ...settings, prompt: finalPrompt },
-                textOverlays: [],
-                isFavorite: false,
-                timestamp: Date.now()
-            };
-            setHistory(prev => [newHistoryItem, ...prev]);
+            addHistoryItem({
+                source: { page: 'product-generation', appName: t('productGeneration') },
+                thumbnail: { type: 'image', value: finalImage },
+                title: finalPrompt,
+                payload: {
+                    images: [finalImage],
+                    settings: { ...settings, prompt: finalPrompt },
+                    textOverlays: [],
+                    palette: undefined,
+                    productImagePreview,
+                },
+            });
 
         } catch (e) {
             console.error(e);
@@ -764,54 +737,27 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }
     };
     
-    // Main generate function
     const handleGenerate = async () => {
         switch (settings.generationMode) {
-            case 'video':
-                await handleVideoGeneration();
-                break;
-            case 'mockup':
-                await handleMockupGeneration();
-                break;
-            case 'social':
-                // For social posts, we use the standard image generator but with specific settings
-                await handleImageGeneration();
-                break;
-            case 'design':
-                await handleDesignGeneration();
-                break;
-            case 'product':
-            default:
-                await handleImageGeneration();
-                break;
+            case 'video': await handleVideoGeneration(); break;
+            case 'mockup': await handleMockupGeneration(); break;
+            case 'design': await handleDesignGeneration(); break;
+            case 'product': case 'social': default: await handleImageGeneration(); break;
         }
     };
 
-    // Generic function to update the currently selected image in state and history
     const updateCurrentImage = (newImage: string) => {
         if (selectedImageIndex === null) return;
-
         const updatedImages = [...generatedImages];
         updatedImages[selectedImageIndex] = newImage;
         setGeneratedImages(updatedImages);
-
-        const latestHistoryItem = history[0];
-        if (latestHistoryItem) {
-            const updatedHistoryImages = [...(latestHistoryItem.images || [])];
-            updatedHistoryImages[selectedImageIndex] = newImage;
-            const updatedHistoryItem = { ...latestHistoryItem, images: updatedHistoryImages };
-            setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
-        }
     };
     
-    // Magic Edit
     const handleMagicEdit = async (imageWithMaskBase64: string, inpaintPrompt: string) => {
         if (selectedImageIndex === null) return;
-
         setIsLoading(true);
         setError(null);
-        setLoadingMessage('Performing Magic Edit...');
-
+        setLoadingMessage(t('loadingMagicEdit'));
         try {
             const inpaintedImageBase64 = await geminiService.magicEditImage(imageWithMaskBase64, inpaintPrompt);
             updateCurrentImage(`data:image/png;base64,${inpaintedImageBase64}`);
@@ -825,11 +771,10 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }
     };
 
-    // Remove Object
     const handleRemoveObject = async (imageWithMaskBase64: string) => {
         setIsLoading(true);
         setError(null);
-        setLoadingMessage('Removing object...');
+        setLoadingMessage(t('loadingRemovingObject'));
         try {
             const prompt = "Remove the object in the erased area. Fill the space with a realistic background that matches the surrounding image content and style."
             const resultImageBase64 = await geminiService.magicEditImage(imageWithMaskBase64, prompt);
@@ -844,14 +789,12 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }
     };
 
-    // Expand Image
     const handleExpandImage = async (direction: 'up' | 'down' | 'left' | 'right') => {
         if (selectedImageIndex === null) return;
         const originalImageBase64 = generatedImages[selectedImageIndex].split(',')[1];
-
         setIsLoading(true);
         setError(null);
-        setLoadingMessage(`Expanding image ${direction}...`);
+        setLoadingMessage(t('loadingExpandingImage', { direction }));
         try {
             const expandedImageBase64 = await geminiService.expandImage(originalImageBase64, finalPrompt, direction);
             updateCurrentImage(`data:image/png;base64,${expandedImageBase64}`);
@@ -865,17 +808,13 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }
     };
 
-
-    // Enhance image
     const handleEnhance = async () => {
         if (selectedImageIndex === null) return;
         const originalImageBase64 = generatedImages[selectedImageIndex].split(',')[1];
-        
         setIsLoading(true);
         setError(null);
-        setLoadingMessage('Enhancing image...');
+        setLoadingMessage(t('loadingEnhancingImage'));
         setEditorMode('view');
-
         try {
             const enhancedImageBase64 = await geminiService.enhanceImage(originalImageBase64, finalPrompt);
             updateCurrentImage(`data:image/png;base64,${enhancedImageBase64}`);
@@ -888,22 +827,18 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }
     };
     
-    // AI Marketing Copy
     const handleGenerateCopy = async () => {
         if (selectedImageIndex === null) return;
         const imageBase64 = generatedImages[selectedImageIndex].split(',')[1];
-        
         setShowCopyModal(true);
         setIsCopyLoading(true);
         setMarketingCopy(null);
         setError(null);
-        
         try {
             const copy = await geminiService.generateMarketingCopy(imageBase64, finalPrompt);
             setMarketingCopy(copy);
         } catch (e) {
             console.error(e);
-            // Show error inside modal? For now, just close it and show global error.
             setError(e instanceof Error ? e.message : 'An unknown error occurred during copy generation.');
             setShowCopyModal(false);
         } finally {
@@ -926,45 +861,24 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         }
     };
 
-    const handleStartOver = () => {
-        setShowConfirmModal(true);
-    };
+    const handleStartOver = () => setShowConfirmModal(true);
 
     const confirmStartOver = () => {
         setProductImage(null);
         setProductImagePreview(null);
         resetForNewProduct();
-        setHistory([]);
+        // The history is now global, so we don't clear it here.
         setShowConfirmModal(false);
-    };
-    
-    const handleRevertToHistory = (historyItem: HistoryItem) => {
-        setSettings({ ...historyItem.settings, editedPrompt: historyItem.settings.prompt });
-        setGeneratedImages(historyItem.images || []);
-        setGeneratedVideoUrl(historyItem.videoUrl || null);
-        setTextOverlays(historyItem.textOverlays || []);
-        setSelectedImageIndex(0);
-        setError(null);
-        setIsRightSidebarOpen(false);
-    };
-
-    const handleToggleFavorite = (id: string) => {
-        setHistory(history.map(item => item.id === id ? { ...item, isFavorite: !item.isFavorite } : item));
     };
 
     const handleExtractPalette = async () => {
-        if (selectedImageIndex === null) return;
+        if (selectedImageIndex === null || currentPalette) return;
         const currentImage = generatedImages[selectedImageIndex];
-        const latestHistoryItem = history[0];
-
-        if (!latestHistoryItem || latestHistoryItem.palette) return; // Already have it
-
         setIsLoading(true);
-        setLoadingMessage("Extracting colors...");
+        setLoadingMessage(t('loadingExtractingPalette'));
         try {
             const palette = await geminiService.extractPalette(currentImage.split(',')[1]);
-            const updatedHistoryItem = { ...latestHistoryItem, palette };
-            setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
+            setCurrentPalette(palette);
         } catch (e) {
             console.error("Palette extraction failed", e);
             setError("Could not extract color palette.");
@@ -974,21 +888,9 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
     };
 
     const handleSelectPreset = (preset: Preset) => {
-        setSettings(s => ({ ...s, selectedPresetId: preset.id, editedPrompt: null }));
+        setSettings(s => ({ ...s, selectedPresetId: preset.id, editedPrompt: null, prompt: '' }));
         setIsPresetModalOpen(false);
     };
-
-    // Save text overlays to history
-    useEffect(() => {
-        if (!history.length) return;
-        const latestHistoryItem = history[0];
-        // Simple stringify check to avoid deep object comparison on every render
-        if (JSON.stringify(latestHistoryItem.textOverlays) !== JSON.stringify(textOverlays)) {
-            const updatedHistoryItem = { ...latestHistoryItem, textOverlays };
-            setHistory(prev => [updatedHistoryItem, ...prev.slice(1)]);
-        }
-    }, [textOverlays, history]);
-
 
     // Theme toggle effect
     useEffect(() => {
@@ -1012,27 +914,21 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
                 e.preventDefault();
-                if (productImage && !isLoading) {
-                    handleGenerate();
-                }
+                if (productImage && !isLoading) handleGenerate();
             }
             if (generatedImages.length > 1 && selectedImageIndex !== null) {
-                if (e.key === 'ArrowRight') {
-                    setSelectedImageIndex(i => (i! + 1) % generatedImages.length);
-                }
-                if (e.key === 'ArrowLeft') {
-                    setSelectedImageIndex(i => (i! - 1 + generatedImages.length) % generatedImages.length);
-                }
+                if (e.key === 'ArrowRight') setSelectedImageIndex(i => (i! + 1) % generatedImages.length);
+                if (e.key === 'ArrowLeft') setSelectedImageIndex(i => (i! - 1 + generatedImages.length) % generatedImages.length);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [productImage, isLoading, generatedImages, selectedImageIndex]);
+    }, [productImage, isLoading, generatedImages, selectedImageIndex, handleGenerate]);
 
     const rightSidebarProps = {
         history,
-        onRevertToHistory: handleRevertToHistory,
-        onToggleFavorite: handleToggleFavorite,
+        onRestoreHistory,
+        onToggleFavorite,
         brandKits,
         setBrandKits,
         activeBrandKitId,
@@ -1046,8 +942,8 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
                 isOpen={showConfirmModal}
                 onClose={() => setShowConfirmModal(false)}
                 onConfirm={confirmStartOver}
-                title="Are you sure?"
-                message="This will clear your current product, all generated images, and the session history. This action cannot be undone."
+                title={t('confirmStartOverTitle')}
+                message={t('confirmStartOverMessage')}
             />
              <MarketingCopyModal
                 isOpen={showCopyModal}
@@ -1104,7 +1000,7 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = ({ is
                         setTextOverlays={setTextOverlays}
                         brandKit={activeBrandKit}
                         watermarkSettings={settings.watermark}
-                        currentHistoryItem={history[0]}
+                        palette={currentPalette}
                         onExtractPalette={handleExtractPalette}
                     />
                     <PromptBar

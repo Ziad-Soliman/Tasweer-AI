@@ -53,7 +53,7 @@ const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSe
             {modes.map(mode => (
                  <button
                     key={mode.value}
-                    onClick={() => setSettings(s => ({ ...s, generationMode: mode.value as GenerationSettings['generationMode'], editedPrompt: null, selectedPresetId: null }))}
+                    onClick={() => setSettings(s => ({ ...s, generationMode: mode.value as GenerationSettings['generationMode'], editedPrompt: null, selectedPresetId: null, prompt: '' }))}
                     disabled={isLoading}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${settings.generationMode === mode.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
@@ -172,18 +172,18 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                  <Section title="settings" defaultOpen={true}>
                     {settings.generationMode === 'product' && (
                         <>
-                            <Select label="lighting" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
-                            <Select label="perspective" value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} />
+                            <Select label="lighting" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null, prompt: ''}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
+                            <Select label="perspective" value={settings.cameraPerspective} onChange={(e) => setSettings(s=>({...s, cameraPerspective: e.target.value, editedPrompt: null, prompt: ''}))} options={CAMERA_PERSPECTIVES} disabled={isLoading || isPromptEdited} />
                         </>
                     )}
                     {settings.generationMode === 'video' && (
                         <>
-                            <Select label="length" value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'], editedPrompt: null }))} options={VIDEO_LENGTHS} disabled={isLoading} />
-                            <Select label="motion" value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'], editedPrompt: null }))} options={CAMERA_MOTIONS} disabled={isLoading} />
+                            <Select label="length" value={settings.videoLength} onChange={(e) => setSettings(s => ({ ...s, videoLength: e.target.value as GenerationSettings['videoLength'], editedPrompt: null, prompt: '' }))} options={VIDEO_LENGTHS} disabled={isLoading} />
+                            <Select label="motion" value={settings.cameraMotion} onChange={(e) => setSettings(s => ({ ...s, cameraMotion: e.target.value as GenerationSettings['cameraMotion'], editedPrompt: null, prompt: '' }))} options={CAMERA_MOTIONS} disabled={isLoading} />
                         </>
                     )}
                     {settings.generationMode === 'mockup' && (
-                        <Select label="mockupType" value={settings.mockupType} onChange={(e) => setSettings(s => ({ ...s, mockupType: e.target.value, editedPrompt: null }))} options={MOCKUP_TYPES} disabled={isLoading} />
+                        <Select label="mockupType" value={settings.mockupType} onChange={(e) => setSettings(s => ({ ...s, mockupType: e.target.value, editedPrompt: null, prompt: '' }))} options={MOCKUP_TYPES} disabled={isLoading} />
                     )}
                      {settings.generationMode === 'social' && (
                         <div className="space-y-2">
@@ -199,6 +199,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                                                 aspectRatio: template.aspectRatio,
                                                 editedPrompt: null,
                                                 selectedPresetId: null,
+                                                prompt: ''
                                             }));
                                         }}
                                         className={`p-3 rounded-lg border-2 text-left transition-colors flex flex-col justify-between h-24 ${

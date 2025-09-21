@@ -9,7 +9,6 @@ interface EditorToolbarProps {
     setMode: (mode: EditorMode) => void;
 }
 
-// FIX: Use valid translation keys for nameKey to match the expected type.
 const TOOLS: { id: EditorMode; nameKey: keyof typeof import('../lib/translations').translations.en; icon: string }[] = [
     { id: 'view', nameKey: 'editorToolView', icon: 'image' },
     { id: 'magic-edit', nameKey: 'editorToolMagicEdit', icon: 'wand' },

@@ -1,5 +1,5 @@
-import { GoogleGenAI, Modality, Part, Type } from "@google/genai";
-import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe } from "../types";
+import { GoogleGenAI, Modality, Part, Type, Chat, Content } from "@google/genai";
+import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene } from "../types";
 import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, FONT_OPTIONS } from '../constants';
 
 
@@ -8,6 +8,18 @@ if (!process.env.API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+// Chat wrapper for conversational features in mini-apps
+export const startChat = (model: 'gemini-2.5-flash', history: Content[], systemInstruction: string): Chat => {
+    return ai.chats.create({
+        model,
+        history,
+        config: {
+            systemInstruction,
+        }
+    });
+};
+
 
 const fileToGenerativePart = async (file: File): Promise<Part> => {
     const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -890,4 +902,466 @@ export const generateTattooDesigns = async (description: string, style: string):
     }
     
     throw new Error('Tattoo generation failed: No images were returned.');
+};
+
+export const generateCharacterConcepts = async (description: string, style: string): Promise<string[]> => {
+    const prompt = `${style} character concept art of ${description}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '9:16',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Character generation failed: No images were returned.');
+};
+
+export const generatePackagingDesigns = async (productInfo: string, style: string): Promise<string[]> => {
+    const prompt = `Product packaging design concept for ${productInfo}. Style: ${style}. The image should show the product packaging as a 3D render on a clean studio background. Photorealistic.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '1:1',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Packaging design generation failed: No images were returned.');
+};
+
+export const generateStoryboardScenes = async (script: string): Promise<StoryboardScene[]> => {
+    const prompt = `You are a film director. Based on the following script or scene description, create a 4-panel storyboard. For each panel, provide a detailed prompt for an AI image generator to create the visual, a suggested camera shot type, and a brief description of the action.
+    
+    Script: "${script}"
+    
+    Return a JSON array of objects.`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        panel: { type: Type.INTEGER },
+                        imagePrompt: { type: Type.STRING, description: "A detailed prompt for an AI image generator, e.g., 'A wide shot of a futuristic city at night, raining, neon signs reflecting on puddles.'" },
+                        shotType: { type: Type.STRING, description: "The camera shot type, e.g., 'Wide Shot', 'Close-up', 'Over-the-shoulder'." },
+                        description: { type: Type.STRING, description: "A brief description of the action in the panel." }
+                    },
+                    required: ["panel", "imagePrompt", "shotType", "description"]
+                }
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as StoryboardScene[];
+    } catch (e) {
+        console.error("Failed to parse storyboard scenes:", e);
+        throw new Error("Could not generate storyboard scenes.");
+    }
+};
+
+export const generateStoryboardImage = async (prompt: string): Promise<string> => {
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: `${prompt}, cinematic, film still, dramatic lighting`,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: 'image/png',
+          aspectRatio: '16:9',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages[0].image.imageBytes;
+    }
+    
+    throw new Error('Storyboard image generation failed: No image was returned.');
+};
+
+export const generateColoringBookPage = async (description: string): Promise<string[]> => {
+    const prompt = `A black and white coloring book page for adults, featuring ${description}. The design should have intricate details, clean lines, and absolutely no shading or solid filled areas. The background must be plain white.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '4:5',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Coloring book page generation failed: No images were returned.');
+};
+
+export const generateSeamlessPattern = async (description: string): Promise<string[]> => {
+    const prompt = `A seamless, tileable pattern of ${description}. The design must be perfectly repeatable on all sides. High resolution, 4k.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '1:1',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Pattern generation failed: No images were returned.');
+};
+
+export const generateAdCopyVariants = async (productDescription: string, targetAudience: string): Promise<AdCopyVariant[]> => {
+    const prompt = `You are an expert marketing copywriter. Generate 3 distinct ad copy variations for a product.
+    Product Description: "${productDescription}"
+    Target Audience: "${targetAudience}"
+    
+    The variations should have different styles:
+    1. A "Punchy & Direct" style: Short, attention-grabbing, and creates urgency.
+    2. A "Professional & Persuasive" style: Focuses on benefits, builds trust, and uses sophisticated language.
+    3. A "Humorous & Witty" style: Uses clever wordplay or humor to be memorable and relatable.
+    
+    For each variation, provide a headline, a body, and a call to action.`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        style: { type: Type.STRING, description: "The style of the ad copy (e.g., 'Punchy & Direct')." },
+                        headline: { type: Type.STRING, description: "The ad headline." },
+                        body: { type: Type.STRING, description: "The main body of the ad copy." },
+                        callToAction: { type: Type.STRING, description: "The call to action." }
+                    },
+                    required: ["style", "headline", "body", "callToAction"]
+                }
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as AdCopyVariant[];
+    } catch (e) {
+        console.error("Failed to parse ad copy variants:", e);
+        throw new Error("Could not generate ad copy variants.");
+    }
+};
+
+export const generateArtisticQRCode = async (url: string, prompt: string): Promise<string[]> => {
+    const fullPrompt = `A scannable QR code that links to "${url}". The QR code should be artistically integrated into the following scene: "${prompt}". The QR code must be clearly visible and functional. High resolution, 4k.`;
+    
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: fullPrompt,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '1:1',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Artistic QR code generation failed: No images were returned.');
+};
+
+export const virtualTryOn = async (personImageFile: File, clothingPrompt: string): Promise<string> => {
+    const imagePart = await fileToGenerativePart(personImageFile);
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: {
+            parts: [
+                imagePart,
+                { text: `Realistically replace the clothes the person in the image is wearing with: "${clothingPrompt}". Keep the person's face, body, and the background the same. The result should be a photorealistic image.` }
+            ]
+        },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
+        }
+    }
+    throw new Error('Virtual try-on failed: No image part in response.');
+};
+
+export const generatePodcastShowNotes = async (transcript: string): Promise<PodcastShowNotes> => {
+    const prompt = `You are a podcast producer. Based on the following transcript, generate a complete set of show notes.
+    Your response must be a JSON object with the following structure:
+    - title: A catchy and relevant title for the podcast episode.
+    - summary: A concise, one-paragraph summary of the episode.
+    - timestamps: An array of key moments, each with a "time" (e.g., "00:15:32") and a "topic" description. Find at least 5 key moments.
+    - socialPosts: An array of 2 social media posts to promote the episode, one for "X (Twitter)" and one for "LinkedIn".
+
+    Transcript:
+    "${transcript}"`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING },
+                    summary: { type: Type.STRING },
+                    timestamps: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                time: { type: Type.STRING },
+                                topic: { type: Type.STRING }
+                            },
+                            required: ["time", "topic"]
+                        }
+                    },
+                    socialPosts: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                platform: { type: Type.STRING },
+                                post: { type: Type.STRING }
+                            },
+                            required: ["platform", "post"]
+                        }
+                    }
+                },
+                required: ["title", "summary", "timestamps", "socialPosts"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as PodcastShowNotes;
+    } catch (e) {
+        console.error("Failed to parse podcast show notes:", e);
+        throw new Error("Could not generate podcast show notes.");
+    }
+};
+
+export const generateVideoFromText = async (prompt: string): Promise<string> => {
+    let operation = await ai.models.generateVideos({
+        model: 'veo-2.0-generate-001',
+        prompt: prompt,
+        config: {
+            numberOfVideos: 1
+        }
+    });
+
+    while (!operation.done) {
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+
+    if (operation.error) {
+        const error = operation.error as { message?: string };
+        const errorMessage = error.message || JSON.stringify(operation.error);
+        throw new Error(`Video generation failed: ${errorMessage}`);
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) {
+        throw new Error('Video generation failed: No download link in response.');
+    }
+
+    const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+    if (!response.ok) {
+        throw new Error(`Failed to download video: ${response.statusText}`);
+    }
+    const videoBlob = await response.blob();
+    return URL.createObjectURL(videoBlob);
+};
+
+export const generatePresentation = async (topic: string): Promise<Presentation> => {
+    const prompt = `Generate a 5-slide presentation on the topic: "${topic}". Include a main title and for each slide, provide a slide number, title, an array of 3-4 content bullet points, and a descriptive prompt for an AI image generator to create a relevant visual.`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    mainTitle: { type: Type.STRING },
+                    slides: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                slideNumber: { type: Type.INTEGER },
+                                title: { type: Type.STRING },
+                                content: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                imagePrompt: { type: Type.STRING }
+                            },
+                            required: ["slideNumber", "title", "content", "imagePrompt"]
+                        }
+                    }
+                },
+                required: ["mainTitle", "slides"]
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as Presentation;
+    } catch (e) {
+        console.error("Failed to parse presentation:", e);
+        throw new Error("Could not generate presentation.");
+    }
+};
+
+export const generateComicPanels = async (story: string): Promise<ComicPanel[]> => {
+    const prompt = `Based on the following story idea, create a 4-panel comic strip script. For each panel, provide a detailed prompt for an AI image generator, optional dialogue for characters, and optional narration.
+    
+    Story: "${story}"
+    
+    Return a JSON array of objects.`;
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        panel: { type: Type.INTEGER },
+                        imagePrompt: { type: Type.STRING },
+                        dialogue: { type: Type.STRING, description: "Character dialogue. Can be empty." },
+                        narration: { type: Type.STRING, description: "Narrator's box text. Can be empty." }
+                    },
+                    required: ["panel", "imagePrompt"]
+                }
+            }
+        }
+    });
+
+    try {
+        const jsonString = result.text.trim();
+        return JSON.parse(jsonString) as ComicPanel[];
+    } catch (e) {
+        console.error("Failed to parse comic panels:", e);
+        throw new Error("Could not generate comic panels.");
+    }
+};
+
+export const generateComicPanelImage = async (prompt: string): Promise<string> => {
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: `${prompt}, american comic book style, vibrant colors, dynamic action, detailed line art`,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: 'image/png',
+          aspectRatio: '1:1',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages[0].image.imageBytes;
+    }
+    
+    throw new Error('Comic panel image generation failed: No image was returned.');
+};
+
+// New functions for enhanced mini-apps
+export const generateMoodboardImage = async (prompt: string): Promise<string[]> => {
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: `A moodboard for a photoshoot. Theme: ${prompt}. A collage of inspirational images, textures, and colors.`,
+        config: {
+          numberOfImages: 4,
+          outputMimeType: 'image/png',
+          aspectRatio: '16:9',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages.map(img => img.image.imageBytes);
+    }
+    
+    throw new Error('Moodboard image generation failed: No images were returned.');
+};
+
+export const generateSceneImage = async (sceneInfo: PhotoshootScene): Promise<string> => {
+    const prompt = `Photoshoot scene: ${sceneInfo.title}. ${sceneInfo.description}. Lighting: ${sceneInfo.lighting}. Camera Angle: ${sceneInfo.cameraAngle}. Props include: ${sceneInfo.props.join(', ')}. Photorealistic, professional photography.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: 'image/png',
+          aspectRatio: '16:9',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages[0].image.imageBytes;
+    }
+    
+    throw new Error('Scene image generation failed: No image was returned.');
+};
+
+export const generateVideoSceneImage = async (visualDescription: string): Promise<string> => {
+    const prompt = `Cinematic still from a short video ad. Scene description: ${visualDescription}. Vibrant, high-energy, commercial style.`;
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: 'image/png',
+          aspectRatio: '9:16',
+        },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        return response.generatedImages[0].image.imageBytes;
+    }
+    
+    throw new Error('Video scene image generation failed: No image was returned.');
 };

@@ -1,49 +1,37 @@
 import React, { useState, useMemo } from 'react';
-import { HistoryItem, GenerationMode } from '../types';
+import { HistoryItem } from '../types';
 import { Icon } from './Icon';
 import { useTranslation } from '../App';
 
 interface HistoryPanelProps {
     history: HistoryItem[];
-    onRevert: (item: HistoryItem) => void;
+    onRestore: (item: HistoryItem) => void;
     onToggleFavorite: (id: string) => void;
 }
 
 const HistoryThumbnail: React.FC<{ item: HistoryItem }> = ({ item }) => {
-    const { images, videoUrl, settings } = item;
-    const { generationMode } = settings;
-
-    // For video mode, show a video icon
-    if (generationMode === 'video' || videoUrl) {
+    const { thumbnail } = item;
+    
+    if (thumbnail.type === 'image') {
+        return <img src={thumbnail.value} alt="History thumbnail" className="w-full h-full object-cover" />;
+    }
+    
+    if (thumbnail.type === 'video') {
         return (
             <div className="w-full h-full flex items-center justify-center bg-slate-800">
                 <Icon name="video" className="w-8 h-8 text-slate-400" />
             </div>
         );
     }
-    
-    // For image-based modes, show the thumbnail and an overlay icon if applicable
-    if (images && images.length > 0) {
-        const iconName: { [key in GenerationMode]?: string } = {
-            'mockup': 'cube',
-            'social': 'sparkles',
-            'design': 'paint-brush',
-        };
-        const modeIcon = iconName[generationMode];
-        
+
+    if (thumbnail.type === 'icon') {
         return (
-            <div className="w-full h-full relative">
-                <img src={images[0]} alt="History thumbnail" className="w-full h-full object-cover" />
-                {modeIcon && (
-                    <div className="absolute bottom-1 right-1 bg-black/60 backdrop-blur-sm rounded-full p-1 shadow-lg">
-                        <Icon name={modeIcon} className="w-3 h-3 text-white" />
-                    </div>
-                )}
+            <div className="w-full h-full flex items-center justify-center bg-muted">
+                <Icon name={thumbnail.value} className="w-8 h-8 text-muted-foreground" />
             </div>
         );
     }
     
-    // Fallback for empty/invalid history items
     return (
         <div className="w-full h-full flex items-center justify-center">
             <Icon name="image" className="w-8 h-8 text-muted-foreground" />
@@ -52,9 +40,9 @@ const HistoryThumbnail: React.FC<{ item: HistoryItem }> = ({ item }) => {
 };
 
 
-const HistoryCard: React.FC<{ item: HistoryItem, onRevert: () => void, onToggleFavorite: () => void }> = ({ item, onRevert, onToggleFavorite }) => {
+const HistoryCard: React.FC<{ item: HistoryItem, onRestore: () => void, onToggleFavorite: () => void }> = ({ item, onRestore, onToggleFavorite }) => {
     const { t } = useTranslation();
-    const { settings, timestamp, isFavorite } = item;
+    const { title, timestamp, isFavorite, source } = item;
     
     const timeAgo = (date: number) => {
         const seconds = Math.floor((new Date().getTime() - date) / 1000);
@@ -79,22 +67,22 @@ const HistoryCard: React.FC<{ item: HistoryItem, onRevert: () => void, onToggleF
 
     return (
         <div className="bg-muted/50 p-3 rounded-lg flex gap-4 transition-colors hover:bg-accent">
-            <button onClick={onRevert} className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden group relative bg-muted">
+            <button onClick={onRestore} className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden group relative bg-muted">
                 <HistoryThumbnail item={item} />
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Icon name="restart" className="text-white w-8 h-8"/>
                 </div>
             </button>
             <div className="flex-1 min-w-0">
-                <p className="text-xs text-foreground font-medium truncate" title={settings.prompt}>
-                    {settings.prompt}
+                <p className="text-xs text-foreground font-medium truncate" title={title}>
+                    {title}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                     {timeAgo(timestamp)}
                 </p>
                 <div className="mt-2 flex items-center justify-between">
                      <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary dark:bg-primary/20 font-medium rounded-full capitalize">
-                        {t(`mode${settings.generationMode.charAt(0).toUpperCase() + settings.generationMode.slice(1)}` as any, {})}
+                        {source.appName}
                      </span>
                      <button onClick={onToggleFavorite} className="text-muted-foreground hover:text-yellow-400" title={t(isFavorite ? 'unfavorite' : 'favorite')}>
                         <Icon name={isFavorite ? 'star-filled' : 'star'} className={`w-5 h-5 ${isFavorite ? 'text-yellow-400' : ''}`}/>
@@ -105,17 +93,18 @@ const HistoryCard: React.FC<{ item: HistoryItem, onRevert: () => void, onToggleF
     );
 };
 
-export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRevert, onToggleFavorite }) => {
+export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRestore, onToggleFavorite }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showFavorites, setShowFavorites] = useState(false);
     const { t } = useTranslation();
 
     const filteredHistory = useMemo(() => {
-        return history.filter(item => {
-            const matchesSearch = item.settings.prompt.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesFavorite = !showFavorites || item.isFavorite;
-            return matchesSearch && matchesFavorite;
-        });
+        return history
+            .filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || item.source.appName.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesFavorite = !showFavorites || item.isFavorite;
+                return matchesSearch && matchesFavorite;
+            });
     }, [history, searchTerm, showFavorites]);
     
     if (history.length === 0) {
@@ -156,7 +145,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRevert, o
                         <HistoryCard 
                             key={item.id} 
                             item={item} 
-                            onRevert={() => onRevert(item)}
+                            onRestore={() => onRestore(item)}
                             onToggleFavorite={() => onToggleFavorite(item.id)}
                         />
                     ))

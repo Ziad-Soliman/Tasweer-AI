@@ -1,10 +1,13 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import { nanoid } from 'nanoid';
 import { ProductGenerationPage } from './pages/ProductGenerationPage';
 import { MiniAppsPage } from './pages/MiniAppsPage';
 import { ClassicGenerationPage } from './pages/ClassicGenerationPage';
 import { LogoConceptualizationPage } from './pages/LogoConceptualizationPage';
+import { AITextureEnhancerPage } from './pages/AITextureEnhancerPage';
 import { Icon } from './components/Icon';
 import { translations } from './lib/translations';
+import { HistoryItem } from './types';
 
 type Language = 'en' | 'ar';
 
@@ -23,7 +26,7 @@ export const LanguageContext = createContext<LanguageContextType>({
 export const useTranslation = () => useContext(LanguageContext);
 
 
-type Page = 'product-generation' | 'mini-apps' | 'classic-generation' | 'logo-conceptualization';
+type Page = 'product-generation' | 'mini-apps' | 'classic-generation' | 'logo-conceptualization' | 'ai-texture-enhancer';
 
 interface PageConfig {
     id: Page;
@@ -36,6 +39,7 @@ const pageConfigs: PageConfig[] = [
     { id: 'mini-apps', titleKey: 'miniApps', component: MiniAppsPage },
     { id: 'classic-generation', titleKey: 'classicGeneration', component: ClassicGenerationPage },
     { id: 'logo-conceptualization', titleKey: 'logoConceptualization', component: LogoConceptualizationPage },
+    { id: 'ai-texture-enhancer', titleKey: 'aiTextureEnhancer', component: AITextureEnhancerPage },
 ];
 
 const AppContent: React.FC = () => {
@@ -44,7 +48,76 @@ const AppContent: React.FC = () => {
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
     const { language, setLanguage, t } = useTranslation();
 
-    const PageComponent = pageConfigs.find(p => p.id === currentPage)!.component;
+    // Centralized history state management
+    const [history, setHistory] = useState<HistoryItem[]>(() => {
+        try {
+            const savedHistory = localStorage.getItem('unified-history');
+            return savedHistory ? JSON.parse(savedHistory) : [];
+        } catch (e) {
+            console.error("Failed to load history from local storage", e);
+            return [];
+        }
+    });
+
+    const [restoredState, setRestoredState] = useState<HistoryItem | null>(null);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('unified-history', JSON.stringify(history));
+        } catch (e) {
+            console.error("Failed to save history to local storage", e);
+        }
+    }, [history]);
+
+    const addHistoryItem = useCallback((itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => {
+        const newHistoryItem: HistoryItem = {
+            ...itemData,
+            id: nanoid(),
+            timestamp: Date.now(),
+            isFavorite: false,
+        };
+        setHistory(prev => [newHistoryItem, ...prev]);
+    }, []);
+
+    const onToggleFavorite = useCallback((id: string) => {
+        setHistory(h => h.map(item => item.id === id ? { ...item, isFavorite: !item.isFavorite } : item));
+    }, []);
+
+    const onRestoreHistory = useCallback((item: HistoryItem) => {
+        setCurrentPage(item.source.page);
+        setRestoredState(item);
+        // Close sidebar on mobile when restoring
+        setIsRightSidebarOpen(false);
+    }, []);
+    
+    const clearRestoredState = useCallback(() => setRestoredState(null), []);
+
+    const pageCommonProps = {
+        history,
+        addHistoryItem,
+        onToggleFavorite,
+        onRestoreHistory,
+        restoredState,
+        clearRestoredState,
+    };
+    
+    let pageContent;
+    switch (currentPage) {
+        case 'product-generation':
+            pageContent = <ProductGenerationPage 
+                isLeftSidebarOpen={isLeftSidebarOpen}
+                isRightSidebarOpen={isRightSidebarOpen}
+                setIsRightSidebarOpen={setIsRightSidebarOpen}
+                {...pageCommonProps}
+            />;
+            break;
+        case 'mini-apps':
+            pageContent = <MiniAppsPage {...pageCommonProps} />;
+            break;
+        default:
+            const PageComponent = pageConfigs.find(p => p.id === currentPage)!.component;
+            pageContent = <PageComponent />;
+    }
 
     return (
         <div className="min-h-screen flex flex-col bg-background dark">
@@ -87,28 +160,19 @@ const AppContent: React.FC = () => {
                     >
                         <span className="font-semibold">{language === 'en' ? 'AR' : 'EN'}</span>
                     </button>
-                    {currentPage === 'product-generation' && (
-                        <button 
-                            onClick={() => setIsRightSidebarOpen(p => !p)}
-                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-accent gap-2"
-                            aria-label={isRightSidebarOpen ? t('hideWorkspacePanel') : t('showWorkspacePanel')}
-                        >
-                             <Icon name="history" className="w-5 h-5" />
-                             <span className="hidden sm:inline">{t('workspace')}</span>
-                        </button>
-                    )}
+                    {/* Unified workspace button */}
+                    <button 
+                        onClick={() => setIsRightSidebarOpen(p => !p)}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-accent gap-2"
+                        aria-label={isRightSidebarOpen ? t('hideWorkspacePanel') : t('showWorkspacePanel')}
+                    >
+                         <Icon name="history" className="w-5 h-5" />
+                         <span className="hidden sm:inline">{t('workspace')}</span>
+                    </button>
                  </div>
             </header>
             
-            {currentPage === 'product-generation' ? (
-                <ProductGenerationPage 
-                    isLeftSidebarOpen={isLeftSidebarOpen}
-                    isRightSidebarOpen={isRightSidebarOpen}
-                    setIsRightSidebarOpen={setIsRightSidebarOpen}
-                />
-            ) : (
-                <PageComponent />
-            )}
+            {pageContent}
         </div>
     );
 }

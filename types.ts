@@ -77,16 +77,29 @@ export interface TextOverlay {
     width: number; // percentage of container width
 }
 
+type Page = 'product-generation' | 'mini-apps' | 'classic-generation' | 'logo-conceptualization' | 'ai-texture-enhancer';
+
 export interface HistoryItem {
-    id:string;
-    images?: string[];
-    videoUrl?: string;
-    settings: GenerationSettings;
+    id: string;
+    // Source of the generation
+    source: {
+        page: Page;
+        miniAppId?: string; // e.g., 'background-remover'
+        appName: string; // Display name, e.g., 'Product Generation', 'Background Remover'
+    };
+    // For display in the history list
+    thumbnail: {
+        type: 'image' | 'video' | 'icon';
+        value: string; // base64 image data URL, or icon name
+    };
+    // The main prompt or a summary of the generation
+    title: string;
+    // All data needed to restore the state of the source page/app
+    payload: any; 
     isFavorite: boolean;
     timestamp: number;
-    palette?: string[];
-    textOverlays?: TextOverlay[];
 }
+
 
 export interface BrandKit {
     id:string;
@@ -123,6 +136,7 @@ export interface VideoAdScene {
     voiceover: string;
     onScreenText: string;
     duration: string;
+    imageUrl?: string;
 }
 
 export interface VideoAdScript {
@@ -141,6 +155,7 @@ export interface PhotoshootScene {
     lighting: string;
     props: string[];
     cameraAngle: string;
+    imageUrl?: string;
 }
 
 export interface PhotoshootConcept {
@@ -148,6 +163,7 @@ export interface PhotoshootConcept {
     moodboardDescription: string;
     colorPalette: { hex: string, name: string }[];
     scenes: PhotoshootScene[];
+    moodboardImageUrls?: string[];
 }
 
 export interface BrandVoiceGuide {
@@ -206,4 +222,48 @@ export interface Recipe {
     servings: string;
     ingredients: string[];
     instructions: string[];
+}
+
+export interface StoryboardScene {
+  panel: number;
+  imagePrompt: string;
+  shotType: string;
+  description: string;
+  imageUrl?: string; // To be populated after image generation
+}
+
+export interface AdCopyVariant {
+    style: string;
+    headline: string;
+    body: string;
+    callToAction: string;
+}
+
+export interface PodcastShowNotes {
+    title: string;
+    summary: string;
+    timestamps: { time: string; topic: string }[];
+    socialPosts: { platform: string; post: string }[];
+}
+
+// Presentation Generator
+export interface PresentationSlide {
+  slideNumber: number;
+  title: string;
+  content: string[]; // Array of bullet points
+  imagePrompt: string;
+}
+
+export interface Presentation {
+  mainTitle: string;
+  slides: PresentationSlide[];
+}
+
+// Comic Book Creator
+export interface ComicPanel {
+  panel: number;
+  imagePrompt: string;
+  dialogue?: string;
+  narration?: string;
+  imageUrl?: string; // To be populated after image generation
 }

@@ -1,22 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MiniAppLayout from './shared/MiniAppLayout';
 import { FileUpload } from '../../components/FileUpload';
 import { Icon } from '../../components/Icon';
 import { ImageComparator } from '../../components/ImageComparator';
 import * as geminiService from '../../services/geminiService';
 import { useTranslation } from '../../App';
+import { HistoryItem } from '../../types';
 
 interface MiniAppProps {
     onBack: () => void;
+    addHistoryItem: (itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => void;
+    initialState: any | null;
+    clearRestoredState: () => void;
 }
 
-const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
+const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack, addHistoryItem, initialState, clearRestoredState }) => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { t } = useTranslation();
+
+    useEffect(() => {
+        if (initialState) {
+            setImagePreview(initialState.imagePreview);
+            setResultImage(initialState.resultImage);
+            clearRestoredState();
+        }
+    }, [initialState, clearRestoredState]);
 
     const handleFileUpload = (file: File) => {
         setImageFile(file);
@@ -32,7 +44,19 @@ const BackgroundRemover: React.FC<MiniAppProps> = ({ onBack }) => {
         setResultImage(null);
         try {
             const resultBase64 = await geminiService.removeBackground(imageFile);
-            setResultImage(`data:image/png;base64,${resultBase64}`);
+            const finalResultImage = `data:image/png;base64,${resultBase64}`;
+            setResultImage(finalResultImage);
+
+            addHistoryItem({
+                source: { page: 'mini-apps', miniAppId: 'background-remover', appName: t('background-remover-title') },
+                thumbnail: { type: 'image', value: finalResultImage },
+                title: `Background removed from ${imageFile.name}`,
+                payload: {
+                    imagePreview: URL.createObjectURL(imageFile),
+                    resultImage: finalResultImage,
+                }
+            });
+
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to remove background.");
         } finally {

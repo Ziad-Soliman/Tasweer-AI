@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+
+
+import React, { useState, useEffect } from 'react';
 import BackgroundRemover from './miniapps/BackgroundRemover';
 import MockupGenerator from './miniapps/MockupGenerator';
 import ImageEnhancer from './miniapps/ImageEnhancer';
@@ -18,14 +20,111 @@ import AITattooDesigner from './miniapps/AITattooDesigner';
 import AIRecipeGenerator from './miniapps/AIRecipeGenerator';
 import { useTranslation } from '../App';
 import { translations } from '../lib/translations';
+import AIVideoGenerator from './miniapps/AIVideoGenerator';
+import AIPresentationGenerator from './miniapps/AIPresentationGenerator';
+import AIComicCreator from './miniapps/AIComicCreator';
+import AIFashionDesigner from './miniapps/AIFashionDesigner';
+import AIQRCodeGenerator from './miniapps/AIQRCodeGenerator';
+import AIPodcastSummarizer from './miniapps/AIPodcastSummarizer';
+import AIColoringBookGenerator from './miniapps/AIColoringBookGenerator';
+import AIAdCopyGenerator from './miniapps/AIAdCopyGenerator';
+import AIPatternGenerator from './miniapps/AIPatternGenerator';
+import AICharacterConceptGenerator from './miniapps/AICharacterConceptGenerator';
+import AIProductPackagingDesigner from './miniapps/AIProductPackagingDesigner';
+import AIStoryboardGenerator from './miniapps/AIStoryboardGenerator';
+import { HistoryItem } from '../types';
 
 const miniApps: {
     id: string;
     titleKey: keyof typeof translations.en;
     descriptionKey: keyof typeof translations.en;
     imageUrl: string;
-    component: React.ComponentType<{ onBack: () => void; }>;
+    component: React.ComponentType<any>; // Allow additional props
 }[] = [
+    { 
+        id: 'video-generator', 
+        titleKey: 'video-generator-title',
+        descriptionKey: 'video-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M15.75 10.5L20.47 5.77C21.16 5.08 22 5.57 22 6.5V17.5C22 18.43 21.16 18.92 20.47 18.23L15.75 13.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3crect x='2' y='6' width='14' height='12' rx='2' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3c/svg%3e`,
+        component: AIVideoGenerator
+    },
+    { 
+        id: 'presentation-generator', 
+        titleKey: 'presentation-generator-title',
+        descriptionKey: 'presentation-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='2' y='4' width='20' height='16' rx='2' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M6 9H12' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M6 12H18' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M6 15H15' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round'/%3e%3c/svg%3e`,
+        component: AIPresentationGenerator
+    },
+    { 
+        id: 'comic-creator', 
+        titleKey: 'comic-creator-title',
+        descriptionKey: 'comic-creator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='2' y='3' width='20' height='18' rx='2' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M2 12H22' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M12 12V21' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M8 17H9' stroke='hsl(var(--primary))' stroke-width='2' stroke-linecap='round'/%3e%3cpath d='M15 17H16' stroke='hsl(var(--primary))' stroke-width='2' stroke-linecap='round'/%3e%3cpath d='M6 7H7' stroke='hsl(var(--primary))' stroke-width='2' stroke-linecap='round'/%3e%3c/svg%3e`,
+        component: AIComicCreator
+    },
+    { 
+        id: 'fashion-designer', 
+        titleKey: 'fashion-designer-title',
+        descriptionKey: 'fashion-designer-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M20.38 3.46L16 2a4 4 0 0 0-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99 .84H6v10c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3c/svg%3e`,
+        component: AIFashionDesigner
+    },
+    { 
+        id: 'qr-code-generator', 
+        titleKey: 'qr-code-generator-title',
+        descriptionKey: 'qr-code-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='3' y='3' width='7' height='7' rx='1' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3crect x='14' y='3' width='7' height='7' rx='1' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3crect x='3' y='14' width='7' height='7' rx='1' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3crect x='14' y='14' width='7' height='7' rx='1' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3c/svg%3e`,
+        component: AIQRCodeGenerator
+    },
+    { 
+        id: 'podcast-summarizer', 
+        titleKey: 'podcast-summarizer-title',
+        descriptionKey: 'podcast-summarizer-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='6' y='2' width='12' height='16' rx='3' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3ccircle cx='12' cy='9' r='2' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3cpath d='M8 18V20C8 21.1046 8.89543 22 10 22H14C15.1046 22 16 21.1046 16 20V18' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M12 18V14' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round'/%3e%3c/svg%3e`,
+        component: AIPodcastSummarizer
+    },
+    { 
+        id: 'coloring-book-generator', 
+        titleKey: 'coloring-book-generator-title',
+        descriptionKey: 'coloring-book-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3cpath d='M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 10.5 3.5 9 4 8' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M12 3V12L4 8' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e`,
+        component: AIColoringBookGenerator
+    },
+    { 
+        id: 'ad-copy-generator', 
+        titleKey: 'ad-copy-generator-title',
+        descriptionKey: 'ad-copy-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12 3H3V12' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 21H3V12' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M21 12H12V3' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M21 12H12V21' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M17 7L7 17' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e`,
+        component: AIAdCopyGenerator
+    },
+    { 
+        id: 'pattern-generator', 
+        titleKey: 'pattern-generator-title',
+        descriptionKey: 'pattern-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M2 8L8 2' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M2 16L16 2' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M8 22L22 8' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M16 22L22 16' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3ccircle cx='5' cy='5' r='2' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3ccircle cx='19' cy='19' r='2' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3c/svg%3e`,
+        component: AIPatternGenerator
+    },
+    { 
+        id: 'character-concept-generator', 
+        titleKey: 'character-concept-generator-title',
+        descriptionKey: 'character-concept-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='12' cy='6' r='3' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M12 9V14' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M9 14H15' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M12 14L9 21' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M12 14L15 21' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round'/%3e%3cpath d='M6 12H18' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round'/%3e%3c/svg%3e`,
+        component: AICharacterConceptGenerator
+    },
+    { 
+        id: 'product-packaging-designer', 
+        titleKey: 'product-packaging-designer-title',
+        descriptionKey: 'product-packaging-designer-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M6 6.5L12 3L18 6.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M6 17.5L12 21L18 17.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M18 6.5V17.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M6 6.5V17.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 12C13.6569 12 15 10.6569 15 9C15 7.34315 13.6569 6 12 6C10.3431 6 9 7.34315 9 9C9 10.6569 10.3431 12 12 12Z' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5'/%3e%3cpath d='M3 4.5L6 6.5L3 8.5' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='2 2'/%3e%3c/svg%3e`,
+        component: AIProductPackagingDesigner
+    },
+    { 
+        id: 'storyboard-generator', 
+        titleKey: 'storyboard-generator-title',
+        descriptionKey: 'storyboard-generator-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='2' y='5' width='20' height='14' rx='2' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M7 5V19' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M12 5V19' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M17 5V19' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3c/svg%3e`,
+        component: AIStoryboardGenerator
+    },
     { 
         id: 'interior-designer', 
         titleKey: 'interior-designer-title',
@@ -162,15 +261,34 @@ const MiniAppCard: React.FC<{ title: string, description: string, imageUrl: stri
     </button>
 );
 
-export const MiniAppsPage: React.FC = () => {
+interface MiniAppsPageProps {
+    addHistoryItem: (itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => void;
+    restoredState: HistoryItem | null;
+    clearRestoredState: () => void;
+}
+
+export const MiniAppsPage: React.FC<MiniAppsPageProps> = ({ addHistoryItem, restoredState, clearRestoredState }) => {
     const [activeAppId, setActiveAppId] = useState<string | null>(null);
     const { t } = useTranslation();
+
+    useEffect(() => {
+        if (restoredState && restoredState.source.page === 'mini-apps') {
+            setActiveAppId(restoredState.source.miniAppId || null);
+        }
+    }, [restoredState]);
 
     const activeApp = miniApps.find(app => app.id === activeAppId);
 
     if (activeApp) {
         const AppComponent = activeApp.component;
-        return <AppComponent onBack={() => setActiveAppId(null)} />;
+        const initialState = (restoredState && restoredState.source.miniAppId === activeApp.id) ? restoredState.payload : null;
+
+        return <AppComponent 
+            onBack={() => { setActiveAppId(null); clearRestoredState(); }}
+            addHistoryItem={addHistoryItem}
+            initialState={initialState}
+            clearRestoredState={clearRestoredState}
+        />;
     }
 
     return (

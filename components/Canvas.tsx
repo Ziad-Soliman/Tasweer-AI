@@ -30,7 +30,8 @@ interface CanvasProps {
     setTextOverlays: React.Dispatch<React.SetStateAction<TextOverlay[]>>;
     brandKit: BrandKit | undefined;
     watermarkSettings: WatermarkSettings;
-    currentHistoryItem: HistoryItem | undefined;
+    // FIX: Replaced currentHistoryItem with a direct palette prop for type safety and clarity.
+    palette: string[] | undefined;
     onExtractPalette: () => void;
 }
 
@@ -256,7 +257,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     productImagePreview, generatedImages, generatedVideoUrl, selectedImageIndex, onSelectImage,
     isLoading, loadingMessage, error, onStartOver, onRetry, onEnhance, onMagicEdit, onRemoveObject, onExpandImage, onGenerateCopy,
     aspectRatio, editorMode, setEditorMode, textOverlays, setTextOverlays, brandKit,
-    watermarkSettings, currentHistoryItem, onExtractPalette
+    watermarkSettings, palette, onExtractPalette
 }) => {
     const { t } = useTranslation();
     const aspectMap: Record<AspectRatio, string> = { '1:1': 'aspect-square', '4:5': 'aspect-[4/5]', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]' };
@@ -582,11 +583,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                     
                      {generatedImages.length > 0 && !isVideoMode && (
                         <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 z-20 flex justify-center items-end gap-4 w-full px-4 overflow-x-auto">
-                             {currentHistoryItem && (
-                                <div className="absolute start-4 bottom-0 hidden lg:block">
-                                    <ColorPalette palette={currentHistoryItem.palette} onExtract={onExtractPalette} />
-                                </div>
-                            )}
+                            <div className="absolute start-4 bottom-0 hidden lg:block">
+                                <ColorPalette palette={palette} onExtract={onExtractPalette} />
+                            </div>
                             {generatedImages.length > 1 && (
                                 <div className="flex justify-center items-center gap-3 p-2 bg-background/50 backdrop-blur-md rounded-xl border">
                                     {generatedImages.map((img, index) => (
