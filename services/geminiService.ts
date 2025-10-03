@@ -91,7 +91,7 @@ export const generateSceneTemplates = async (productDescription: string): Promis
 export const removeBackground = async (imageFile: File): Promise<string> => {
     const imagePart = await fileToGenerativePart(imageFile);
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: {
             parts: [
                 imagePart,
@@ -136,7 +136,7 @@ export const generateImage = async (
     }
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: { parts },
         config: config,
     });
@@ -173,7 +173,7 @@ export const generateSocialPost = async (
     ];
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: { parts },
         config: {
             responseModalities: [Modality.IMAGE, Modality.TEXT],
@@ -203,7 +203,7 @@ export const generateDesignAlternative = async (
     ];
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: { parts },
         config: {
             responseModalities: [Modality.IMAGE, Modality.TEXT],
@@ -235,7 +235,7 @@ export const generateMockup = async (
     ];
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: { parts },
         config: {
             responseModalities: [Modality.IMAGE, Modality.TEXT],
@@ -304,7 +304,7 @@ export const magicEditImage = async (
     const textPart = { text: `In the following image, edit the transparent (erased) area based on this instruction: "${prompt}". You can add, remove, or change objects. Blend the changes seamlessly with the rest of the image.` };
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: { parts: [imagePart, textPart] },
         config: {
             responseModalities: [Modality.IMAGE, Modality.TEXT],
@@ -330,7 +330,7 @@ export const enhanceImage = async (
     const textPart = { text: `Enhance and upscale this image, maintaining the original subject and style described as: "${originalPrompt}". Add photorealistic details, improve texture, and increase resolution.` };
 
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: { parts: [imagePart, textPart] },
         config: {
             responseModalities: [Modality.IMAGE, Modality.TEXT],
@@ -482,7 +482,7 @@ export const expandImage = async (
     const imagePart = base64ToGenerativePart(imageWithMaskBase64);
 
     const result = await ai.models.generateContent({
-         model: 'gemini-2.5-flash-image-preview',
+         model: 'gemini-2.5-flash-image',
          contents: { parts: [imagePart, textPart] },
          config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
     });
@@ -815,7 +815,7 @@ export const generateThumbnailSuggestionsFromImage = async (imageFile: File, vid
 export const redesignRoom = async (imageFile: File, style: string): Promise<string> => {
     const imagePart = await fileToGenerativePart(imageFile);
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: {
             parts: [
                 imagePart,
@@ -923,23 +923,62 @@ export const generateCharacterConcepts = async (description: string, style: stri
     throw new Error('Character generation failed: No images were returned.');
 };
 
-export const generatePackagingDesigns = async (productInfo: string, style: string): Promise<string[]> => {
-    const prompt = `Product packaging design concept for ${productInfo}. Style: ${style}. The image should show the product packaging as a 3D render on a clean studio background. Photorealistic.`;
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-          numberOfImages: 4,
-          outputMimeType: 'image/png',
-          aspectRatio: '1:1',
-        },
-    });
+export const generatePackagingDesigns = async (productInfo: string, style: string, productImageBase64?: string | null): Promise<string[]> => {
+    if (productImageBase64) {
+        // Use multimodal model
+        const imagePart = base64ToGenerativePart(productImageBase64);
+        const textPrompt = `Using the provided product image (which may or may not have a transparent background), create a product packaging design concept. The product is: ${productInfo}. The style should be: ${style}. The final image should be a photorealistic 3D render of the complete packaging with the product seamlessly integrated, on a clean studio background.`;
+        
+        const parts: Part[] = [imagePart, { text: textPrompt }];
+        
+        const generateOneImage = async (): Promise<string> => {
+            const result = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: { parts },
+                config: {
+                    responseModalities: [Modality.IMAGE, Modality.TEXT],
+                },
+            });
+            const candidate = result.candidates?.[0];
+            if (candidate?.content?.parts) {
+                for (const part of candidate.content.parts) {
+                    if (part.inlineData) {
+                        return part.inlineData.data;
+                    }
+                }
+            }
+            throw new Error('Packaging design generation failed: No image part in response.');
+        };
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-        return response.generatedImages.map(img => img.image.imageBytes);
+        // Generate 4 images in parallel
+        const generationPromises = [
+            generateOneImage(),
+            generateOneImage(),
+            generateOneImage(),
+            generateOneImage(),
+        ];
+        
+        return await Promise.all(generationPromises);
+
+    } else {
+        // Use text-to-image model (original functionality)
+        const prompt = `Product packaging design concept for ${productInfo}. Style: ${style}. The image should show the product packaging as a 3D render on a clean studio background. Photorealistic.`;
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: prompt,
+            config: {
+                numberOfImages: 4,
+                outputMimeType: 'image/png',
+                aspectRatio: '1:1',
+            },
+        });
+
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            return response.generatedImages.map(img => img.image.imageBytes);
+        }
+        
+        throw new Error('Packaging design generation failed: No images were returned.');
     }
-    
-    throw new Error('Packaging design generation failed: No images were returned.');
 };
 
 export const generateStoryboardScenes = async (script: string): Promise<StoryboardScene[]> => {
@@ -1100,7 +1139,7 @@ export const generateArtisticQRCode = async (url: string, prompt: string): Promi
 export const virtualTryOn = async (personImageFile: File, clothingPrompt: string): Promise<string> => {
     const imagePart = await fileToGenerativePart(personImageFile);
     const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.5-flash-image',
         contents: {
             parts: [
                 imagePart,

@@ -94,6 +94,7 @@ const AIComicCreator: React.FC<MiniAppProps> = ({ onBack }) => {
         try {
             const systemInstruction = `You are a comic book writer. Your goal is to generate and refine 4-panel comic scripts. Always respond with a valid JSON array of objects matching the schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: initialPrompt });
             const jsonString = response.text.trim();
             const panels = JSON.parse(jsonString) as ComicPanel[];
@@ -114,6 +115,7 @@ const AIComicCreator: React.FC<MiniAppProps> = ({ onBack }) => {
         setIsLoading(true);
         setError(null);
         try {
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const panels = JSON.parse(jsonString) as ComicPanel[];

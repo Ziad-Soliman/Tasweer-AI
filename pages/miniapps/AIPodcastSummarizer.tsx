@@ -78,6 +78,7 @@ const AIPodcastSummarizer: React.FC<MiniAppProps> = ({ onBack }) => {
         try {
             const systemInstruction = `You are a podcast producer. Your goal is to generate and refine show notes from transcripts. Always respond with a valid JSON object matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: initialPrompt });
             const jsonString = response.text.trim();
             const notes = JSON.parse(jsonString) as PodcastShowNotes;
@@ -98,6 +99,7 @@ const AIPodcastSummarizer: React.FC<MiniAppProps> = ({ onBack }) => {
         setIsLoading(true);
         setError(null);
         try {
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const notes = JSON.parse(jsonString) as PodcastShowNotes;

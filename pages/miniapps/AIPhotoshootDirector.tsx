@@ -164,6 +164,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
             const systemInstruction = `You are an expert AI Photoshoot Director. Your goal is to generate and refine photoshoot concepts. Always respond with a valid JSON object matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
             
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: initialPrompt });
             const jsonString = response.text.trim();
             const concept = JSON.parse(jsonString) as PhotoshootConcept;
@@ -186,6 +187,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const concept = JSON.parse(jsonString) as PhotoshootConcept;

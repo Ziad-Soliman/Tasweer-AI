@@ -3,6 +3,7 @@ import MiniAppLayout from './shared/MiniAppLayout';
 import { Icon } from '../../components/Icon';
 import * as geminiService from '../../services/geminiService';
 import { useTranslation } from '../../App';
+import { FileUpload } from '../../components/FileUpload';
 
 interface MiniAppProps {
     onBack: () => void;
@@ -14,9 +15,16 @@ const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
     const [results, setResults] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const { t } = useTranslation();
 
     const packagingStyles = ['Minimalist & Clean', 'Bold & Vibrant', 'Elegant & Luxurious', 'Eco-friendly & Natural', 'Vintage & Retro', 'Playful & Whimsical'];
+
+    const handleFileUpload = (file: File) => {
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    };
 
     const handleGenerate = async () => {
         if (!productInfo) return;
@@ -24,7 +32,16 @@ const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
         setResults([]);
         try {
-            const images = await geminiService.generatePackagingDesigns(productInfo, style);
+            let imageBase64: string | null = null;
+            if (imageFile) {
+                imageBase64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(imageFile);
+                });
+            }
+            const images = await geminiService.generatePackagingDesigns(productInfo, style, imageBase64);
             setResults(images.map(base64 => `data:image/png;base64,${base64}`));
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate designs.");
@@ -41,14 +58,24 @@ const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
         >
             <div className="max-w-4xl mx-auto flex flex-col gap-8">
                 <div className="bg-card border p-6 rounded-lg grid md:grid-cols-2 gap-6 items-start">
-                    <div className="flex flex-col gap-4 md:col-span-2">
+                    <div className="flex flex-col gap-4">
                         <label className="block text-sm font-medium text-foreground">{t('productInfo')}</label>
                         <textarea
                             value={productInfo}
                             onChange={(e) => setProductInfo(e.target.value)}
                             placeholder={t('productInfoPlaceholder')}
-                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-24 resize-none"
+                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-32 resize-none"
                         />
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        <label className="block text-sm font-medium text-foreground">{t('productImageOptional')}</label>
+                        <FileUpload
+                            onFileUpload={handleFileUpload}
+                            label={t('uploadProductImage')}
+                            uploadedFileName={imageFile?.name}
+                            onClear={() => { setImageFile(null); setImagePreview(null); }}
+                        />
+                        {imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 rounded-md max-h-20 object-contain self-start" />}
                     </div>
                      <div className="flex flex-col gap-4">
                         <label className="block text-sm font-medium text-foreground">{t('packagingStyle')}</label>

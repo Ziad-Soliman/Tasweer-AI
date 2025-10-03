@@ -142,6 +142,7 @@ const AIAdCopyGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             const systemInstruction = `You are an expert marketing copywriter. Your goal is to generate and refine ad copy variants. Always respond with a valid JSON array of objects matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
             
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: initialPrompt });
             const jsonString = response.text.trim();
             const variants = JSON.parse(jsonString) as AdCopyVariant[];
@@ -164,6 +165,7 @@ const AIAdCopyGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
+            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const variants = JSON.parse(jsonString) as AdCopyVariant[];
