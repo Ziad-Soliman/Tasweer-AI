@@ -164,7 +164,6 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
             const systemInstruction = `You are an expert AI Photoshoot Director. Your goal is to generate and refine photoshoot concepts. Always respond with a valid JSON object matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
             
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: initialPrompt });
             const jsonString = response.text.trim();
             const concept = JSON.parse(jsonString) as PhotoshootConcept;
@@ -187,11 +186,9 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const concept = JSON.parse(jsonString) as PhotoshootConcept;
-
             setMessages(prev => [...prev, { id: nanoid(), role: 'model', content: concept }]);
         } catch(e) {
             setError(e instanceof Error ? e.message : "Failed to get response.");
@@ -208,56 +205,62 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
         if (typeof message.content === 'object') {
             const result = message.content as PhotoshootConcept;
             const moodboardKey = `${messageIndex}-moodboard`;
-            const {isLoading: isMoodboardLoading} = imageGenStates[moodboardKey] || {};
+            const { isLoading: isMoodboardLoading, error: moodboardError } = imageGenStates[moodboardKey] || { isLoading: false, error: null };
+
             return (
-                 <div className="animate-fade-in space-y-4 bg-card border p-4 rounded-lg self-start max-w-3xl">
-                    <h2 className="text-xl font-bold text-primary text-center">{result.conceptTitle}</h2>
+                 <div className="bg-card border p-4 rounded-lg space-y-4 self-start max-w-3xl w-full">
+                    <div className="text-center">
+                        <h2 className="text-xl font-bold text-primary">{result.conceptTitle}</h2>
+                    </div>
                     <div>
-                        <h3 className="font-semibold text-lg mb-2">{t('moodboard')}</h3>
-                        <p className="text-muted-foreground text-sm mb-3">{result.moodboardDescription}</p>
+                        <h3 className="font-semibold mb-2">{t('moodboard')}</h3>
+                        <p className="text-sm text-muted-foreground italic">"{result.moodboardDescription}"</p>
                         {result.moodboardImageUrls ? (
-                             <div className="grid grid-cols-2 gap-2">
-                                {result.moodboardImageUrls.map((url, i) => <img key={i} src={url} className="w-full rounded" />)}
+                             <div className="grid grid-cols-2 gap-2 mt-2">
+                                {result.moodboardImageUrls.map((url, i) => <img key={i} src={url} alt={`Moodboard image ${i+1}`} className="w-full aspect-video object-cover rounded"/>)}
                             </div>
                         ) : (
-                            <button onClick={handleGenerateMoodboardImages} disabled={isMoodboardLoading} className="text-sm inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md hover:bg-accent disabled:opacity-50">
-                                {isMoodboardLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="image" className="w-4 h-4"/>}
+                            <button onClick={handleGenerateMoodboardImages} disabled={isMoodboardLoading} className="mt-2 text-sm inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md hover:bg-accent disabled:opacity-50">
+                                {isMoodboardLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="camera" className="w-4 h-4"/>}
                                 Generate Moodboard Images
                             </button>
                         )}
-                        <h4 className="font-semibold text-md my-3">{t('colorPalette')}</h4>
-                        <div className="flex flex-wrap gap-3">
-                            {result.colorPalette.map(color => (
-                                <div key={color.hex} className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: color.hex }} />
-                                    <p className="text-xs font-medium">{color.name}</p>
-                                </div>
-                            ))}
+                        {moodboardError && <p className="text-xs text-destructive mt-1">{moodboardError}</p>}
+                    </div>
+                    <div>
+                        <h3 className="font-semibold mb-2">{t('colorPalette')}</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {result.colorPalette.map(c => <div key={c.hex} className="flex items-center gap-2"><div className="w-5 h-5 rounded-full border" style={{backgroundColor: c.hex}}></div><span className="text-xs">{c.name} ({c.hex})</span></div>)}
                         </div>
                     </div>
-
-                    {result.scenes.map((scene, index) => {
-                        const sceneKey = `${messageIndex}-scene-${index}`;
-                        const { isLoading: isSceneLoading } = imageGenStates[sceneKey] || {};
-                        return(
-                         <div key={index} className="border-t pt-4">
-                            <h3 className="font-semibold text-lg mb-2 text-primary">{`${t('scene')} ${index + 1}: ${scene.title}`}</h3>
-                            <p className="text-muted-foreground text-sm mb-3 italic">{scene.description}</p>
-                            <div className="grid md:grid-cols-2 gap-4 text-sm">
-                                <div><strong className="text-foreground">{t('lightingScene')}</strong> {scene.lighting}</div>
-                                <div><strong className="text-foreground">{t('cameraAngle')}</strong> {scene.cameraAngle}</div>
-                                <div><strong className="text-foreground">{t('props')}</strong> <ul className="list-disc list-inside ms-2 text-xs"> {scene.props.map(p => <li key={p}>{p}</li>)}</ul></div>
-                                <div className="flex flex-col items-center justify-center">
-                                {scene.imageUrl ? <img src={scene.imageUrl} className="w-full rounded"/> : (
-                                    <button onClick={() => handleGenerateSceneImage(index, scene)} disabled={isSceneLoading} className="text-sm w-full inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md hover:bg-accent disabled:opacity-50">
-                                        {isSceneLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="camera" className="w-4 h-4"/>}
-                                        Generate Scene Image
-                                    </button>
-                                )}
+                    <div className="space-y-4">
+                        {result.scenes.map((scene, i) => {
+                             const sceneKey = `${messageIndex}-scene-${i}`;
+                             const { isLoading: isSceneLoading, error: sceneError } = imageGenStates[sceneKey] || { isLoading: false, error: null };
+                             return (
+                            <div key={i} className="border-t pt-4">
+                                <h3 className="font-semibold">{t('scene')} {i + 1}: {scene.title}</h3>
+                                <p className="text-sm text-muted-foreground mt-1">{scene.description}</p>
+                                <div className="grid md:grid-cols-2 gap-4 mt-2">
+                                    <ul className="text-xs space-y-1">
+                                        <li><strong>{t('lightingScene')}:</strong> {scene.lighting}</li>
+                                        <li><strong>{t('cameraAngle')}:</strong> {scene.cameraAngle}</li>
+                                        <li><strong>{t('props')}:</strong> {scene.props.join(', ')}</li>
+                                    </ul>
+                                    <div className="flex flex-col items-center justify-center">
+                                    {scene.imageUrl ? (
+                                        <img src={scene.imageUrl} alt={`Scene ${i+1}`} className="w-full aspect-video object-cover rounded bg-muted" />
+                                    ) : (
+                                        <button onClick={() => handleGenerateSceneImage(i, scene)} disabled={isSceneLoading} className="w-full aspect-video bg-muted hover:bg-accent rounded flex flex-col items-center justify-center text-xs text-muted-foreground text-center p-1 disabled:opacity-50">
+                                            {isSceneLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin"/> : <><Icon name="camera" className="w-5 h-5 mb-1"/> Generate Scene</>}
+                                        </button>
+                                    )}
+                                     {sceneError && <p className="text-xs text-destructive mt-1">{sceneError}</p>}
+                                    </div>
                                 </div>
                             </div>
-                         </div>
-                    )})}
+                        )})}
+                    </div>
                 </div>
             );
         }
@@ -269,10 +272,10 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
         <MiniAppLayout controls={<Controls onBack={onBack} onGenerate={handleInitialGenerate} isLoading={isLoading && messages.length < 2} />}>
             <div className="h-full flex flex-col p-4">
                 <div className="flex-1 overflow-y-auto space-y-4 flex flex-col pb-4">
-                     {messages.length === 0 && !isLoading && (
+                    {messages.length === 0 && !isLoading && (
                         <div className="m-auto text-center text-muted-foreground">
                             <Icon name="camera" className="w-16 h-16 mx-auto" />
-                            <p>Your generated photoshoot concept will appear here.</p>
+                            <p>Your photoshoot concept will appear here.</p>
                         </div>
                     )}
                     {messages.map((msg, idx) => <div key={msg.id} className="flex flex-col">{renderMessageContent(msg, idx)}</div>)}
@@ -289,7 +292,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
                                 value={userInput}
                                 onChange={(e) => setUserInput(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="Refine your concept... (e.g., 'make the color palette warmer')"
+                                placeholder="Refine your concept... (e.g., 'make the second scene more dramatic')"
                                 className="flex h-12 w-full rounded-md border border-input bg-background ps-4 pe-12 text-sm"
                                 disabled={isLoading}
                             />

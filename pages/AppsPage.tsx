@@ -10,6 +10,7 @@ import ImageExpander from './miniapps/ImageExpander';
 import ProductNamer from './miniapps/ProductNamer';
 import LogoIdeator from './miniapps/LogoIdeator';
 import VideoAdScripter from './miniapps/VideoAdScripter';
+// FIX: Module '"file:///pages/miniapps/AIPhotoshootDirector"' has no default export.
 import AIPhotoshootDirector from './miniapps/AIPhotoshootDirector';
 import BrandVoiceGuide from './miniapps/BrandVoiceGuide';
 import YouTubeThumbnailGenerator from './miniapps/YouTubeThumbnailGenerator';
@@ -148,7 +149,7 @@ const miniApps: {
         id: 'youtube-thumbnail-generator', 
         titleKey: 'youtube-thumbnail-generator-title',
         descriptionKey: 'youtube-thumbnail-generator-desc',
-        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='2' y='6' width='20' height='12' rx='3' fill='hsl(54, 96%, 53%)'/%3e%3cpath d='M10 9L15 12L10 15V9Z' fill='hsl(0, 0%, 13%)'/%3e%3c/svg%3e`,
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='2' y='6' width='20' height='12' rx='3' fill='hsl(var(--primary))'/%3e%3cpath d='M10 9L15 12L10 15V9Z' fill='hsl(var(--primary-foreground))'/%3e%3c/svg%3e`,
         component: YouTubeThumbnailGenerator 
     },
     { 
@@ -258,6 +259,7 @@ const MiniAppCard: React.FC<{ title: string, description: string, imageUrl: stri
         </div>
     </button>
 );
+
 
 interface AppsPageProps {
     addHistoryItem: (itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => void;

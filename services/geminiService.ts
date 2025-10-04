@@ -21,7 +21,7 @@ export const startChat = (model: 'gemini-2.5-flash', history: Content[], systemI
 };
 
 
-const fileToGenerativePart = async (file: File): Promise<Part> => {
+export const fileToGenerativePart = async (file: File): Promise<Part> => {
     const base64EncodedDataPromise = new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
@@ -76,7 +76,7 @@ export const generateSceneTemplates = async (productDescription: string): Promis
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         const templates = JSON.parse(jsonString);
         if (Array.isArray(templates)) {
             return templates.filter(t => t.name && t.prompt && t.lighting && t.perspective);
@@ -322,6 +322,11 @@ export const magicEditImage = async (
     throw new Error('Magic Edit failed: No image part in response.');
 };
 
+export const removeObject = async (imageWithMaskBase64: string): Promise<string> => {
+    const prompt = 'Remove the object in the masked (transparent) area, and fill the space realistically and seamlessly to match the background.';
+    return magicEditImage(imageWithMaskBase64, prompt);
+};
+
 export const enhanceImage = async (
     imageBase64: string,
     originalPrompt: string
@@ -363,7 +368,7 @@ export const extractPalette = async (imageBase64: string): Promise<string[]> => 
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         const palette = JSON.parse(jsonString);
         if (Array.isArray(palette) && palette.every(item => typeof item === 'string' && item.startsWith('#'))) {
             return palette;
@@ -399,7 +404,7 @@ export const generateMarketingCopy = async (imageBase64: string, prompt: string)
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as MarketingCopy;
     } catch (e) {
         console.error("Failed to parse marketing copy:", e);
@@ -524,7 +529,7 @@ export const generateProductNames = async (description: string, keywords: string
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as ProductNameSuggestion[];
     } catch (e) {
         console.error("Failed to parse product names:", e);
@@ -592,7 +597,7 @@ export const generateVideoAdScript = async (productDescription: string, targetAu
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as VideoAdScript;
     } catch (e) {
         console.error("Failed to parse video script:", e);
@@ -648,7 +653,7 @@ export const generatePhotoshootConcept = async (productDescription: string, bran
     });
 
      try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as PhotoshootConcept;
     } catch (e) {
         console.error("Failed to parse photoshoot concept:", e);
@@ -700,7 +705,7 @@ export const generateBrandVoiceGuide = async (brandDescription: string, targetAu
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as BrandVoiceGuide;
     } catch (e) {
         console.error("Failed to parse brand voice guide:", e);
@@ -756,7 +761,7 @@ export const generateThumbnailSuggestions = async (videoTitle: string): Promise<
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as AISuggestions;
     } catch (e) {
         console.error("Failed to parse thumbnail suggestions:", e);
@@ -804,7 +809,7 @@ export const generateThumbnailSuggestionsFromImage = async (imageFile: File, vid
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as AISuggestions;
     } catch (e) {
         console.error("Failed to parse thumbnail suggestions from image:", e);
@@ -877,7 +882,7 @@ export const generateRecipe = async (data: { imageFile?: File, ingredientsText?:
     });
     
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as Recipe;
     } catch (e) {
         console.error("Failed to parse recipe:", e);
@@ -904,30 +909,62 @@ export const generateTattooDesigns = async (description: string, style: string):
     throw new Error('Tattoo generation failed: No images were returned.');
 };
 
-export const generateCharacterConcepts = async (description: string, style: string): Promise<string[]> => {
-    const prompt = `${style} character concept art of ${description}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-          numberOfImages: 4,
-          outputMimeType: 'image/png',
-          aspectRatio: '9:16',
-        },
-    });
+export const generateCharacterConcepts = async (description: string, style: string, referenceImageFile?: File | null): Promise<string[]> => {
+    if (referenceImageFile) {
+        const imagePart = await fileToGenerativePart(referenceImageFile);
+        const textPrompt = `Using the provided reference image for style and inspiration, create a ${style} character concept art of ${description}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        
+        const parts: Part[] = [imagePart, { text: textPrompt }];
+        
+        const generateOneImage = async (): Promise<string> => {
+            const result = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: { parts },
+                config: {
+                    responseModalities: [Modality.IMAGE, Modality.TEXT],
+                },
+            });
+            const candidate = result.candidates?.[0];
+            if (candidate?.content?.parts) {
+                for (const part of candidate.content.parts) {
+                    if (part.inlineData) {
+                        return part.inlineData.data;
+                    }
+                }
+            }
+            throw new Error('Character concept generation failed: No image part in response.');
+        };
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-        return response.generatedImages.map(img => img.image.imageBytes);
-    }
+        // Generate 4 images in parallel
+        const generationPromises = Array(4).fill(0).map(() => generateOneImage());
+        
+        return await Promise.all(generationPromises);
+
+    } else {
+        const prompt = `${style} character concept art of ${description}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: prompt,
+            config: {
+              numberOfImages: 4,
+              outputMimeType: 'image/png',
+              aspectRatio: '9:16',
+            },
+        });
     
-    throw new Error('Character generation failed: No images were returned.');
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            return response.generatedImages.map(img => img.image.imageBytes);
+        }
+        
+        throw new Error('Character generation failed: No images were returned.');
+    }
 };
 
-export const generatePackagingDesigns = async (productInfo: string, style: string, productImageBase64?: string | null): Promise<string[]> => {
+export const generatePackagingDesigns = async (productInfo: string, style: string, packagingType: string, productImageBase64?: string | null): Promise<string[]> => {
     if (productImageBase64) {
         // Use multimodal model
         const imagePart = base64ToGenerativePart(productImageBase64);
-        const textPrompt = `Using the provided product image (which may or may not have a transparent background), create a product packaging design concept. The product is: ${productInfo}. The style should be: ${style}. The final image should be a photorealistic 3D render of the complete packaging with the product seamlessly integrated, on a clean studio background.`;
+        const textPrompt = `Using the provided product image, create a photorealistic 3D render of a complete ${packagingType} product packaging design concept. The product is: ${productInfo}. The style should be: ${style}. The final image should be on a clean studio background.`;
         
         const parts: Part[] = [imagePart, { text: textPrompt }];
         
@@ -962,7 +999,7 @@ export const generatePackagingDesigns = async (productInfo: string, style: strin
 
     } else {
         // Use text-to-image model (original functionality)
-        const prompt = `Product packaging design concept for ${productInfo}. Style: ${style}. The image should show the product packaging as a 3D render on a clean studio background. Photorealistic.`;
+        const prompt = `A photorealistic 3D render of a ${packagingType} product packaging design concept for ${productInfo}. Style: ${style}. The image should show the product packaging on a clean studio background.`;
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: prompt,
@@ -1010,7 +1047,7 @@ export const generateStoryboardScenes = async (script: string): Promise<Storyboa
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as StoryboardScene[];
     } catch (e) {
         console.error("Failed to parse storyboard scenes:", e);
@@ -1074,11 +1111,20 @@ export const generateSeamlessPattern = async (description: string): Promise<stri
     throw new Error('Pattern generation failed: No images were returned.');
 };
 
-export const generateAdCopyVariants = async (productDescription: string, targetAudience: string): Promise<AdCopyVariant[]> => {
-    const prompt = `You are an expert marketing copywriter. Generate 3 distinct ad copy variations for a product.
-    Product Description: "${productDescription}"
-    Target Audience: "${targetAudience}"
+export const generateAdCopyVariants = async (productDescription: string, targetAudience: string, imageFile?: File | null): Promise<AdCopyVariant[]> => {
+    const parts: Part[] = [];
+    let promptText = `You are an expert marketing copywriter. Generate 3 distinct ad copy variations for a product based on the provided information.
+    Target Audience: "${targetAudience}"`;
+
+    if (imageFile) {
+        parts.push(await fileToGenerativePart(imageFile));
+        promptText += `\nProduct Image: is provided. Analyze it for key features and visual style.`;
+    }
+    if (productDescription) {
+         promptText += `\nProduct Description: "${productDescription}"`;
+    }
     
+    promptText += `
     The variations should have different styles:
     1. A "Punchy & Direct" style: Short, attention-grabbing, and creates urgency.
     2. A "Professional & Persuasive" style: Focuses on benefits, builds trust, and uses sophisticated language.
@@ -1086,9 +1132,11 @@ export const generateAdCopyVariants = async (productDescription: string, targetA
     
     For each variation, provide a headline, a body, and a call to action.`;
 
+    parts.push({ text: promptText });
+
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: prompt,
+        contents: { parts },
         config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -1108,7 +1156,7 @@ export const generateAdCopyVariants = async (productDescription: string, targetA
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as AdCopyVariant[];
     } catch (e) {
         console.error("Failed to parse ad copy variants:", e);
@@ -1136,16 +1184,33 @@ export const generateArtisticQRCode = async (url: string, prompt: string): Promi
     throw new Error('Artistic QR code generation failed: No images were returned.');
 };
 
-export const virtualTryOn = async (personImageFile: File, clothingPrompt: string): Promise<string> => {
-    const imagePart = await fileToGenerativePart(personImageFile);
+export const virtualTryOn = async (
+    personImageFile: File,
+    clothingPrompt: string,
+    clothingImageFile?: File | null
+): Promise<string> => {
+    const personImagePart = await fileToGenerativePart(personImageFile);
+    
+    const parts: Part[] = [personImagePart];
+    let textContent = '';
+
+    if (clothingImageFile) {
+        const clothingImagePart = await fileToGenerativePart(clothingImageFile);
+        parts.push(clothingImagePart);
+        textContent = `The first image is a person. The second image is a reference for an clothing style. Realistically dress the person in the first image in an outfit inspired by the clothing in the second image. `;
+        if (clothingPrompt) {
+            textContent += `Incorporate these details from the user: "${clothingPrompt}". `;
+        }
+        textContent += `Keep the person's face, body, and the background the same. The result should be a photorealistic image.`;
+    } else {
+        textContent = `Realistically replace the clothes the person in the image is wearing with: "${clothingPrompt}". Keep the person's face, body, and the background the same. The result should be a photorealistic image.`;
+    }
+    
+    parts.push({ text: textContent });
+
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [
-                imagePart,
-                { text: `Realistically replace the clothes the person in the image is wearing with: "${clothingPrompt}". Keep the person's face, body, and the background the same. The result should be a photorealistic image.` }
-            ]
-        },
+        contents: { parts },
         config: {
             responseModalities: [Modality.IMAGE, Modality.TEXT],
         },
@@ -1161,6 +1226,7 @@ export const virtualTryOn = async (personImageFile: File, clothingPrompt: string
     }
     throw new Error('Virtual try-on failed: No image part in response.');
 };
+
 
 export const generatePodcastShowNotes = async (transcript: string): Promise<PodcastShowNotes> => {
     const prompt = `You are a podcast producer. Based on the following transcript, generate a complete set of show notes.
@@ -1212,7 +1278,7 @@ export const generatePodcastShowNotes = async (transcript: string): Promise<Podc
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as PodcastShowNotes;
     } catch (e) {
         console.error("Failed to parse podcast show notes:", e);
@@ -1285,7 +1351,7 @@ export const generatePresentation = async (topic: string): Promise<Presentation>
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as Presentation;
     } catch (e) {
         console.error("Failed to parse presentation:", e);
@@ -1322,7 +1388,7 @@ export const generateComicPanels = async (story: string): Promise<ComicPanel[]> 
     });
 
     try {
-        const jsonString = result.text.trim();
+        const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
         return JSON.parse(jsonString) as ComicPanel[];
     } catch (e) {
         console.error("Failed to parse comic panels:", e);

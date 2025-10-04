@@ -19,20 +19,6 @@ interface Message {
     content: string | MarketingCopy;
 }
 
-const fileToGenerativePart = async (file: File): Promise<Part> => {
-    const base64EncodedDataPromise = new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.readAsDataURL(file);
-    });
-    return {
-        inlineData: {
-            data: await base64EncodedDataPromise,
-            mimeType: file.type,
-        },
-    };
-};
-
 const Controls: React.FC<{
     onBack: () => void;
     onGenerate: (imageFile: File, prompt: string) => void;
@@ -108,7 +94,7 @@ const MarketingCopyGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
-            const imagePart = await fileToGenerativePart(imageFile);
+            const imagePart = await geminiService.fileToGenerativePart(imageFile);
             const textPart = { text: `This is a product photo. ${prompt ? `The user added this context: "${prompt}".` : ''} Based on this image, generate compelling marketing copy. Your response MUST be a JSON object that follows this schema: ${JSON.stringify({
                 productName: "string", tagline: "string", description: "string",
                 socialMediaPost: "string", socialMediaPostArabic: "string"
@@ -117,7 +103,6 @@ const MarketingCopyGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             const systemInstruction = `You are an expert marketing copywriter. Your goal is to generate and refine marketing copy based on product images. Always respond with a valid JSON object matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
             
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: [imagePart, textPart] });
             const jsonString = response.text.trim();
             const copy = JSON.parse(jsonString) as MarketingCopy;
@@ -140,7 +125,6 @@ const MarketingCopyGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const copy = JSON.parse(jsonString) as MarketingCopy;

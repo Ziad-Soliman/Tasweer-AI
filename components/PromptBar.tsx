@@ -6,59 +6,49 @@ import { useTranslation } from '../App';
 interface PromptBarProps {
   prompt: string;
   onPromptChange: (value: string) => void;
-  negativePrompt: string;
-  onNegativePromptChange: (value: string) => void;
   onGenerate: () => void;
   onBrowsePresets: () => void;
   onEnhancePrompt: () => void;
   isGenerating: boolean;
+  isEnhancingPrompt: boolean;
   isImageUploaded: boolean;
-  numberOfImages: 1 | 4;
 }
 
 export const PromptBar: React.FC<PromptBarProps> = ({
-  prompt, onPromptChange, negativePrompt, onNegativePromptChange,
+  prompt, onPromptChange,
   onGenerate, onBrowsePresets, onEnhancePrompt,
-  isGenerating, isImageUploaded, numberOfImages,
+  isGenerating, isEnhancingPrompt, isImageUploaded,
 }) => {
   const { t } = useTranslation();
   
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-20">
-      <div className="mx-auto max-w-4xl bg-card/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl p-3 flex flex-col gap-2">
-        <div className="flex gap-2 items-start">
-          <textarea
+    <div className="absolute bottom-6 start-1/2 -translate-x-1/2 w-full max-w-4xl z-30 px-4">
+      <div className="bg-card/60 backdrop-blur-xl border border-border/80 rounded-full shadow-2xl p-2 flex items-center gap-2">
+        <Tooltip text={t('browsePresets')}>
+            <button onClick={onBrowsePresets} disabled={!isImageUploaded || isGenerating} className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-muted rounded-full hover:bg-accent text-muted-foreground disabled:opacity-50 transition-colors">
+                <Icon name="sparkles" className="w-5 h-5" />
+            </button>
+        </Tooltip>
+        <input
+            type="text"
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             placeholder={isImageUploaded ? t('promptPlaceholder') : t('promptPlaceholderNoImage')}
-            className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground resize-none p-2 h-14"
-            rows={2}
+            className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground px-2"
             disabled={!isImageUploaded || isGenerating}
-          />
-          <Tooltip text={t('browsePresets')}>
-            <button onClick={onBrowsePresets} disabled={!isImageUploaded || isGenerating} className="p-2 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-50"><Icon name="sparkles" className="w-5 h-5" /></button>
-          </Tooltip>
-          <Tooltip text={t('enhancePrompt')}>
-             <button onClick={onEnhancePrompt} disabled={!prompt || isGenerating} className="p-2 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-50"><Icon name="wand" className="w-5 h-5" /></button>
-          </Tooltip>
-           <button
+        />
+        <Tooltip text={t('enhancePrompt')}>
+            <button onClick={onEnhancePrompt} disabled={!prompt || isGenerating || isEnhancingPrompt} className="p-2 rounded-full hover:bg-accent text-muted-foreground disabled:opacity-50 transition-colors">
+                {isEnhancingPrompt ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="wand" className="w-5 h-5" />}
+            </button>
+        </Tooltip>
+        <button
             onClick={onGenerate}
-            disabled={!prompt || isGenerating}
-            className="bg-primary text-primary-foreground h-14 px-6 rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-colors"
-          >
-            {isGenerating ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <><span>{t('generate')}</span>{numberOfImages > 1 && <span>{numberOfImages}</span>}</>}
-          </button>
-        </div>
-        <div className="px-2">
-            <input 
-                type="text"
-                value={negativePrompt}
-                onChange={(e) => onNegativePromptChange(e.target.value)}
-                placeholder={t('negativePromptPlaceholder')}
-                className="w-full bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground"
-                disabled={!isImageUploaded || isGenerating}
-            />
-        </div>
+            disabled={!prompt || isGenerating || isEnhancingPrompt}
+            className="bg-primary text-primary-foreground h-10 px-6 rounded-full text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-all"
+        >
+            {isGenerating ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <><span>{t('generate')}</span> <Icon name="arrow-right" className="w-4 h-4"/></>}
+        </button>
       </div>
     </div>
   );

@@ -18,20 +18,6 @@ interface Message {
     content: string | Recipe;
 }
 
-const fileToGenerativePart = async (file: File): Promise<Part> => {
-    const base64EncodedDataPromise = new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.readAsDataURL(file);
-    });
-    return {
-        inlineData: {
-            data: await base64EncodedDataPromise,
-            mimeType: file.type,
-        },
-    };
-};
-
 const Controls: React.FC<{
     onBack: () => void;
     onGenerate: (data: { imageFile?: File, ingredientsText?: string, restrictions: string }) => void;
@@ -112,7 +98,7 @@ const AIRecipeGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             const parts: Part[] = [];
             let promptText = `Generate a creative recipe. Your response MUST be a JSON object that follows this schema: ${JSON.stringify({ recipeName: "string", description: "string", prepTime: "string", cookTime: "string", servings: "string", ingredients: ["string"], instructions: ["string"] })}`;
             if (data.imageFile) {
-                parts.push(await fileToGenerativePart(data.imageFile));
+                parts.push(await geminiService.fileToGenerativePart(data.imageFile));
                 promptText += ` The image contains the available ingredients.`;
             } else {
                 promptText += ` The available ingredients are: ${data.ingredientsText}.`;
@@ -123,7 +109,6 @@ const AIRecipeGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             const systemInstruction = `You are a creative chef. Your goal is to generate and refine recipes. Always respond with a valid JSON object matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
             
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: parts });
             const jsonString = response.text.trim();
             const recipe = JSON.parse(jsonString) as Recipe;
@@ -146,7 +131,6 @@ const AIRecipeGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const recipe = JSON.parse(jsonString) as Recipe;

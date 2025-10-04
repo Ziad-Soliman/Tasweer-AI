@@ -3,6 +3,7 @@ import MiniAppLayout from './shared/MiniAppLayout';
 import { Icon } from '../../components/Icon';
 import * as geminiService from '../../services/geminiService';
 import { useTranslation } from '../../App';
+import { FileUpload } from '../../components/FileUpload';
 
 interface MiniAppProps {
     onBack: () => void;
@@ -11,6 +12,7 @@ interface MiniAppProps {
 const AICharacterConceptGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
     const [description, setDescription] = useState('');
     const [style, setStyle] = useState('Fantasy Art');
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [results, setResults] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,7 @@ const AICharacterConceptGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
         setResults([]);
         try {
-            const images = await geminiService.generateCharacterConcepts(description, style);
+            const images = await geminiService.generateCharacterConcepts(description, style, imageFile);
             setResults(images.map(base64 => `data:image/png;base64,${base64}`));
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate concepts.");
@@ -60,10 +62,19 @@ const AICharacterConceptGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                             {artStyles.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
+                    <div className="flex flex-col gap-4">
+                         <label className="block text-sm font-medium text-foreground">{t('uploadReferenceImage')}</label>
+                        <FileUpload
+                            onFileUpload={setImageFile}
+                            label={t('uploadReferenceImage')}
+                            uploadedFileName={imageFile?.name}
+                            onClear={() => setImageFile(null)}
+                        />
+                    </div>
                      <button
                         onClick={handleGenerate}
                         disabled={!description || isLoading}
-                        className="md:col-start-2 inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 self-end"
+                        className="md:col-span-2 inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2"
                     >
                         {isLoading ? ( <Icon name="spinner" className="animate-spin w-5 h-5" /> ) : ( <Icon name="sparkles" className="w-5 h-5" /> )}
                         <span>{isLoading ? t('generatingConcepts') : t('generateConcepts')}</span>

@@ -12,6 +12,7 @@ interface MiniAppProps {
 const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
     const [productInfo, setProductInfo] = useState('');
     const [style, setStyle] = useState('Minimalist & Clean');
+    const [packagingType, setPackagingType] = useState('Box');
     const [results, setResults] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,6 +21,8 @@ const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
     const { t } = useTranslation();
 
     const packagingStyles = ['Minimalist & Clean', 'Bold & Vibrant', 'Elegant & Luxurious', 'Eco-friendly & Natural', 'Vintage & Retro', 'Playful & Whimsical'];
+    const packagingTypes = ['Box', 'Bottle', 'Pouch', 'Can', 'Tube', 'Jar'];
+
 
     const handleFileUpload = (file: File) => {
         setImageFile(file);
@@ -41,7 +44,7 @@ const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
                     reader.readAsDataURL(imageFile);
                 });
             }
-            const images = await geminiService.generatePackagingDesigns(productInfo, style, imageBase64);
+            const images = await geminiService.generatePackagingDesigns(productInfo, style, packagingType, imageBase64);
             setResults(images.map(base64 => `data:image/png;base64,${base64}`));
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate designs.");
@@ -87,10 +90,20 @@ const AIProductPackagingDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
                             {packagingStyles.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
+                     <div className="flex flex-col gap-4">
+                        <label className="block text-sm font-medium text-foreground">{t('packagingType')}</label>
+                         <select
+                            value={packagingType}
+                            onChange={(e) => setPackagingType(e.target.value)}
+                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                            {packagingTypes.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    </div>
                      <button
                         onClick={handleGenerate}
                         disabled={!productInfo || isLoading}
-                        className="md:col-start-2 inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 self-end"
+                        className="md:col-span-2 inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2"
                     >
                         {isLoading ? ( <Icon name="spinner" className="animate-spin w-5 h-5" /> ) : ( <Icon name="cube" className="w-5 h-5" /> )}
                         <span>{isLoading ? t('generatingDesigns') : t('generateDesigns')}</span>

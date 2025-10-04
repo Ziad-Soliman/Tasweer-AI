@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GenerationSettings, BrandKit } from '../types';
-import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES, SOCIAL_MEDIA_TEMPLATES } from '../constants';
+import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES, SOCIAL_MEDIA_TEMPLATES, NEGATIVE_PROMPT_PRESETS } from '../constants';
 import { Icon } from './Icon';
 import { FileUpload } from './FileUpload';
 import { useTranslation } from '../App';
@@ -24,18 +24,15 @@ const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
     <label className={`block text-sm font-medium text-foreground mb-1.5 ${className}`}>{children}</label>
 );
 
-const Section: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = true }) => {
+const Section: React.FC<{ titleKey: string; children: React.ReactNode; }> = ({ titleKey, children }) => {
     const { t } = useTranslation();
     return (
-    <details className="border-b border-border/80 group" open={defaultOpen}>
-        <summary className="font-semibold text-foreground cursor-pointer list-none flex justify-between items-center p-4">
-            <span>{t(title as any)}</span>
-            <Icon name="chevron-down" className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
-        </summary>
+    <div className="border-b border-border/80">
+        <h3 className="font-semibold text-foreground px-4 pt-4 pb-2">{t(titleKey as any)}</h3>
         <div className="p-4 pt-0 space-y-4">
             {children}
         </div>
-    </details>
+    </div>
 )};
 
 const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSettings' | 'isLoading'>> = ({ settings, setSettings, isLoading }) => {
@@ -116,6 +113,57 @@ const Input: React.FC<{ value: string | number; onChange: (e: React.ChangeEvent<
     />
 );
 
+const NegativePromptInput: React.FC<{ value: string; onChange: (value: string) => void; disabled?: boolean; }> = ({ value, onChange, disabled }) => {
+    const prompts = value ? value.split(',').map(p => p.trim()).filter(Boolean) : [];
+    const [inputValue, setInputValue] = useState('');
+    const { t } = useTranslation();
+
+    const addPrompt = (prompt: string) => {
+        const newPrompt = prompt.trim();
+        if (newPrompt && !prompts.includes(newPrompt)) {
+            onChange([...prompts, newPrompt].join(', '));
+        }
+    };
+
+    const removePrompt = (promptToRemove: string) => {
+        onChange(prompts.filter(p => p !== promptToRemove).join(', '));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addPrompt(inputValue);
+            setInputValue('');
+        }
+    };
+
+    return (
+        <div className="p-2 border border-input rounded-md bg-background focus-within:ring-2 focus-within:ring-ring">
+            <div className="flex flex-wrap gap-1.5">
+                {prompts.map(p => (
+                    <div key={p} className="flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-sm">
+                        <span>{p}</span>
+                        <button onClick={() => removePrompt(p)} disabled={disabled} className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed" aria-label={`Remove ${p}`}>
+                            <Icon name="close" className="w-3 h-3"/>
+                        </button>
+                    </div>
+                ))}
+                 <input
+                    type="text"
+                    value={inputValue}
+                    onChange={e => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    // FIX: Argument of type '"addNegativePrompt"' is not assignable to parameter of type...
+                    placeholder={t('negativePromptPlaceholder')}
+                    className="flex-1 bg-transparent focus:outline-none text-sm min-w-[120px]"
+                    disabled={disabled}
+                />
+            </div>
+        </div>
+    );
+};
+
+
 const AdvancedSettingsPanel: React.FC<Pick<ControlPanelProps, 'settings' | 'setSettings' | 'isLoading' | 'activeBrandKit'>> = ({ settings, setSettings, isLoading, activeBrandKit }) => {
     const { watermark } = settings;
     const { t } = useTranslation();
@@ -124,52 +172,69 @@ const AdvancedSettingsPanel: React.FC<Pick<ControlPanelProps, 'settings' | 'setS
     };
     
     return (
-        <div className="space-y-4">
-            <div>
-                <Label>{t('seed')}</Label>
-                <Input type="number" value={settings.seed} onChange={(e) => setSettings(s=>({...s, seed: e.target.value}))}
-                    placeholder={t('seedPlaceholder')} disabled={isLoading} />
-            </div>
-             <div className="border-t pt-4 mt-4 space-y-4">
-                <div className="flex items-center justify-between">
-                    <Label className="mb-0">{t('enableWatermark')}</Label>
-                    <Switch checked={watermark.enabled} onCheckedChange={enabled => updateWatermark({ enabled })} id="enable-watermark" />
+         <details className="group">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground list-none flex items-center justify-between">
+                <span>{t('advanced')}</span>
+                <Icon name="chevron-down" className="w-4 h-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-4 space-y-4">
+                 <div>
+                    {/* FIX: Argument of type '"negativePrompt"' is not assignable to parameter of type... */}
+                    <Label>{t('negativePrompt')}</Label>
+                    <NegativePromptInput
+                        value={settings.negativePrompt}
+                        onChange={(value) => setSettings(s => ({...s, negativePrompt: value}))}
+                        disabled={isLoading}
+                    />
                 </div>
-                {watermark.enabled && (
-                    <div className="space-y-3 animate-fade-in">
-                        <ToggleGroup value={watermark.useLogo ? 'logo' : 'text'} onValueChange={(val) => updateWatermark({ useLogo: val === 'logo' })} options={[{value: 'text', label: t('watermarkText')}, {value: 'logo', label: t('watermarkLogo')}]} disabled={!activeBrandKit?.logo} />
-                        {!watermark.useLogo && ( <Input value={watermark.text} onChange={e => updateWatermark({ text: e.target.value })} placeholder={t('watermarkPlaceholder')} /> )}
+                <div>
+                    <Label>{t('seed')}</Label>
+                    <Input type="number" value={settings.seed} onChange={(e) => setSettings(s=>({...s, seed: e.target.value}))}
+                        placeholder={t('seedPlaceholder')} disabled={isLoading} />
+                </div>
+                 <div className="border-t border-border pt-4 mt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <Label className="mb-0">{t('enableWatermark')}</Label>
+                        <Switch checked={watermark.enabled} onCheckedChange={enabled => updateWatermark({ enabled })} id="enable-watermark" />
                     </div>
-                )}
+                    {watermark.enabled && (
+                        <div className="space-y-3 animate-fade-in">
+                            <ToggleGroup value={watermark.useLogo ? 'logo' : 'text'} onValueChange={(val) => updateWatermark({ useLogo: val === 'logo' })} options={[{value: 'text', label: t('watermarkText')}, {value: 'logo', label: t('watermarkLogo')}]} disabled={!activeBrandKit?.logo} />
+                            {!watermark.useLogo && ( <Input value={watermark.text} onChange={e => updateWatermark({ text: e.target.value })} placeholder={t('watermarkPlaceholder')} /> )}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </details>
     );
 };
 
 
 export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
-    const { settings, setSettings, isLoading, onProductImageUpload, onClearProductImage, productImage } = props;
+    const { settings, setSettings, isLoading, isGeneratingPrompt, promptGenerationMessage, onProductImageUpload, onClearProductImage, productImage } = props;
     const { t } = useTranslation();
     const isPromptEdited = settings.editedPrompt !== null;
 
     return (
-         <div className="h-full flex flex-col bg-card">
+         <div className="h-full flex flex-col bg-card border-r border-border">
             <div className="p-4 border-b border-border/80 flex items-center h-[65px]">
                 <h2 className="text-lg font-semibold">{t('controls')}</h2>
             </div>
             <div className="flex-1 overflow-y-auto">
-                <Section title="upload" defaultOpen={true}>
+                <Section titleKey="upload">
                     <FileUpload 
                         onFileUpload={onProductImageUpload} 
                         label={t('uploadPhoto')}
                         uploadedFileName={productImage?.name} 
                         onClear={onClearProductImage}
+                        disabled={isLoading || isGeneratingPrompt}
+                        disabledReason={isGeneratingPrompt ? promptGenerationMessage : undefined}
                     />
                 </Section>
-                <Section title="generationMode" defaultOpen={true}>
+                <Section titleKey="generationMode">
                     <GenerationModeToggle {...props} />
                 </Section>
-                 <Section title="settings" defaultOpen={true}>
+                 <Section titleKey="settings">
                     {settings.generationMode === 'product' && (
                         <>
                             <Select label="lighting" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null, prompt: ''}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
@@ -227,7 +292,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                         </div>
                     )}
                  </Section>
-                 <Section title="output">
+                 <Section titleKey="output">
                     <div>
                         <Label>{t('aspectRatio')}</Label>
                         <ToggleGroup value={settings.aspectRatio} onValueChange={(val) => setSettings(s => ({...s, aspectRatio: val as GenerationSettings['aspectRatio']}))} options={ASPECT_RATIOS.map(ar => ({value: ar.value, label: t(ar.labelKey as any)}))} disabled={isLoading || settings.generationMode === 'social'}/>
@@ -238,9 +303,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                             <ToggleGroup value={String(settings.numberOfImages)} onValueChange={(val) => setSettings(s => ({...s, numberOfImages: Number(val) as 1 | 4}))} options={[{value: '1', label: '1'}, {value: '4', label: '4'}]} disabled={isLoading} />
                         </div>
                     )}
-                </Section>
-                <Section title="advanced" defaultOpen={false}>
-                    <AdvancedSettingsPanel {...props} />
+                     <AdvancedSettingsPanel {...props} />
                 </Section>
             </div>
         </div>

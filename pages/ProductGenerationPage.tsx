@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import { GenerationSettings, BrandKit, HistoryItem, EditorMode, TextOverlay, MarketingCopy, Preset, GenerationMode } from '../types';
@@ -14,6 +15,8 @@ import * as geminiService from '../services/geminiService';
 import { PRESETS } from '../constants/presets';
 import { useTranslation } from '../App';
 import { NEGATIVE_PROMPT_PRESETS, SOCIAL_MEDIA_TEMPLATES } from '../constants';
+import { FileUpload } from '../components/FileUpload';
+import { Icon } from '../components/Icon';
 
 const DEFAULT_BRAND_KIT: BrandKit = {
     id: 'default',
@@ -31,7 +34,7 @@ const DEFAULT_SETTINGS: GenerationSettings = {
     videoLength: 'Short (~5s)',
     cameraMotion: 'Static',
     mockupType: 'T-shirt on a model',
-    selectedSocialTemplateId: null,
+    selectedSocialTemplateId: 'ig-post',
     prompt: '',
     editedPrompt: null,
     negativePrompt: NEGATIVE_PROMPT_PRESETS.join(', '),
@@ -49,6 +52,57 @@ const DEFAULT_SETTINGS: GenerationSettings = {
     },
 };
 
+const WelcomeScreen = ({ mode, onUpload }: { mode: 'image' | 'video' | 'edit', onUpload: (file: File) => void }) => {
+    const { t } = useTranslation();
+    
+    const StepCard = ({ icon, step, title, description }: { icon: string, step: string, title: string, description: string }) => (
+         <div className="flex flex-col items-center p-4 rounded-lg">
+            <div className="relative w-full aspect-video rounded-lg bg-card flex items-center justify-center p-4 border border-border">
+                <Icon name={icon} className="w-16 h-16 text-primary" />
+                <span className="absolute top-2 left-2 text-2xl font-bold text-foreground/20">{step}</span>
+            </div>
+            <h3 className="font-semibold mt-4">{title}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        </div>
+    );
+
+    // Video-specific welcome screen
+    if (mode === 'video') {
+        return (
+            <div className="flex-1 flex flex-col justify-center items-center p-8 text-center animate-fade-in">
+                <Icon name="video" className="w-24 h-24 text-primary mb-4" />
+                <h1 className="text-4xl font-bold tracking-tight">Control Every Camera Move</h1>
+                <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Animate your scenes with precision and style. Get full cinematic control over how the camera moves to enhance emotion, rhythm, and storytelling.
+                </p>
+                 <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+                    <StepCard icon="move" step="01" title="Choose motion" description="Select a Motion to define how your image will move" />
+                    <StepCard icon="upload" step="02" title="Add Image" description="Upload an image to start your animation" />
+                    <StepCard icon="video" step="03" title="Get video" description="Click generate to create your final animated video!" />
+                </div>
+            </div>
+        );
+    }
+
+    // Default for Image/Edit
+    return (
+        <div className="flex-1 flex flex-col justify-center items-center p-8 text-center animate-fade-in">
+            <div className="w-full max-w-lg">
+                 <Icon name="wand" className="w-24 h-24 text-primary mx-auto mb-4" />
+                 <h2 className="text-4xl font-bold tracking-tight">AI Image Generation Studio</h2>
+                 <p className="text-muted-foreground mt-2 mb-8 max-w-md mx-auto">Generate new, stylized e-commerce and marketing images from a single product photo.</p>
+                 <FileUpload onFileUpload={onUpload} label={t('uploadPhoto')}/>
+            </div>
+             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+                <StepCard icon="upload" step="01" title="Upload Photo" description="Start by uploading a photo of your product." />
+                <StepCard icon="pencil" step="02" title="Describe Scene & Style" description="Use the controls and prompt to describe the perfect scene." />
+                <StepCard icon="sparkles" step="03" title="Generate Image" description="Let the AI create stunning, professional visuals for you." />
+            </div>
+        </div>
+    );
+};
+
+
 interface ProductGenerationPageProps {
     initialMode: 'image' | 'video' | 'edit';
     selectedModel: string;
@@ -64,8 +118,13 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const { initialMode, history, onToggleFavorite, onRestore, addHistoryItem, restoredState, clearRestoredState } = props;
     const { t } = useTranslation();
 
+    const getInitialGenerationMode = (): GenerationMode => {
+        if (initialMode === 'video') return 'video';
+        return 'product';
+    };
+
     // === CORE STATE ===
-    const [settings, setSettings] = useState<GenerationSettings>({ ...DEFAULT_SETTINGS, generationMode: initialMode === 'video' ? 'video' : 'product' });
+    const [settings, setSettings] = useState<GenerationSettings>({ ...DEFAULT_SETTINGS, generationMode: getInitialGenerationMode() });
     const [productImage, setProductImage] = useState<File | null>(null);
     const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
     const [productImageNoBg, setProductImageNoBg] = useState<string | null>(null);
@@ -78,6 +137,7 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [promptGenerationMessage, setPromptGenerationMessage] = useState('');
+    const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
     const [error, setError] = useState<string | null>(null);
     
     // === UI/EDITOR STATE ===
@@ -96,12 +156,56 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const [marketingCopy, setMarketingCopy] = useState<MarketingCopy | null>(null);
     const [palette, setPalette] = useState<string[] | undefined>(undefined);
 
+    // === RESPONSIVENESS ===
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1024) {
+                setIsSidebarVisible(false);
+                setIsWorkspaceVisible(false);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Initial check
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // === STATE RESTORATION ===
+     useEffect(() => {
+        if (restoredState && restoredState.source.page === 'product-generation') {
+            const { payload } = restoredState;
+            setSettings(payload.settings);
+            setProductImagePreview(payload.productImagePreview);
+            setProductImageNoBg(payload.productImageNoBg);
+            // Must create a File object from the preview to allow re-generation
+             if (payload.productImagePreview) {
+                fetch(payload.productImagePreview)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const file = new File([blob], "restored-image.png", { type: blob.type });
+                        setProductImage(file);
+                    });
+            }
+            const restoredImages = payload.generatedImages || [];
+            setGeneratedImages(restoredImages);
+            setGeneratedVideoUrl(payload.generatedVideoUrl || null);
+            setTextOverlays(payload.textOverlays || []);
+            setSelectedImageIndex(restoredImages.length > 1 ? null : 0);
+            clearRestoredState();
+        }
+    }, [restoredState, clearRestoredState]);
+
+
     // === HANDLERS & LOGIC ===
-    const resetState = () => {
+    const resetState = (keepModeAndImage = false) => {
+        const currentMode = settings.generationMode;
         setSettings(DEFAULT_SETTINGS);
-        setProductImage(null);
-        setProductImagePreview(null);
-        setProductImageNoBg(null);
+        if (keepModeAndImage) {
+             setSettings(s => ({ ...s, generationMode: currentMode }));
+        } else {
+            setProductImage(null);
+            setProductImagePreview(null);
+            setProductImageNoBg(null);
+        }
         setGeneratedImages([]);
         setGeneratedVideoUrl(null);
         setSelectedImageIndex(null);
@@ -120,11 +224,11 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     };
 
     const handleProductImageUpload = async (file: File) => {
-        resetState();
+        resetState(true);
         setProductImage(file);
         const previewUrl = URL.createObjectURL(file);
         setProductImagePreview(previewUrl);
-
+        
         try {
             setPromptGenerationMessage(t('loadingAnalyzing'));
             const desc = await geminiService.describeProduct(file);
@@ -174,6 +278,129 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
         generateAndSetPrompt();
     }, [generateAndSetPrompt]);
 
+    const handleUpdateSingleImage = (newImageBase64: string) => {
+        if (selectedImageIndex === null) return;
+        const finalImage = `data:image/png;base64,${newImageBase64}`;
+        const newImages = [...generatedImages];
+        newImages[selectedImageIndex] = finalImage;
+        setGeneratedImages(newImages);
+    };
+
+    // === API-backed Feature Handlers ===
+    const handleEnhancePrompt = async () => {
+        setIsEnhancingPrompt(true);
+        setError(null);
+        try {
+            const currentPrompt = settings.editedPrompt ?? settings.prompt;
+            const enhanced = await geminiService.enhancePrompt(currentPrompt);
+            setSettings(s => ({ ...s, editedPrompt: enhanced }));
+        } catch(e) {
+            setError(e instanceof Error ? e.message : 'Failed to enhance prompt.');
+        } finally {
+            setIsEnhancingPrompt(false);
+        }
+    };
+    
+    const handleMagicEdit = async (imageWithMaskBase64: string, prompt: string) => {
+        setIsLoading(true);
+        setLoadingMessage(t('loadingMagicEdit'));
+        setError(null);
+        try {
+            const result = await geminiService.magicEditImage(imageWithMaskBase64, prompt);
+            handleUpdateSingleImage(result);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Magic Edit failed.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setEditorMode('view');
+        }
+    };
+
+    const handleRemoveObject = async (imageWithMaskBase64: string) => {
+        setIsLoading(true);
+        setLoadingMessage(t('loadingRemovingObject'));
+        setError(null);
+        try {
+            const result = await geminiService.removeObject(imageWithMaskBase64);
+            handleUpdateSingleImage(result);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Object removal failed.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setEditorMode('view');
+        }
+    };
+    
+    const handleEnhanceImage = async () => {
+        if (!selectedImage) return;
+        setIsLoading(true);
+        setLoadingMessage(t('loadingEnhancingImage'));
+        setError(null);
+        try {
+            const base64 = selectedImage.split(',')[1];
+            const result = await geminiService.enhanceImage(base64, settings.prompt);
+            handleUpdateSingleImage(result);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Enhancement failed.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+        }
+    };
+    
+    const handleExpandImage = async (direction: 'up' | 'down' | 'left' | 'right') => {
+        if (!selectedImage) return;
+        setIsLoading(true);
+        setLoadingMessage(t('loadingExpandingImage', { direction }));
+        setError(null);
+        try {
+            const base64 = selectedImage.split(',')[1];
+            const result = await geminiService.expandImage(base64, settings.prompt, direction);
+            handleUpdateSingleImage(result);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Expansion failed.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+            setEditorMode('view');
+        }
+    };
+    
+    const handleGenerateCopy = async (regenerate = false) => {
+        if (!selectedImage) return;
+        if (!regenerate) setIsCopyModalOpen(true);
+        setMarketingCopy(null);
+        setIsLoading(true);
+        setLoadingMessage(t('loadingGeneratingCopy'));
+        setError(null);
+        try {
+            const base64 = selectedImage.split(',')[1];
+            const result = await geminiService.generateMarketingCopy(base64, settings.prompt);
+            setMarketingCopy(result);
+        } catch(e) {
+            setError(e instanceof Error ? e.message : "Failed to generate copy.");
+        } finally {
+            setIsLoading(false);
+            setLoadingMessage('');
+        }
+    };
+    
+    const handleExtractPalette = async () => {
+        if (!selectedImage) return;
+        setLoadingMessage(t('loadingExtractingPalette')); // Use loading message for quick feedback
+        try {
+            const base64 = selectedImage.split(',')[1];
+            const result = await geminiService.extractPalette(base64);
+            setPalette(result);
+        } catch(e) {
+            setError(e instanceof Error ? e.message : "Failed to extract palette.");
+        } finally {
+            setLoadingMessage('');
+        }
+    };
+
     const handleGenerate = async () => {
         setError(null);
         setIsLoading(true);
@@ -185,8 +412,9 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
         const currentSettings = settings.editedPrompt ? { ...settings, prompt: settings.editedPrompt } : settings;
         
         try {
-            // FIX: Explicitly type `historyThumbnail` to prevent type widening from `let` which causes a type error on assignment.
             let historyThumbnail: HistoryItem['thumbnail'] = { type: 'icon', value: 'sparkles' };
+            let finalGeneratedImages: string[] = [];
+            let finalGeneratedVideoUrl: string | null = null;
             
             switch (currentSettings.generationMode) {
                 case 'product':
@@ -201,20 +429,18 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
                         if (currentSettings.generationMode === 'mockup') {
                             return geminiService.generateMockup(productImageNoBg, currentSettings.prompt, currentSettings.mockupType);
                         }
-                        // Default to standard image generation for product, social, design
                         return geminiService.generateImage(productImageNoBg, currentSettings.prompt, currentSettings.negativePrompt, seed);
                     });
 
                     const results = await Promise.all(imagePromises);
-                    const finalImages = results.map(base64 => `data:image/png;base64,${base64}`);
-                    setGeneratedImages(finalImages);
-                    setSelectedImageIndex(0);
-                    historyThumbnail = { type: 'image', value: finalImages[0] };
+                    finalGeneratedImages = results.map(base64 => `data:image/png;base64,${base64}`);
+                    setGeneratedImages(finalGeneratedImages);
+                    setSelectedImageIndex(finalGeneratedImages.length > 1 ? null : 0);
+                    historyThumbnail = { type: 'image', value: finalGeneratedImages[0] };
                     break;
                 
                 case 'video':
                     if (!productImageNoBg) throw new Error("Product image not ready.");
-                    // video loading message carousel
                     const videoLoadingMessages = [t('videoLoadingMessage1'), t('videoLoadingMessage2'), t('videoLoadingMessage3'), t('videoLoadingMessage4'), t('videoLoadingMessage5'), t('videoLoadingMessage6'), t('videoLoadingMessage7')];
                     let messageIndex = 0;
                     setLoadingMessage(videoLoadingMessages[messageIndex]);
@@ -226,6 +452,7 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
                     const url = await geminiService.generateVideo(productImageNoBg, currentSettings.prompt);
                     clearInterval(intervalId);
                     setGeneratedVideoUrl(url);
+                    finalGeneratedVideoUrl = url;
                     historyThumbnail = { type: 'video', value: url };
                     break;
             }
@@ -238,8 +465,8 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
                     settings: currentSettings,
                     productImagePreview,
                     productImageNoBg,
-                    generatedImages: generatedImages,
-                    generatedVideoUrl: generatedVideoUrl,
+                    generatedImages: finalGeneratedImages,
+                    generatedVideoUrl: finalGeneratedVideoUrl,
                     textOverlays,
                 }
             });
@@ -252,11 +479,14 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
         }
     };
     
-    // ... other handlers for enhance, magic edit, etc.
+    if (!productImagePreview) {
+        return <div className="flex-1 flex flex-col"><WelcomeScreen mode={initialMode} onUpload={handleProductImageUpload} /></div>;
+    }
+
 
     return (
-        <main className="grid grid-cols-[350px_1fr_350px] h-full overflow-hidden">
-            <div className={`transition-all duration-300 ${isSidebarVisible ? 'w-[350px]' : 'w-0'} overflow-hidden`}>
+        <div className={`grid flex-1 min-h-0 overflow-hidden transition-all duration-300 md:grid-cols-[auto_1fr_auto]`}>
+            <div className={`transition-all duration-300 overflow-hidden ${isSidebarVisible ? 'w-[350px]' : 'w-0'}`}>
                 <ControlPanel 
                     settings={settings}
                     setSettings={setSettings}
@@ -270,7 +500,10 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
                 />
             </div>
 
-            <div className="flex flex-col relative bg-background">
+            <div className="flex flex-col relative bg-transparent min-w-0 h-full">
+                 <button onClick={() => setIsSidebarVisible(!isSidebarVisible)} className="absolute top-1/2 -start-3 -translate-y-1/2 z-30 w-6 h-16 bg-card border-y border-e border-border/80 rounded-r-lg flex items-center justify-center hover:bg-accent transition-colors">
+                    <Icon name={isSidebarVisible ? 'arrow-left' : 'arrow-right'} className="w-4 h-4" />
+                 </button>
                 <Canvas
                     productImagePreview={productImagePreview}
                     generatedImages={generatedImages}
@@ -290,28 +523,29 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
                     brandKit={activeBrandKit}
                     watermarkSettings={settings.watermark}
                     palette={palette}
-                    onExtractPalette={() => {}} // TODO
-                    onEnhance={() => {}} // TODO
-                    onMagicEdit={() => {}} // TODO
-                    onRemoveObject={() => {}} // TODO
-                    onExpandImage={() => {}} // TODO
-                    onGenerateCopy={() => setIsCopyModalOpen(true)}
+                    onExtractPalette={handleExtractPalette}
+                    onEnhance={handleEnhanceImage}
+                    onMagicEdit={handleMagicEdit}
+                    onRemoveObject={handleRemoveObject}
+                    onExpandImage={handleExpandImage}
+                    onGenerateCopy={() => handleGenerateCopy(false)}
                 />
                 <PromptBar
                     prompt={settings.editedPrompt ?? settings.prompt}
                     onPromptChange={(p) => setSettings(s => ({ ...s, editedPrompt: p }))}
-                    negativePrompt={settings.negativePrompt}
-                    onNegativePromptChange={(p) => setSettings(s => ({ ...s, negativePrompt: p }))}
                     onGenerate={handleGenerate}
                     onBrowsePresets={() => setIsPresetModalOpen(true)}
-                    onEnhancePrompt={() => {}} // TODO
+                    onEnhancePrompt={handleEnhancePrompt}
                     isGenerating={isLoading}
+                    isEnhancingPrompt={isEnhancingPrompt}
                     isImageUploaded={!!productImage}
-                    numberOfImages={settings.numberOfImages}
                 />
+                <button onClick={() => setIsWorkspaceVisible(!isWorkspaceVisible)} className="absolute top-1/2 -end-3 -translate-y-1/2 z-30 w-6 h-16 bg-card border-y border-s border-border/80 rounded-l-lg flex items-center justify-center hover:bg-accent transition-colors">
+                    <Icon name={isWorkspaceVisible ? 'arrow-right' : 'arrow-left'} className="w-4 h-4" />
+                </button>
             </div>
 
-            <div className={`transition-all duration-300 ${isWorkspaceVisible ? 'w-[350px]' : 'w-0'} overflow-hidden bg-card border-l`}>
+            <div className={`transition-all duration-300 overflow-hidden ${isWorkspaceVisible ? 'w-[350px]' : 'w-0'}`}>
                  <Tabs tabs={[{key: 'History', label: t('history')}, {key: 'Brand', label: t('brand')}]}>
                     {(activeTab) => (
                         <div className="p-4 h-full">
@@ -343,9 +577,9 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
                 isOpen={isCopyModalOpen}
                 onClose={() => setIsCopyModalOpen(false)}
                 copy={marketingCopy}
-                onRegenerate={() => {}}
-                isLoading={isLoading}
+                onRegenerate={() => handleGenerateCopy(true)}
+                isLoading={isLoading && isCopyModalOpen}
             />
-        </main>
+        </div>
     );
 };

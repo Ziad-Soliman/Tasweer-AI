@@ -20,7 +20,7 @@ const TOOLS: { id: EditorMode; nameKey: keyof typeof import('../lib/translations
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({ mode, setMode }) => {
     const { t } = useTranslation();
     return (
-        <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 z-20 border shadow-lg">
+        <div className="bg-background/70 backdrop-blur-md p-2 rounded-full flex gap-1 border shadow-lg">
             {TOOLS.map((tool) => (
                 <Tooltip key={tool.id} text={t(tool.nameKey)}>
                     <button

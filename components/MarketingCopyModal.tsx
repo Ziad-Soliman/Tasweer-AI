@@ -38,13 +38,13 @@ export const MarketingCopyModal: React.FC<MarketingCopyModalProps> = ({ isOpen, 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-scale-in" onClick={onClose}>
             <div className="bg-card border rounded-lg shadow-lg w-full max-w-2xl m-4 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">{t('aiGeneratedMarketingCopy')}</h3>
-                    <button onClick={onClose} className="p-2 rounded-md hover:bg-accent"><Icon name="close" /></button>
+                    <h3 className="text-lg font-semibold flex items-center gap-2"><Icon name="pencil" className="w-5 h-5 text-primary"/>{t('aiGeneratedMarketingCopy')}</h3>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-accent"><Icon name="close" /></button>
                 </div>
-                <div className="p-6 flex-1 overflow-y-auto space-y-4">
+                <div className="p-6 flex-1 overflow-y-auto space-y-4 min-h-[200px]">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full"><Icon name="spinner" className="w-8 h-8 animate-spin text-primary"/></div>
                     ) : copy ? (
@@ -56,10 +56,12 @@ export const MarketingCopyModal: React.FC<MarketingCopyModalProps> = ({ isOpen, 
                             <CopyField label={t('socialMediaPostArabic')} value={copy.socialMediaPostArabic} />
                         </>
                     ) : (
-                        <p className="text-muted-foreground">{t('noResultsFound')}</p>
+                         <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                            <p>{t('noResultsFound')}</p>
+                        </div>
                     )}
                 </div>
-                <div className="p-4 border-t flex justify-end gap-2">
+                <div className="p-4 border-t flex justify-end gap-2 bg-muted/50 rounded-b-lg">
                     <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-accent">{t('close')}</button>
                     <button onClick={onRegenerate} disabled={isLoading} className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
                         {isLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="sparkles" className="w-4 h-4" />}

@@ -14,6 +14,8 @@ const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [clothingPrompt, setClothingPrompt] = useState('');
+    const [clothingImageFile, setClothingImageFile] = useState<File | null>(null);
+    const [clothingImagePreview, setClothingImagePreview] = useState<string | null>(null);
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -26,13 +28,18 @@ const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
     };
 
+    const handleClothingImageUpload = (file: File) => {
+        setClothingImageFile(file);
+        setClothingImagePreview(URL.createObjectURL(file));
+    };
+
     const handleGenerate = async () => {
-        if (!imageFile || !clothingPrompt) return;
+        if (!imageFile || (!clothingPrompt && !clothingImageFile)) return;
         setIsLoading(true);
         setError(null);
         setResultImage(null);
         try {
-            const resultBase64 = await geminiService.virtualTryOn(imageFile, clothingPrompt);
+            const resultBase64 = await geminiService.virtualTryOn(imageFile, clothingPrompt, clothingImageFile);
             setResultImage(`data:image/png;base64,${resultBase64}`);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate design.");
@@ -63,9 +70,17 @@ const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
                             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-24 resize-none"
                             disabled={!imageFile}
                         />
+                        <FileUpload
+                            onFileUpload={handleClothingImageUpload}
+                            label={t('uploadClothingReference')}
+                            uploadedFileName={clothingImageFile?.name}
+                            onClear={() => { setClothingImageFile(null); setClothingImagePreview(null); }}
+                            disabled={!imageFile}
+                        />
+                         {clothingImagePreview && <img src={clothingImagePreview} alt="Clothing Preview" className="mt-2 rounded-md max-h-20 object-contain self-start" />}
                         <button
                             onClick={handleGenerate}
-                            disabled={!imageFile || !clothingPrompt || isLoading}
+                            disabled={!imageFile || (!clothingPrompt && !clothingImageFile) || isLoading}
                             className="inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2"
                         >
                             {isLoading ? ( <Icon name="spinner" className="animate-spin w-5 h-5" /> ) : ( <Icon name="shirt" className="w-5 h-5" /> )}

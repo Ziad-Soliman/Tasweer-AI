@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ProductGenerationPage } from './pages/ProductGenerationPage';
 import { AppsPage } from './pages/AppsPage';
 import { Icon } from './components/Icon';
@@ -6,13 +7,25 @@ import { translations } from './lib/translations';
 import { HistoryItem } from './types';
 import { nanoid } from 'nanoid';
 
-// FIX: Added a useTranslation hook to be used across the application.
+// 1. Define Language Context
+interface LanguageContextType {
+    lang: 'en' | 'ar';
+    setLang: (lang: 'en' | 'ar') => void;
+}
+
+const LanguageContext = createContext<LanguageContextType>({
+    lang: 'en',
+    setLang: () => {},
+});
+
+
+// 2. Update useTranslation hook to use context
 export const useTranslation = () => {
-    // Hardcoding to 'en' as there's no language switching mechanism provided.
-    const lang = 'en'; 
+    const { lang } = useContext(LanguageContext);
   
     const t = (key: keyof (typeof translations)['en'], options?: { [key: string]: string | number }) => {
-      let translation = translations[lang][key] || String(key);
+      // Use 'en' as a fallback language
+      let translation = (translations[lang] as any)[key] || (translations['en'] as any)[key] || String(key);
       if (options) {
         Object.keys(options).forEach(optKey => {
           const regex = new RegExp(`{{${optKey}}}`, 'g');
@@ -22,8 +35,8 @@ export const useTranslation = () => {
       return translation;
     };
   
-    return { t };
-  };
+    return { t, lang };
+};
 
 // --- DATA FOR MENUS ---
 
@@ -90,7 +103,7 @@ const menuData: Record<string, { features: any[], models: any[] }> = {
 
 const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features: any[], models: any[], selectedModel?: string, onSelectModel?: (model: string) => void; }) => {
     return (
-        <div className="absolute top-full left-0 mt-2 w-[550px] bg-card border border-border rounded-lg shadow-2xl p-4 grid grid-cols-2 gap-4 animate-fade-in z-50">
+        <div className="absolute top-full start-0 mt-2 w-[550px] bg-popover border border-border rounded-lg shadow-2xl p-4 grid grid-cols-2 gap-4 animate-slide-up-fade z-50">
             <div>
                 <h3 className="font-semibold text-sm mb-3 px-2">Features</h3>
                 <div className="space-y-1">
@@ -100,8 +113,8 @@ const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features:
                             <div>
                                 <p className="font-medium text-sm text-foreground">
                                     {feature.name}
-                                    {feature.new && <span className="ml-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">NEW</span>}
-                                    {feature.best && <span className="ml-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">BEST</span>}
+                                    {feature.new && <span className="ms-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">NEW</span>}
+                                    {feature.best && <span className="ms-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">BEST</span>}
                                 </p>
                                 <p className="text-xs text-muted-foreground">{feature.description}</p>
                             </div>
@@ -118,8 +131,8 @@ const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features:
                             <div>
                                 <p className="font-medium text-sm text-foreground">
                                     {model.name}
-                                    {model.new && <span className="ml-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">NEW</span>}
-                                    {model.best && <span className="ml-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">BEST</span>}
+                                    {model.new && <span className="ms-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">NEW</span>}
+                                    {model.best && <span className="ms-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">BEST</span>}
                                 </p>
                                 <p className="text-xs text-muted-foreground">{model.description}</p>
                             </div>
@@ -131,63 +144,55 @@ const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features:
     );
 };
 
+const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
+    <div className="flex-1 flex items-center justify-center text-center p-8 flex-col animate-fade-in">
+        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+            <Icon name={icon} className="w-10 h-10 text-primary" />
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">{title}</h1>
+        <p className="mt-2 text-md text-muted-foreground">This page is under construction. Coming soon!</p>
+    </div>
+);
 
-const Header = ({ currentPage, setCurrentPage, selectedModel, onSelectModel }: { currentPage: string, setCurrentPage: (page: string) => void, selectedModel: string; onSelectModel: (model: string) => void; }) => {
-    const [openMenu, setOpenMenu] = useState<string | null>(null);
-    const navItems = ["Explore", "Image", "Video", "Edit", "Assist", "Apps", "ASMR", "Community"];
-
-    const handleNavClick = (item: string) => {
-        const page = item.toLowerCase();
-        // Only navigate if it's a main page, otherwise let the menu handle interaction
-        if (['image', 'video', 'edit', 'apps'].includes(page)) {
-             setCurrentPage(page);
-        }
-    }
-
-    return (
-        <header className="fixed top-0 left-0 right-0 z-40 bg-background/50 backdrop-blur-md">
-            <div className="container mx-auto px-4 flex justify-between items-center h-16 border-b border-border">
-                <div className="flex items-center gap-6">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43NDkgNS4yOTEgMjEgNy41IDIxSDE2LjVDMTguNzQ5IDIxIDIxIDE4Ljc0OSAyMSAxNi41VjcuNUMyMSA1LjI1MSAxOC43NDkgMyAxNi41IDNINy41Wk03LjUgNC41SDE2LjVDMTcuODY5IDQuNSAxOSA1LjYzMSAxOSA3LjVWMTYuNUMxOSAxNy44NjkgMTcuODY5IDE5IDE2LjUgMTlINy41QzYuMTMxIDE5IDUgMTcuODY5IDUgMTYuNVY3LjVDNSA2LjEzMSA2LjEzMSA0LjUgNy41IDQuNVoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==" alt="Logo" className="w-8 h-8"/>
-
-                    <nav className="hidden md:flex items-center gap-2">
-                        {navItems.map(item => (
-                            <div key={item} onMouseEnter={() => menuData[item] && setOpenMenu(item)} onMouseLeave={() => menuData[item] && setOpenMenu(null)} className="relative">
-                                <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                                    {item}
-                                    {item === 'ASMR' && <span className="ml-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">ASMR</span>}
-                                    {item === 'Community' && <span className="ml-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">New</span>}
-                                </a>
-                                {openMenu === item && menuData[item] && (
-                                    <AppMenu 
-                                        features={menuData[item].features} 
-                                        models={menuData[item].models} 
-                                        selectedModel={selectedModel} 
-                                        onSelectModel={onSelectModel} 
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </nav>
-                </div>
-                <div className="flex items-center gap-4 text-sm font-medium">
-                    <a href="#" className="text-foreground hover:text-primary transition-colors">Pricing</a>
-                    <a href="#" className="text-foreground hover:text-primary transition-colors flex items-center gap-2">
-                        <Icon name="copy" className="w-4 h-4" /> Discord
-                    </a>
-                    <a href="#" className="text-foreground hover:text-primary transition-colors px-4 py-1.5 border border-border rounded-md">Login</a>
-                    <a href="#" className="bg-primary text-primary-foreground px-4 py-1.5 rounded-md hover:opacity-90 transition-opacity">Sign Up</a>
-                </div>
-            </div>
-        </header>
-    );
-};
 
 const App: React.FC = () => {
+    const [lang, setLang] = useState<'en' | 'ar'>('en');
     const [currentPage, setCurrentPage] = useState('image');
     const [selectedModel, setSelectedModel] = useState("Higgsfield Soul");
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [restoredState, setRestoredState] = useState<HistoryItem | null>(null);
+    const [openMenu, setOpenMenu] = useState<string | null>(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const navItems = ["Explore", "Image", "Video", "Edit", "Assist", "Apps", "Community"];
+    const menuRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
+
+    useEffect(() => {
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    }, [lang]);
+    
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setOpenMenu(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleNavClick = (item: string) => {
+        const page = item.toLowerCase();
+        setCurrentPage(page);
+        setIsMobileMenuOpen(false);
+        setOpenMenu(null);
+    }
+    
+    const toggleLang = () => {
+        setLang(lang === 'en' ? 'ar' : 'en');
+    };
 
     const addHistoryItem = (itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => {
         const newHistoryItem: HistoryItem = {
@@ -196,7 +201,7 @@ const App: React.FC = () => {
             timestamp: Date.now(),
             isFavorite: false,
         };
-        setHistory(prev => [newHistoryItem, ...prev]);
+        setHistory(prev => [newHistoryItem, ...prev.filter(item => item.id !== newHistoryItem.id)]);
     };
 
     const toggleFavorite = (id: string) => {
@@ -207,9 +212,9 @@ const App: React.FC = () => {
         setRestoredState(item);
         if (item.source.page === 'product-generation') {
             const mode = item.payload.settings.generationMode;
-             if (['video', 'edit'].includes(mode)) {
-                setCurrentPage(mode);
-            } else {
+             if (['video'].includes(mode)) {
+                setCurrentPage('video');
+            } else { // product, mockup, social, design
                 setCurrentPage('image');
             }
         } else if (item.source.page === 'mini-apps') {
@@ -222,31 +227,34 @@ const App: React.FC = () => {
     };
 
     const renderPage = () => {
-        const generationModes = ['image', 'video', 'edit'];
-
-        if (generationModes.includes(currentPage)) {
-            return <ProductGenerationPage 
-                        key={restoredState ? restoredState.id : currentPage}
-                        initialMode={currentPage as 'image' | 'video' | 'edit'}
-                        selectedModel={selectedModel} 
-                        history={history}
-                        onToggleFavorite={toggleFavorite}
-                        onRestore={restoreFromHistory}
-                        addHistoryItem={addHistoryItem}
-                        restoredState={restoredState}
-                        clearRestoredState={clearRestoredState}
-                   />;
-        }
-
         switch(currentPage) {
+            case 'image':
+            case 'video':
+            case 'edit':
+                 return <ProductGenerationPage 
+                            key={restoredState ? restoredState.id : currentPage}
+                            initialMode={currentPage as 'image' | 'video' | 'edit'}
+                            selectedModel={selectedModel} 
+                            history={history}
+                            onToggleFavorite={toggleFavorite}
+                            onRestore={restoreFromHistory}
+                            addHistoryItem={addHistoryItem}
+                            restoredState={restoredState}
+                            clearRestoredState={clearRestoredState}
+                       />;
             case 'apps':
                 return <AppsPage 
                             addHistoryItem={addHistoryItem}
                             restoredState={restoredState}
                             clearRestoredState={clearRestoredState}
                        />;
+            case 'explore':
+                return <ComingSoonPage title="Explore" icon="search" />;
+            case 'assist':
+                return <ComingSoonPage title="Higgsfield Assist" icon="sparkles" />;
+            case 'community':
+                return <ComingSoonPage title="Community" icon="users" />;
             default:
-                // Fallback for Explore, Assist, etc.
                  return <ProductGenerationPage 
                             key="default-image"
                             initialMode="image"
@@ -262,17 +270,76 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="h-screen bg-background">
-            <Header 
-                currentPage={currentPage} 
-                setCurrentPage={setCurrentPage}
-                selectedModel={selectedModel} 
-                onSelectModel={setSelectedModel} 
-            />
-            <div className="h-full pt-16 flex flex-col">
-                 {renderPage()}
+        <LanguageContext.Provider value={{ lang, setLang }}>
+            <div className="h-screen bg-background flex flex-col">
+                 <header className="fixed top-0 start-0 end-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/80">
+                    <div className="container mx-auto px-4 flex justify-between items-center h-16">
+                        <div className="flex items-center gap-6">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43NDkgNS4yOTEgMjEgNy41IDIxSDE2LjVDMTguNzQ5IDIxIDIxIDE4Ljc0OSAyMSAxNi41VjcuNUMyMSA1LjI1MSAxODc0OSAzIDE2LjUgM0g3LjVaTTcuNSA0LjVIMTYuNUMxNy44NjkgNC41IDE5IDUuNjMxIDE5IDcuNVYxNi45IDE3Ljg2OSAxNy44NjkgMTkgMTYuNSAxOUg3LjVDNi4xMzEgMTkgNSAxNy44NjkgNSAxNi41VjcuNUM1IDYuMTMxIDYuMTMxIDQuNSA3LjUgNC41WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+" alt="Logo" className="w-8 h-8"/>
+
+                            <nav ref={menuRef} className="hidden md:flex items-center gap-1">
+                                {navItems.map(item => (
+                                    <div key={item} onMouseEnter={() => menuData[item] && setOpenMenu(item)} onMouseLeave={() => setOpenMenu(null)} className="relative">
+                                        <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                                            {item}
+                                            {item === 'Community' && <span className="ms-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">New</span>}
+                                        </a>
+                                        {openMenu === item && menuData[item] && (
+                                            <AppMenu 
+                                                features={menuData[item].features} 
+                                                models={menuData[item].models} 
+                                                selectedModel={selectedModel} 
+                                                onSelectModel={(model) => { setSelectedModel(model); setOpenMenu(null); }} 
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </nav>
+                        </div>
+                        <div className="hidden md:flex items-center gap-4 text-sm font-medium">
+                            <a href="#" className="text-foreground hover:text-primary transition-colors">{t('pricing')}</a>
+                            <button onClick={toggleLang} className="text-foreground hover:text-primary transition-colors">
+                                {lang === 'en' ? 'العربية' : 'English'}
+                            </button>
+                            <a href="#" className="text-foreground hover:text-primary transition-colors">{t('login')}</a>
+                            <a href="#" className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors">{t('signUp')}</a>
+                            <button className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-muted-foreground"><Icon name="users" className="w-5 h-5"/></button>
+                        </div>
+                        <div className="md:hidden">
+                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md text-muted-foreground hover:bg-muted">
+                                <Icon name={isMobileMenuOpen ? "close" : "menu"} className="w-6 h-6"/>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                {isMobileMenuOpen && (
+                     <div className="md:hidden fixed inset-0 top-16 bg-background/95 z-30 animate-fade-in">
+                        <div className="container mx-auto px-4 pt-4">
+                             <nav className="flex flex-col gap-2">
+                                {navItems.map(item => (
+                                    <a key={item} href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-4 py-3 text-lg font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                                        {item}
+                                    </a>
+                                ))}
+                            </nav>
+                             <div className="border-t border-border mt-6 pt-6 flex flex-col gap-4 text-lg font-medium">
+                                <a href="#" className="text-foreground hover:text-primary transition-colors">{t('pricing')}</a>
+                                 <button onClick={toggleLang} className="text-foreground hover:text-primary transition-colors text-start w-fit">
+                                    {lang === 'en' ? 'العربية' : 'English'}
+                                </button>
+                                <a href="#" className="text-foreground hover:text-primary transition-colors">{t('login')}</a>
+                                <a href="#" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md transition-colors text-center">{t('signUp')}</a>
+                            </div>
+                        </div>
+                     </div>
+                )}
+                
+                <main className="pt-16 flex-1 flex flex-col min-h-0">
+                     {renderPage()}
+                </main>
             </div>
-        </div>
+        </LanguageContext.Provider>
     );
 };
 

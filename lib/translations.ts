@@ -12,6 +12,9 @@ export const translations = {
     hideWorkspacePanel: 'Hide Workspace Panel',
     showWorkspacePanel: 'Show Workspace Panel',
     workspace: 'Workspace',
+    pricing: 'Pricing',
+    login: 'Login',
+    signUp: 'Sign Up',
 
     // ControlPanel.tsx
     controls: 'Controls',
@@ -69,6 +72,7 @@ export const translations = {
     'Facebook Post': 'Facebook Post',
     'Facebook Cover': 'Facebook Cover',
     'X (Twitter) Post': 'X (Twitter) Post',
+    negativePrompt: 'Negative Prompt',
 
     // Aspect Ratios (from constants.ts)
     aspectRatioSquare: '1:1 Square',
@@ -116,6 +120,9 @@ export const translations = {
     delete: 'Delete',
     yourTextHere: 'Your Text Here',
     extractPalette: 'Extract Color Palette with AI',
+    backToGrid: 'Back to Grid',
+    gridView: 'Grid View',
+    selectAnImageToEdit: 'Select an Image to Edit',
 
     // HistoryPanel.tsx
     history: 'History',
@@ -351,6 +358,7 @@ export const translations = {
     storyIdeaPlaceholder: 'e.g., A space detective finds a mysterious alien artifact on a deserted moon.',
     generateComic: 'Generate Comic',
     writingComicScript: 'Writing script...',
+    addNegativePrompt: 'Add a negative prompt...',
 
     // YouTube Thumbnail Generator
     templates: 'Templates',
@@ -381,6 +389,7 @@ export const translations = {
     productInfo: 'Product Information',
     productInfoPlaceholder: 'e.g., A luxury dark chocolate bar with sea salt and almonds.',
     packagingStyle: 'Packaging Style',
+    packagingType: 'Packaging Type',
     generateDesigns: 'Generate Designs',
     generatingDesigns: 'Generating Designs...',
     generatedDesigns: 'Generated Designs',
@@ -438,7 +447,7 @@ export const translations = {
     previewSeamlessness: 'Seamless Preview',
     copied: 'Copied!',
     uploadYourself: 'Upload Photo of Yourself',
-    clothingPromptPlaceholder: "e.g., 'a red silk ball gown', 'a futuristic leather jacket with neon lights'",
+    clothingPromptPlaceholder: "Describe an outfit, or add details for the reference image...",
     virtualTryOn: 'Virtual Try-On',
     websiteURL: 'Website URL',
     artisticPrompt: 'Artistic Prompt',
@@ -452,6 +461,8 @@ export const translations = {
     summary: 'Summary',
     keyMoments: 'Key Moments',
     socialPosts: 'Social Posts',
+    uploadClothingReference: 'Upload Clothing Reference',
+    uploadReferenceImage: 'Upload Reference Image (Optional)',
   },
   ar: {
     // App.tsx
@@ -466,6 +477,9 @@ export const translations = {
     hideWorkspacePanel: 'إخفاء مساحة العمل',
     showWorkspacePanel: 'إظهار مساحة العمل',
     workspace: 'مساحة العمل',
+    pricing: 'الأسعار',
+    login: 'تسجيل الدخول',
+    signUp: 'إنشاء حساب',
 
     // ControlPanel.tsx
     controls: 'عناصر التحكم',
@@ -523,6 +537,7 @@ export const translations = {
     'Facebook Post': 'منشور فيسبوك',
     'Facebook Cover': 'غلاف فيسبوك',
     'X (Twitter) Post': 'منشور إكس (تويتر)',
+    negativePrompt: 'الأمر السلبي',
 
     // Aspect Ratios (from constants.ts)
     aspectRatioSquare: '1:1 مربع',
@@ -570,6 +585,9 @@ export const translations = {
     delete: 'حذف',
     yourTextHere: 'اكتب نصك هنا',
     extractPalette: 'استخراج لوحة الألوان بالذكاء الاصطناعي',
+    backToGrid: 'العودة للشبكة',
+    gridView: 'عرض شبكي',
+    selectAnImageToEdit: 'اختر صورة لتعديلها',
 
     // HistoryPanel.tsx
     history: 'السجل',
@@ -804,6 +822,7 @@ export const translations = {
     storyIdeaPlaceholder: 'مثال: محقق فضاء يجد قطعة أثرية فضائية غامضة على قمر مهجور.',
     generateComic: 'إنشاء قصة مصورة',
     writingComicScript: 'جارٍ كتابة النص...',
+    addNegativePrompt: 'أضف أمرًا سلبيًا...',
 
     // YouTube Thumbnail Generator
     templates: 'قوالب',
@@ -834,6 +853,7 @@ export const translations = {
     productInfo: 'معلومات المنتج',
     productInfoPlaceholder: 'مثال: لوح شوكولاتة داكنة فاخرة بملح البحر واللوز.',
     packagingStyle: 'نمط التغليف',
+    packagingType: 'نوع التغليف',
     generateDesigns: 'إنشاء التصاميم',
     generatingDesigns: 'جارٍ إنشاء التصاميم...',
     generatedDesigns: 'التصاميم المنشأة',
@@ -891,7 +911,7 @@ export const translations = {
     previewSeamlessness: 'معاينة التكرار',
     copied: 'تم النسخ!',
     uploadYourself: 'ارفع صورة لنفسك',
-    clothingPromptPlaceholder: "مثال: 'فستان حفلة أحمر حريري'، 'سترة جلدية مستقبلية بأضواء نيون'",
+    clothingPromptPlaceholder: "صف الزي، أو أضف تفاصيل للصورة المرجعية...",
     virtualTryOn: 'تجربة افتراضية',
     websiteURL: 'رابط الموقع',
     artisticPrompt: 'وصف فني',
@@ -905,5 +925,7 @@ export const translations = {
     summary: 'ملخص',
     keyMoments: 'اللحظات الرئيسية',
     socialPosts: 'منشورات للسوشيال ميديا',
+    uploadClothingReference: 'رفع صورة مرجعية للملابس',
+    uploadReferenceImage: 'رفع صورة مرجعية (اختياري)',
   }
 };

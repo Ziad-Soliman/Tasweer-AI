@@ -12,7 +12,7 @@ interface CanvasProps {
     generatedImages: string[];
     generatedVideoUrl: string | null;
     selectedImageIndex: number | null;
-    onSelectImage: (index: number) => void;
+    onSelectImage: (index: number | null) => void;
     isLoading: boolean;
     loadingMessage: string;
     error: string | null;
@@ -30,32 +30,9 @@ interface CanvasProps {
     setTextOverlays: React.Dispatch<React.SetStateAction<TextOverlay[]>>;
     brandKit: BrandKit | undefined;
     watermarkSettings: WatermarkSettings;
-    // FIX: Replaced currentHistoryItem with a direct palette prop for type safety and clarity.
     palette: string[] | undefined;
     onExtractPalette: () => void;
 }
-
-const Placeholder: React.FC = () => {
-    const { t } = useTranslation();
-    return (
-        <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 select-none">
-            <div className="relative w-full max-w-md h-64 flex items-center justify-center">
-                {/* Background decorative element */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-3xl transform -rotate-12 scale-105 opacity-50"></div>
-                <div className="absolute inset-0 bg-gradient-to-tl from-secondary to-transparent rounded-3xl transform rotate-6 scale-95 opacity-30"></div>
-                
-                <div className="relative z-10 bg-card/60 backdrop-blur-lg p-8 rounded-xl border border-border/50 shadow-2xl">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxkZWZzPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWRpZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNBNTg1N0Y3Ii8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8L2RlZnM+CiAgICA8cGF0aCBkPSJNMTIgMkwzIDIySDdMOC4yNSAxOEgxNS43NUwxNyAyMkgxMUwxMiAyWk0xMiA2LjhMMTQuMjUgMTRIMi43NUwxMiA2LjhaIiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiLz4KICAgIDxwYXRoIGQ9Ik0xOCAyTDE5LjUgNUwyMiA2TDE5LjUgN0wxOCAxMEwxNi41IDdMMTQgNkwxNi41IDVMMTggMloiIGZpbGw9InVybCgjbG9nb0dyYWRpZW50KSIvPgo8L3N2Zz4=" alt="AI Designer Logo" className="w-16 h-16 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-foreground">{t('placeholderTitle')}</h3>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        {t('placeholderDescription')}
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 const LoadingOverlay: React.FC<{ message: string }> = ({ message }) => (
     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 rounded-xl">
@@ -84,7 +61,7 @@ const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel
     const [prompt, setPrompt] = useState('');
     const { t } = useTranslation();
     return (
-        <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg flex-wrap">
+        <div className="absolute bottom-24 start-4 end-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg flex-wrap">
              <div className="flex items-center gap-2">
                 <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                 <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
@@ -107,7 +84,7 @@ const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel
 const RemoveObjectControls: React.FC<{ onApply: () => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onApply, onCancel, brushSize, setBrushSize }) => {
     const { t } = useTranslation();
     return (
-        <div className="absolute bottom-[8.5rem] md:bottom-24 left-4 right-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
+        <div className="absolute bottom-24 start-4 end-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
             <div className="flex items-center gap-2">
                 <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                 <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
@@ -127,9 +104,9 @@ const ExpandControls: React.FC<{ onExpand: (direction: 'up' | 'down' | 'left' | 
     return (
         <>
             <Tooltip text={t('expandUp')}><button onClick={() => onExpand('up')} className={`${buttonClass} top-2 left-1/2 -translate-x-1/2`}><Icon name="arrow-up" className={iconClass} /></button></Tooltip>
-            <Tooltip text={t('expandDown')}><button onClick={() => onExpand('down')} className={`${buttonClass} bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2`}><Icon name="arrow-down" className={iconClass} /></button></Tooltip>
-            <Tooltip text={t('expandLeft')}><button onClick={() => onExpand('left')} className={`${buttonClass} left-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-left" className={iconClass} /></button></Tooltip>
-            <Tooltip text={t('expandRight')}><button onClick={() => onExpand('right')} className={`${buttonClass} right-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-right" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandDown')}><button onClick={() => onExpand('down')} className={`${buttonClass} bottom-24 left-1/2 -translate-x-1/2`}><Icon name="arrow-down" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandLeft')}><button onClick={() => onExpand('left')} className={`${buttonClass} start-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-left" className={iconClass} /></button></Tooltip>
+            <Tooltip text={t('expandRight')}><button onClick={() => onExpand('right')} className={`${buttonClass} end-2 top-1/2 -translate-y-1/2`}><Icon name="arrow-right" className={iconClass} /></button></Tooltip>
         </>
     );
 };
@@ -142,7 +119,7 @@ const IconButton: React.FC<{onClick: () => void; label: string; title: string; c
     </Tooltip>
 );
 
-const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onStartOver: () => void; isVideo: boolean; onDownloadVideo: () => void; onEnhance: () => void; onGenerateCopy: () => void; onCompare: () => void; }> = (props) => {
+const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onStartOver: () => void; isVideo: boolean; onDownloadVideo: () => void; onEnhance: () => void; onGenerateCopy: () => void; onCompare: () => void; onBackToGrid?: () => void; }> = (props) => {
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
@@ -171,6 +148,7 @@ const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onSt
         <div ref={menuRef} className="absolute top-4 end-4 flex gap-2 z-30">
             {/* Desktop Buttons */}
             <div className="hidden md:flex gap-2">
+                {props.onBackToGrid && <IconButton onClick={props.onBackToGrid} label={t('backToGrid')} title={t('backToGrid')}><Icon name="layout-grid" /></IconButton>}
                 {!props.isVideo && <IconButton onClick={props.onCompare} label={t('compareWithOriginal')} title={t('compareWithOriginal')}><Icon name="compare" /></IconButton>}
                 {!props.isVideo && <IconButton onClick={props.onEnhance} label={t('enhanceImage')} title={t('enhanceImage')}><Icon name="wand" /></IconButton>}
                 {!props.isVideo && <IconButton onClick={props.onGenerateCopy} label={t('generateMarketingCopy')} title={t('generateMarketingCopy')}><Icon name="pencil" /></IconButton>}
@@ -191,6 +169,7 @@ const ActionsMenu: React.FC<{ onDownload: (format: 'png' | 'jpeg') => void; onSt
                 </IconButton>
                 {isActionsMenuOpen && (
                     <div className="absolute top-full end-0 mt-2 w-48 bg-popover text-popover-foreground rounded-md shadow-lg z-50 animate-fade-in border p-1">
+                        {props.onBackToGrid && <DropdownAction onClick={props.onBackToGrid} icon="layout-grid" label={t('gridView')} />}
                         {!props.isVideo && <DropdownAction onClick={props.onCompare} icon="compare" label={t('compare')} />}
                         {!props.isVideo && <DropdownAction onClick={props.onEnhance} icon="wand" label={t('enhance')} />}
                         {!props.isVideo && <DropdownAction onClick={props.onGenerateCopy} icon="pencil" label={t('generateCopy')} />}
@@ -274,6 +253,8 @@ export const Canvas: React.FC<CanvasProps> = ({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageContainerRef = useRef<HTMLDivElement>(null);
     const isDrawing = useRef(false);
+
+    const showGrid = generatedImages.length > 1 && selectedImageIndex === null;
 
     const handleDownloadImage = (format: 'png' | 'jpeg') => {
         if (!selectedImage) return;
@@ -517,14 +498,32 @@ export const Canvas: React.FC<CanvasProps> = ({
     const isMaskingMode = editorMode === 'magic-edit' || editorMode === 'remove-object';
 
     return (
-        <div className="p-4 flex flex-col items-center justify-center relative w-full h-full">
+        <div className="p-4 flex flex-col items-center justify-center relative w-full flex-1 min-h-0">
             {isLoading && <LoadingOverlay message={loadingMessage} />}
             {error && <ErrorDisplay message={error} onRetry={onRetry} />}
-
-            {!hasContent && !isLoading && <Placeholder />}
             
-            {hasContent && (
-                 <div ref={imageContainerRef} onMouseDown={handleAddText} className={`relative transition-all duration-300 w-full h-full flex items-center justify-center ${aspectMap[aspectRatio]} ${editorMode === 'text' ? 'cursor-text' : ''}`}>
+            {showGrid ? (
+                <div className="w-full h-full flex flex-col p-4 animate-fade-in">
+                    <h2 className="text-xl font-semibold text-center mb-4 text-foreground">{t('selectAnImageToEdit')}</h2>
+                    <div className="flex-1 overflow-y-auto">
+                        <div className={`grid grid-cols-2 gap-4`}>
+                            {generatedImages.map((img, index) => (
+                                <button
+                                key={index}
+                                onClick={() => onSelectImage(index)}
+                                className={`relative rounded-lg overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background ${aspectMap[aspectRatio]}`}
+                                >
+                                <img src={img} alt={`Variant ${index + 1}`} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Icon name="expand" className="w-10 h-10 text-white" />
+                                </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : hasContent && (
+                 <div ref={imageContainerRef} onMouseDown={handleAddText} className={`relative transition-all duration-300 w-full max-h-full flex items-center justify-center ${aspectMap[aspectRatio]} ${editorMode === 'text' ? 'cursor-text' : ''}`}>
                      <div className="w-full h-full relative" onClick={() => editorMode === 'text' && setActiveTextOverlayId(null)}>
                         {showComparison && productImagePreview && !isVideoMode ? (
                             <ImageComparator baseImage={productImagePreview} newImage={selectedImage || ''} />
@@ -562,7 +561,12 @@ export const Canvas: React.FC<CanvasProps> = ({
                     
                     {(selectedImage || generatedVideoUrl) && !isLoading && !showComparison && (
                         <>
-                         {!isVideoMode && <EditorToolbar mode={editorMode} setMode={setEditorMode} />}
+                         {!isVideoMode && (
+                            <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-2">
+                                <ColorPalette palette={palette} onExtract={onExtractPalette} />
+                                <EditorToolbar mode={editorMode} setMode={setEditorMode} />
+                            </div>
+                         )}
                          <ActionsMenu 
                             onDownload={handleDownloadImage}
                             onStartOver={onStartOver}
@@ -571,6 +575,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                             onEnhance={onEnhance}
                             onGenerateCopy={onGenerateCopy}
                             onCompare={() => setShowComparison(true)}
+                            onBackToGrid={generatedImages.length > 1 ? () => onSelectImage(null) : undefined}
                          />
                         </>
                     )}
@@ -580,24 +585,6 @@ export const Canvas: React.FC<CanvasProps> = ({
                     {editorMode === 'magic-edit' && <MagicEditControls onSubmit={handleMagicEditSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
                     {editorMode === 'remove-object' && <RemoveObjectControls onApply={handleRemoveObjectSubmit} onCancel={() => setEditorMode('view')} brushSize={brushSize} setBrushSize={setBrushSize} />}
                     {editorMode === 'expand' && <ExpandControls onExpand={onExpandImage} />}
-                    
-                     {generatedImages.length > 0 && !isVideoMode && (
-                        <div className="absolute bottom-[8.5rem] md:bottom-24 left-1/2 -translate-x-1/2 z-20 flex justify-center items-end gap-4 w-full px-4 overflow-x-auto">
-                            <div className="absolute start-4 bottom-0 hidden lg:block">
-                                <ColorPalette palette={palette} onExtract={onExtractPalette} />
-                            </div>
-                            {generatedImages.length > 1 && (
-                                <div className="flex justify-center items-center gap-3 p-2 bg-background/50 backdrop-blur-md rounded-xl border">
-                                    {generatedImages.map((img, index) => (
-                                        <button key={index} onClick={() => onSelectImage(index)}
-                                            className={`w-16 h-16 rounded-md overflow-hidden transition-all duration-200 ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 flex-shrink-0 ${selectedImageIndex === index ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-border/50 hover:ring-primary/50'}`}>
-                                            <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                 </div>
             )}

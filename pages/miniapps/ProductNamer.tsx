@@ -104,7 +104,6 @@ const ProductNamer: React.FC<MiniAppProps> = ({ onBack }) => {
             const systemInstruction = `You are a branding expert specializing in product naming. Your goal is to generate and refine product names. Always respond with a valid JSON array of objects matching the requested schema.`;
             chatRef.current = geminiService.startChat('gemini-2.5-flash', [], systemInstruction);
             
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: initialPrompt });
             const jsonString = response.text.trim();
             const names = JSON.parse(jsonString) as ProductNameSuggestion[];
@@ -127,7 +126,6 @@ const ProductNamer: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
 
         try {
-            // FIX: The argument to sendMessage must be an object with a `message` property.
             const response = await chatRef.current.sendMessage({ message: userInput });
             const jsonString = response.text.trim();
             const names = JSON.parse(jsonString) as ProductNameSuggestion[];
