@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import MiniAppLayout from './shared/MiniAppLayout';
 import { FileUpload } from '../../components/FileUpload';
 import { Icon } from '../../components/Icon';
@@ -10,6 +11,66 @@ interface MiniAppProps {
     onBack: () => void;
 }
 
+const CameraModal: React.FC<{ onClose: () => void, onCapture: (file: File) => void }> = ({ onClose, onCapture }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [stream, setStream] = useState<MediaStream | null>(null);
+
+    useEffect(() => {
+        let streamInstance: MediaStream;
+        const startCamera = async () => {
+            try {
+                streamInstance = await navigator.mediaDevices.getUserMedia({ video: true });
+                setStream(streamInstance);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = streamInstance;
+                }
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Could not access camera. Please ensure permissions are granted.");
+                onClose();
+            }
+        };
+
+        startCamera();
+
+        return () => {
+            streamInstance?.getTracks().forEach(track => track.stop());
+        };
+    }, [onClose]);
+
+    const handleCapture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const canvas = canvasRef.current;
+            const video = videoRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            canvas.toBlob(blob => {
+                if (blob) {
+                    const file = new File([blob], `capture-${Date.now()}.png`, { type: 'image/png' });
+                    onCapture(file);
+                }
+            }, 'image/png');
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+            <div className="bg-card border rounded-lg shadow-lg p-4 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+                <video ref={videoRef} autoPlay playsInline className="w-full rounded-md aspect-video" />
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="flex justify-center items-center gap-4 mt-4">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-accent">Cancel</button>
+                    <button onClick={handleCapture} className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90">Capture</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -19,6 +80,7 @@ const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
     const { t } = useTranslation();
 
     const handleFileUpload = (file: File) => {
@@ -27,6 +89,11 @@ const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
         setResultImage(null);
         setError(null);
     };
+
+    const handleCameraCapture = (file: File) => {
+        handleFileUpload(file);
+        setIsCameraOpen(false);
+    }
 
     const handleClothingImageUpload = (file: File) => {
         setClothingImageFile(file);
@@ -54,14 +121,21 @@ const AIFashionDesigner: React.FC<MiniAppProps> = ({ onBack }) => {
             description={t('fashion-designer-desc')}
             onBack={onBack}
         >
+            {isCameraOpen && <CameraModal onClose={() => setIsCameraOpen(false)} onCapture={handleCameraCapture} />}
             <div className="max-w-4xl mx-auto flex flex-col gap-8">
                 <div className="grid md:grid-cols-2 gap-8 items-start">
-                    <FileUpload
-                        onFileUpload={handleFileUpload}
-                        label={t('uploadYourself')}
-                        uploadedFileName={imageFile?.name}
-                        onClear={() => { setImageFile(null); setImagePreview(null); }}
-                    />
+                    <div className="space-y-2">
+                        <FileUpload
+                            onFileUpload={handleFileUpload}
+                            label={t('uploadYourself')}
+                            uploadedFileName={imageFile?.name}
+                            onClear={() => { setImageFile(null); setImagePreview(null); }}
+                        />
+                        <button onClick={() => setIsCameraOpen(true)} className="w-full text-sm inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-accent">
+                            <Icon name="camera" className="w-4 h-4"/> Use Camera
+                        </button>
+                    </div>
+
                     <div className="flex flex-col gap-4">
                         <textarea
                             value={clothingPrompt}

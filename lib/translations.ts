@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     // App.tsx
@@ -112,6 +113,7 @@ export const translations = {
     enhance: 'Enhance',
     generateCopy: 'Generate Copy',
     copy: 'Copy',
+    copied: 'Copied!',
     download: 'Download',
     saveAsPNG: 'Save as PNG',
     saveAsJPG: 'Save as JPG',
@@ -163,6 +165,8 @@ export const translations = {
     // ProductGenerationPage.tsx (modals, promptbar, etc.)
     confirmStartOverTitle: 'Are you sure?',
     confirmStartOverMessage: 'This will clear your current product, all generated images, and the session history. This action cannot be undone.',
+    confirmDeleteTitle: "Delete History Item",
+    confirmDeleteMessage: "Are you sure you want to delete this item? This action cannot be undone.",
     confirm: 'Confirm',
     cancel: 'Cancel',
     aiGeneratedMarketingCopy: 'AI Generated Marketing Copy',
@@ -445,7 +449,6 @@ export const translations = {
     generatePattern: 'Generate Pattern',
     generatedPatterns: 'Generated Patterns',
     previewSeamlessness: 'Seamless Preview',
-    copied: 'Copied!',
     uploadYourself: 'Upload Photo of Yourself',
     clothingPromptPlaceholder: "Describe an outfit, or add details for the reference image...",
     virtualTryOn: 'Virtual Try-On',
@@ -577,6 +580,7 @@ export const translations = {
     enhance: 'تحسين',
     generateCopy: 'إنشاء محتوى',
     copy: 'نسخ',
+    copied: 'تم النسخ!',
     download: 'تنزيل',
     saveAsPNG: 'حفظ بصيغة PNG',
     saveAsJPG: 'حفظ بصيغة JPG',
@@ -627,6 +631,8 @@ export const translations = {
     // ProductGenerationPage.tsx (modals, promptbar, etc.)
     confirmStartOverTitle: 'هل أنت متأكد؟',
     confirmStartOverMessage: 'سيؤدي هذا إلى مسح منتجك الحالي وجميع الصور التي تم إنشاؤها وسجل الجلسة. لا يمكن التراجع عن هذا الإجراء.',
+    confirmDeleteTitle: "حذف عنصر من السجل",
+    confirmDeleteMessage: "هل أنت متأكد أنك تريد حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.",
     confirm: 'تأكيد',
     cancel: 'إلغاء',
     aiGeneratedMarketingCopy: 'محتوى تسويقي من إنشاء الذكاء الاصطناعي',
@@ -909,7 +915,6 @@ export const translations = {
     generatePattern: 'إنشاء النمط',
     generatedPatterns: 'الأنماط المُنشأة',
     previewSeamlessness: 'معاينة التكرار',
-    copied: 'تم النسخ!',
     uploadYourself: 'ارفع صورة لنفسك',
     clothingPromptPlaceholder: "صف الزي، أو أضف تفاصيل للصورة المرجعية...",
     virtualTryOn: 'تجربة افتراضية',

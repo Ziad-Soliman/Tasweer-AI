@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from './Icon';
 import { AspectRatio, EditorMode, TextOverlay, BrandKit, WatermarkSettings, HistoryItem } from '../types';
@@ -61,7 +62,7 @@ const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel
     const [prompt, setPrompt] = useState('');
     const { t } = useTranslation();
     return (
-        <div className="absolute bottom-24 start-4 end-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg flex-wrap">
+        <div className="absolute bottom-[12rem] md:bottom-[9rem] start-4 end-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg flex-wrap">
              <div className="flex items-center gap-2">
                 <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                 <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
@@ -84,7 +85,7 @@ const MagicEditControls: React.FC<{ onSubmit: (prompt: string) => void, onCancel
 const RemoveObjectControls: React.FC<{ onApply: () => void, onCancel: () => void, brushSize: number, setBrushSize: (size: number) => void }> = ({ onApply, onCancel, brushSize, setBrushSize }) => {
     const { t } = useTranslation();
     return (
-        <div className="absolute bottom-24 start-4 end-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
+        <div className="absolute bottom-[12rem] md:bottom-[9rem] start-4 end-4 bg-background/80 backdrop-blur-md p-3 rounded-lg z-40 flex items-center gap-4 animate-fade-in border shadow-lg">
             <div className="flex items-center gap-2">
                 <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                 <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
@@ -290,10 +291,24 @@ export const Canvas: React.FC<CanvasProps> = ({
                 } else {
                     const fontSize = canvas.width * (watermarkSettings.scale / 200);
                     ctx.font = `bold ${fontSize}px ${brandKit?.font || 'Inter'}`;
-                    ctx.fillStyle = getContrastingTextColor(ctx, canvas);
+                    
+                    // Use white text with a shadow for better visibility on any background
+                    ctx.fillStyle = 'white';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+
                     const textMetrics = ctx.measureText(watermarkSettings.text);
                     const { x, y } = getWatermarkPosition(canvas.width, canvas.height, textMetrics.width, fontSize, watermarkSettings.position);
                     ctx.fillText(watermarkSettings.text, x, y);
+
+                    // Reset shadow for subsequent draws
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+
                     applyTextAndFinalizeDownload(canvas, format);
                 }
             } else {
@@ -370,17 +385,6 @@ export const Canvas: React.FC<CanvasProps> = ({
         if (pos.includes('middle')) y = (ch + wh) / 2;
         if (pos.includes('bottom')) y = ch - p;
         return { x, y };
-    };
-
-    const getContrastingTextColor = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-        // A simple check at a few points to determine if background is light or dark
-        const samplePoints = [ {x: canvas.width * 0.8, y: canvas.height * 0.8}, {x: canvas.width * 0.2, y: canvas.height * 0.2} ];
-        let totalLuminance = 0;
-        samplePoints.forEach(p => {
-            const pixel = ctx.getImageData(p.x, p.y, 1, 1).data;
-            totalLuminance += (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]);
-        });
-        return (totalLuminance / samplePoints.length) > 128 ? '#000000' : '#FFFFFF';
     };
 
 
@@ -503,15 +507,16 @@ export const Canvas: React.FC<CanvasProps> = ({
             {error && <ErrorDisplay message={error} onRetry={onRetry} />}
             
             {showGrid ? (
-                <div className="w-full h-full flex flex-col p-4 animate-fade-in">
+                <div className="w-full h-full flex flex-col p-4">
                     <h2 className="text-xl font-semibold text-center mb-4 text-foreground">{t('selectAnImageToEdit')}</h2>
                     <div className="flex-1 overflow-y-auto">
                         <div className={`grid grid-cols-2 gap-4`}>
                             {generatedImages.map((img, index) => (
                                 <button
-                                key={index}
-                                onClick={() => onSelectImage(index)}
-                                className={`relative rounded-lg overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background ${aspectMap[aspectRatio]}`}
+                                    key={index}
+                                    onClick={() => onSelectImage(index)}
+                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+                                    className={`relative rounded-lg overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background animate-scale-in ${aspectMap[aspectRatio]}`}
                                 >
                                 <img src={img} alt={`Variant ${index + 1}`} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

@@ -1,22 +1,115 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { nanoid } from 'nanoid';
-import { GenerationSettings, BrandKit, HistoryItem, EditorMode, TextOverlay, MarketingCopy, Preset, GenerationMode } from '../types';
-import { ControlPanel } from '../components/ControlPanel';
+import { GenerationSettings, BrandKit, HistoryItem, EditorMode, TextOverlay, MarketingCopy, Preset, GenerationMode, SceneTemplate } from '../types';
 import { Canvas } from '../components/Canvas';
 import { Tabs } from '../components/Tabs';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { BrandKitPanel } from '../components/BrandKitPanel';
-import { PromptBar } from '../components/PromptBar';
 import { StylePresetModal } from '../components/StylePresetModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { MarketingCopyModal } from '../components/MarketingCopyModal';
+import { SceneSuggestions } from '../components/SceneSuggestions';
 import * as geminiService from '../services/geminiService';
 import { PRESETS } from '../constants/presets';
 import { useTranslation } from '../App';
-import { NEGATIVE_PROMPT_PRESETS, SOCIAL_MEDIA_TEMPLATES } from '../constants';
+import { NEGATIVE_PROMPT_PRESETS, SOCIAL_MEDIA_TEMPLATES, ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES } from '../constants';
 import { FileUpload } from '../components/FileUpload';
 import { Icon } from '../components/Icon';
+import { Tooltip } from '../components/Tooltip';
+
+// --- Start of components moved/recreated from other files for this page ---
+
+const CollapsibleSection = ({ title, children, defaultOpen = true }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
+    return (
+        <details className="group border border-border rounded-lg bg-card overflow-hidden" open={defaultOpen}>
+            <summary className="font-semibold text-foreground px-4 py-3 cursor-pointer list-none flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <span>{title}</span>
+                <Icon name="chevron-down" className="w-5 h-5 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="p-4 pt-2 border-t border-border bg-background space-y-4">
+                {children}
+            </div>
+        </details>
+    );
+};
+
+interface GeneratedItem {
+    id: string;
+    src?: string;
+    prompt: string;
+    videoUrl?: string;
+    isLoading: boolean;
+}
+
+const LoadingCard = () => (
+    <div className="w-full bg-[#111118] border border-slate-700/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
+        <div className="relative w-16 h-16 flex items-center justify-center">
+            <div className="absolute w-12 h-12 bg-blue-500 rounded-full animate-pulse opacity-50"></div>
+            <div className="absolute w-5 h-5 bg-pink-500 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
+            <div className="absolute w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-700 rounded-full"></div>
+        </div>
+        <p className="mt-6 font-semibold text-slate-200 tracking-wide">Forging New Realities ...</p>
+        <p className="mt-1 text-sm text-slate-400">Rendering impossible landscapes...</p>
+    </div>
+);
+
+
+interface ImageCardProps {
+    item: GeneratedItem;
+    onSelect: () => void;
+    onDownload: () => void;
+    onEnhance: () => void;
+    onGenerateCopy: () => void;
+    onSetEditorMode: (mode: EditorMode) => void;
+}
+
+const ImageCard: React.FC<ImageCardProps> = ({ item, onSelect, onDownload, onEnhance, onGenerateCopy, onSetEditorMode }) => {
+    const { t } = useTranslation();
+
+    const handleAction = (e: React.MouseEvent, action: () => void) => {
+        e.stopPropagation();
+        onSelect();
+        action();
+    }
+    
+    return (
+        <div className="break-inside-avoid">
+            {item.isLoading || !item.src ? (
+                <LoadingCard />
+            ) : (
+                <>
+                    <div className="group relative overflow-hidden rounded-lg cursor-pointer" onClick={onSelect}>
+                        {item.videoUrl ? (
+                            <video src={item.videoUrl} loop autoPlay muted className="w-full h-auto block bg-muted" />
+                        ) : (
+                            <img src={item.src} alt={item.prompt} className="w-full h-auto block bg-muted" />
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-start justify-end p-2">
+                            <div className="flex items-center gap-1.5">
+                                <Tooltip text={t('editorToolExpandImage')}><button onClick={(e) => handleAction(e, () => onSetEditorMode('expand'))} className="p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 backdrop-blur-sm"><Icon name="expand" className="w-4 h-4" /></button></Tooltip>
+                                <Tooltip text={t('enhance')}><button onClick={(e) => handleAction(e, onEnhance)} className="p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 backdrop-blur-sm"><Icon name="wand" className="w-4 h-4" /></button></Tooltip>
+                                <Tooltip text={t('generateCopy')}><button onClick={(e) => handleAction(e, onGenerateCopy)} className="p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 backdrop-blur-sm"><Icon name="pencil" className="w-4 h-4" /></button></Tooltip>
+                                <Tooltip text={t('download')}><button onClick={(e) => { e.stopPropagation(); onDownload(); }} className="p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 backdrop-blur-sm"><Icon name="download" className="w-4 h-4" /></button></Tooltip>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-between items-start mt-2 gap-2">
+                        <p className="text-muted-foreground text-xs">{item.prompt}</p>
+                         <Tooltip text={t('copy')}>
+                            <button onClick={() => navigator.clipboard.writeText(item.prompt)} className="flex-shrink-0 text-muted-foreground hover:text-foreground">
+                                <Icon name="copy" className="w-3.5 h-3.5" />
+                            </button>
+                        </Tooltip>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+// --- End of components ---
+
 
 const DEFAULT_BRAND_KIT: BrandKit = {
     id: 'default',
@@ -54,49 +147,13 @@ const DEFAULT_SETTINGS: GenerationSettings = {
 
 const WelcomeScreen = ({ mode, onUpload }: { mode: 'image' | 'video' | 'edit', onUpload: (file: File) => void }) => {
     const { t } = useTranslation();
-    
-    const StepCard = ({ icon, step, title, description }: { icon: string, step: string, title: string, description: string }) => (
-         <div className="flex flex-col items-center p-4 rounded-lg">
-            <div className="relative w-full aspect-video rounded-lg bg-card flex items-center justify-center p-4 border border-border">
-                <Icon name={icon} className="w-16 h-16 text-primary" />
-                <span className="absolute top-2 left-2 text-2xl font-bold text-foreground/20">{step}</span>
-            </div>
-            <h3 className="font-semibold mt-4">{title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-        </div>
-    );
-
-    // Video-specific welcome screen
-    if (mode === 'video') {
-        return (
-            <div className="flex-1 flex flex-col justify-center items-center p-8 text-center animate-fade-in">
-                <Icon name="video" className="w-24 h-24 text-primary mb-4" />
-                <h1 className="text-4xl font-bold tracking-tight">Control Every Camera Move</h1>
-                <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Animate your scenes with precision and style. Get full cinematic control over how the camera moves to enhance emotion, rhythm, and storytelling.
-                </p>
-                 <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
-                    <StepCard icon="move" step="01" title="Choose motion" description="Select a Motion to define how your image will move" />
-                    <StepCard icon="upload" step="02" title="Add Image" description="Upload an image to start your animation" />
-                    <StepCard icon="video" step="03" title="Get video" description="Click generate to create your final animated video!" />
-                </div>
-            </div>
-        );
-    }
-
-    // Default for Image/Edit
     return (
-        <div className="flex-1 flex flex-col justify-center items-center p-8 text-center animate-fade-in">
+        <div className="flex-1 flex flex-col justify-center items-center p-8 text-center animate-fade-in h-full">
             <div className="w-full max-w-lg">
                  <Icon name="wand" className="w-24 h-24 text-primary mx-auto mb-4" />
                  <h2 className="text-4xl font-bold tracking-tight">AI Image Generation Studio</h2>
                  <p className="text-muted-foreground mt-2 mb-8 max-w-md mx-auto">Generate new, stylized e-commerce and marketing images from a single product photo.</p>
                  <FileUpload onFileUpload={onUpload} label={t('uploadPhoto')}/>
-            </div>
-             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
-                <StepCard icon="upload" step="01" title="Upload Photo" description="Start by uploading a photo of your product." />
-                <StepCard icon="pencil" step="02" title="Describe Scene & Style" description="Use the controls and prompt to describe the perfect scene." />
-                <StepCard icon="sparkles" step="03" title="Generate Image" description="Let the AI create stunning, professional visuals for you." />
             </div>
         </div>
     );
@@ -110,12 +167,34 @@ interface ProductGenerationPageProps {
     onToggleFavorite: (id: string) => void;
     onRestore: (item: HistoryItem) => void;
     addHistoryItem: (itemData: Omit<HistoryItem, 'id' | 'timestamp' | 'isFavorite'>) => void;
+    deleteHistoryItem: (id: string) => void;
     restoredState: HistoryItem | null;
     clearRestoredState: () => void;
 }
 
+const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <label className={`block text-sm font-medium text-muted-foreground mb-1.5 ${className}`}>{children}</label>
+);
+
+const Dropdown: React.FC<{ value: string; onChange: (val: string) => void; options: readonly string[]; disabled?: boolean; label: keyof typeof import('../lib/translations').translations.en }> = ({ value, onChange, options, disabled, label }) => {
+    const { t } = useTranslation();
+    return (
+    <div>
+        <Label>{t(label)}</Label>
+        <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+            {options.map(opt => <option key={opt} value={opt}>{t(opt as any) || opt}</option>)}
+        </select>
+    </div>
+)};
+
+
 export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (props) => {
-    const { initialMode, history, onToggleFavorite, onRestore, addHistoryItem, restoredState, clearRestoredState } = props;
+    const { initialMode, history, onToggleFavorite, onRestore, addHistoryItem, deleteHistoryItem, restoredState, clearRestoredState } = props;
     const { t } = useTranslation();
 
     const getInitialGenerationMode = (): GenerationMode => {
@@ -129,10 +208,9 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
     const [productImageNoBg, setProductImageNoBg] = useState<string | null>(null);
 
-    const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-    const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+    const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-    const selectedImage = useMemo(() => (selectedImageIndex !== null ? generatedImages[selectedImageIndex] : null), [selectedImageIndex, generatedImages]);
+    const selectedItem = useMemo(() => (selectedImageIndex !== null ? generatedItems[selectedImageIndex] : null), [selectedImageIndex, generatedItems]);
 
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
@@ -141,8 +219,6 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const [error, setError] = useState<string | null>(null);
     
     // === UI/EDITOR STATE ===
-    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
-    const [isWorkspaceVisible, setIsWorkspaceVisible] = useState(true);
     const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
     const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
     const [isStartOverModalOpen, setIsStartOverModalOpen] = useState(false);
@@ -155,19 +231,8 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const activeBrandKit = useMemo(() => brandKits.find(kit => kit.id === activeBrandKitId), [brandKits, activeBrandKitId]);
     const [marketingCopy, setMarketingCopy] = useState<MarketingCopy | null>(null);
     const [palette, setPalette] = useState<string[] | undefined>(undefined);
-
-    // === RESPONSIVENESS ===
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 1024) {
-                setIsSidebarVisible(false);
-                setIsWorkspaceVisible(false);
-            }
-        };
-        window.addEventListener('resize', handleResize);
-        handleResize(); // Initial check
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const [sceneTemplates, setSceneTemplates] = useState<SceneTemplate[]>([]);
+    const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
 
     // === STATE RESTORATION ===
      useEffect(() => {
@@ -176,20 +241,22 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
             setSettings(payload.settings);
             setProductImagePreview(payload.productImagePreview);
             setProductImageNoBg(payload.productImageNoBg);
-            // Must create a File object from the preview to allow re-generation
              if (payload.productImagePreview) {
-                fetch(payload.productImagePreview)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const file = new File([blob], "restored-image.png", { type: blob.type });
-                        setProductImage(file);
-                    });
+                fetch(payload.productImagePreview).then(res => res.blob()).then(blob => {
+                    const file = new File([blob], "restored-image.png", { type: blob.type });
+                    setProductImage(file);
+                });
             }
-            const restoredImages = payload.generatedImages || [];
-            setGeneratedImages(restoredImages);
-            setGeneratedVideoUrl(payload.generatedVideoUrl || null);
+            const items: GeneratedItem[] = (payload.generatedImages || []).map((img: string, i: number) => ({
+                id: nanoid(),
+                src: img,
+                prompt: payload.settings.prompt, // simplified assumption
+                videoUrl: payload.generatedVideoUrl && i === 0 ? payload.generatedVideoUrl : undefined,
+                isLoading: false,
+            }));
+            setGeneratedItems(items);
             setTextOverlays(payload.textOverlays || []);
-            setSelectedImageIndex(restoredImages.length > 1 ? null : 0);
+            setSelectedImageIndex(null); // Go back to gallery view
             clearRestoredState();
         }
     }, [restoredState, clearRestoredState]);
@@ -206,8 +273,7 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
             setProductImagePreview(null);
             setProductImageNoBg(null);
         }
-        setGeneratedImages([]);
-        setGeneratedVideoUrl(null);
+        setGeneratedItems([]);
         setSelectedImageIndex(null);
         setIsLoading(false);
         setLoadingMessage('');
@@ -216,6 +282,7 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
         setTextOverlays([]);
         setMarketingCopy(null);
         setPalette(undefined);
+        setSceneTemplates([]);
     };
     
     const handleStartOver = () => {
@@ -226,9 +293,7 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const handleProductImageUpload = async (file: File) => {
         resetState(true);
         setProductImage(file);
-        const previewUrl = URL.createObjectURL(file);
-        setProductImagePreview(previewUrl);
-        
+        setProductImagePreview(URL.createObjectURL(file));
         try {
             setPromptGenerationMessage(t('loadingAnalyzing'));
             const desc = await geminiService.describeProduct(file);
@@ -244,6 +309,26 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
              setPromptGenerationMessage('');
         }
     };
+    
+    const generateAndSetSceneTemplates = useCallback(async () => {
+        if (settings.generationMode === 'product' && settings.productDescription && !promptGenerationMessage) {
+            setIsLoadingTemplates(true);
+            setSceneTemplates([]);
+            try {
+                const templates = await geminiService.generateSceneTemplates(settings.productDescription);
+                setSceneTemplates(templates);
+            } catch (e) {
+                console.error("Failed to generate scene templates", e);
+            } finally {
+                setIsLoadingTemplates(false);
+            }
+        }
+    }, [settings.productDescription, settings.generationMode, promptGenerationMessage]);
+
+    useEffect(() => {
+        generateAndSetSceneTemplates();
+    }, [generateAndSetSceneTemplates]);
+
 
     const generateAndSetPrompt = useCallback(() => {
         if (!settings.productDescription || settings.editedPrompt !== null) return;
@@ -278,121 +363,72 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
         generateAndSetPrompt();
     }, [generateAndSetPrompt]);
 
+    const handleSelectSceneTemplate = (template: SceneTemplate) => {
+        setSettings(s => ({
+            ...s,
+            prompt: template.prompt,
+            editedPrompt: template.prompt,
+            lightingStyle: template.lighting,
+            cameraPerspective: template.perspective,
+            selectedPresetId: null
+        }));
+    };
+
     const handleUpdateSingleImage = (newImageBase64: string) => {
         if (selectedImageIndex === null) return;
         const finalImage = `data:image/png;base64,${newImageBase64}`;
-        const newImages = [...generatedImages];
-        newImages[selectedImageIndex] = finalImage;
-        setGeneratedImages(newImages);
+        setGeneratedItems(items => items.map((item, index) => index === selectedImageIndex ? {...item, src: finalImage} : item));
     };
 
-    // === API-backed Feature Handlers ===
     const handleEnhancePrompt = async () => {
-        setIsEnhancingPrompt(true);
-        setError(null);
+        setIsEnhancingPrompt(true); setError(null);
         try {
             const currentPrompt = settings.editedPrompt ?? settings.prompt;
             const enhanced = await geminiService.enhancePrompt(currentPrompt);
             setSettings(s => ({ ...s, editedPrompt: enhanced }));
-        } catch(e) {
-            setError(e instanceof Error ? e.message : 'Failed to enhance prompt.');
-        } finally {
-            setIsEnhancingPrompt(false);
-        }
+        } catch(e) { setError(e instanceof Error ? e.message : 'Failed to enhance prompt.'); } 
+        finally { setIsEnhancingPrompt(false); }
     };
-    
-    const handleMagicEdit = async (imageWithMaskBase64: string, prompt: string) => {
-        setIsLoading(true);
-        setLoadingMessage(t('loadingMagicEdit'));
-        setError(null);
+
+    const runActionForSelectedIndex = async (action: () => Promise<string | void>, loadingMsg: string, errorMsg: string) => {
+        if (selectedImageIndex === null || !selectedItem?.src) return;
+        setIsLoading(true); setLoadingMessage(loadingMsg); setError(null);
         try {
-            const result = await geminiService.magicEditImage(imageWithMaskBase64, prompt);
-            handleUpdateSingleImage(result);
+            const result = await action();
+            if (typeof result === 'string') {
+                handleUpdateSingleImage(result);
+            }
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Magic Edit failed.");
+            setError(e instanceof Error ? e.message : errorMsg);
         } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-            setEditorMode('view');
+            setIsLoading(false); setLoadingMessage(''); setEditorMode('view');
         }
     };
 
-    const handleRemoveObject = async (imageWithMaskBase64: string) => {
-        setIsLoading(true);
-        setLoadingMessage(t('loadingRemovingObject'));
-        setError(null);
-        try {
-            const result = await geminiService.removeObject(imageWithMaskBase64);
-            handleUpdateSingleImage(result);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Object removal failed.");
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-            setEditorMode('view');
-        }
-    };
-    
-    const handleEnhanceImage = async () => {
-        if (!selectedImage) return;
-        setIsLoading(true);
-        setLoadingMessage(t('loadingEnhancingImage'));
-        setError(null);
-        try {
-            const base64 = selectedImage.split(',')[1];
-            const result = await geminiService.enhanceImage(base64, settings.prompt);
-            handleUpdateSingleImage(result);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Enhancement failed.");
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-        }
-    };
-    
-    const handleExpandImage = async (direction: 'up' | 'down' | 'left' | 'right') => {
-        if (!selectedImage) return;
-        setIsLoading(true);
-        setLoadingMessage(t('loadingExpandingImage', { direction }));
-        setError(null);
-        try {
-            const base64 = selectedImage.split(',')[1];
-            const result = await geminiService.expandImage(base64, settings.prompt, direction);
-            handleUpdateSingleImage(result);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Expansion failed.");
-        } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
-            setEditorMode('view');
-        }
-    };
+    const handleMagicEdit = (imageWithMask: string, prompt: string) => runActionForSelectedIndex(() => geminiService.magicEditImage(imageWithMask, prompt), t('loadingMagicEdit'), "Magic Edit failed.");
+    const handleRemoveObject = (imageWithMask: string) => runActionForSelectedIndex(() => geminiService.removeObject(imageWithMask), t('loadingRemovingObject'), "Object removal failed.");
+    const handleEnhanceImage = () => runActionForSelectedIndex(() => geminiService.enhanceImage(selectedItem!.src!.split(',')[1], selectedItem!.prompt), t('loadingEnhancingImage'), "Enhancement failed.");
+    const handleExpandImage = (direction: 'up'|'down'|'left'|'right') => runActionForSelectedIndex(() => geminiService.expandImage(selectedItem!.src!.split(',')[1], selectedItem!.prompt, direction), t('loadingExpandingImage', { direction }), "Expansion failed.");
     
     const handleGenerateCopy = async (regenerate = false) => {
-        if (!selectedImage) return;
+        if (selectedImageIndex === null || !selectedItem?.src) return;
         if (!regenerate) setIsCopyModalOpen(true);
-        setMarketingCopy(null);
-        setIsLoading(true);
-        setLoadingMessage(t('loadingGeneratingCopy'));
-        setError(null);
+        setMarketingCopy(null); setIsLoading(true); setLoadingMessage(t('loadingGeneratingCopy')); setError(null);
         try {
-            const base64 = selectedImage.split(',')[1];
-            const result = await geminiService.generateMarketingCopy(base64, settings.prompt);
+            const result = await geminiService.generateMarketingCopy(selectedItem!.src.split(',')[1], selectedItem!.prompt);
             setMarketingCopy(result);
         } catch(e) {
             setError(e instanceof Error ? e.message : "Failed to generate copy.");
         } finally {
-            setIsLoading(false);
-            setLoadingMessage('');
+            setIsLoading(false); setLoadingMessage('');
         }
     };
     
     const handleExtractPalette = async () => {
-        if (!selectedImage) return;
-        setLoadingMessage(t('loadingExtractingPalette')); // Use loading message for quick feedback
+        if (selectedImageIndex === null || !selectedItem?.src) return;
+        setLoadingMessage(t('loadingExtractingPalette'));
         try {
-            const base64 = selectedImage.split(',')[1];
-            const result = await geminiService.extractPalette(base64);
+            const result = await geminiService.extractPalette(selectedItem!.src.split(',')[1]);
             setPalette(result);
         } catch(e) {
             setError(e instanceof Error ? e.message : "Failed to extract palette.");
@@ -404,182 +440,291 @@ export const ProductGenerationPage: React.FC<ProductGenerationPageProps> = (prop
     const handleGenerate = async () => {
         setError(null);
         setIsLoading(true);
-        setGeneratedImages([]);
-        setGeneratedVideoUrl(null);
-        setSelectedImageIndex(null);
         setPalette(undefined);
-
+        setSelectedImageIndex(null);
+    
         const currentSettings = settings.editedPrompt ? { ...settings, prompt: settings.editedPrompt } : settings;
-        
+    
         try {
-            let historyThumbnail: HistoryItem['thumbnail'] = { type: 'icon', value: 'sparkles' };
-            let finalGeneratedImages: string[] = [];
-            let finalGeneratedVideoUrl: string | null = null;
-            
-            switch (currentSettings.generationMode) {
-                case 'product':
-                case 'mockup':
-                case 'social':
-                case 'design':
-                    if (!productImageNoBg) throw new Error("Product image not ready.");
-                    setLoadingMessage(t('loadingGeneratingImages', { count: currentSettings.numberOfImages }));
-                    
-                    const imagePromises = Array(currentSettings.numberOfImages).fill(0).map((_, i) => {
-                        const seed = currentSettings.seed ? parseInt(currentSettings.seed) + i : null;
-                        if (currentSettings.generationMode === 'mockup') {
-                            return geminiService.generateMockup(productImageNoBg, currentSettings.prompt, currentSettings.mockupType);
-                        }
-                        return geminiService.generateImage(productImageNoBg, currentSettings.prompt, currentSettings.negativePrompt, seed);
-                    });
-
-                    const results = await Promise.all(imagePromises);
-                    finalGeneratedImages = results.map(base64 => `data:image/png;base64,${base64}`);
-                    setGeneratedImages(finalGeneratedImages);
-                    setSelectedImageIndex(finalGeneratedImages.length > 1 ? null : 0);
-                    historyThumbnail = { type: 'image', value: finalGeneratedImages[0] };
-                    break;
+            if (currentSettings.generationMode === 'video') {
+                if (!productImageNoBg) throw new Error("Product image not ready.");
+    
+                const placeholder: GeneratedItem = { id: nanoid(), prompt: currentSettings.prompt, isLoading: true };
+                setGeneratedItems(prev => [placeholder, ...prev]);
+                setLoadingMessage(t('videoLoadingMessage1')); // Simplified
+    
+                const url = await geminiService.generateVideo(productImageNoBg, currentSettings.prompt);
                 
-                case 'video':
-                    if (!productImageNoBg) throw new Error("Product image not ready.");
-                    const videoLoadingMessages = [t('videoLoadingMessage1'), t('videoLoadingMessage2'), t('videoLoadingMessage3'), t('videoLoadingMessage4'), t('videoLoadingMessage5'), t('videoLoadingMessage6'), t('videoLoadingMessage7')];
-                    let messageIndex = 0;
-                    setLoadingMessage(videoLoadingMessages[messageIndex]);
-                    const intervalId = setInterval(() => {
-                        messageIndex = (messageIndex + 1) % videoLoadingMessages.length;
-                        setLoadingMessage(videoLoadingMessages[messageIndex]);
-                    }, 5000);
-
-                    const url = await geminiService.generateVideo(productImageNoBg, currentSettings.prompt);
-                    clearInterval(intervalId);
-                    setGeneratedVideoUrl(url);
-                    finalGeneratedVideoUrl = url;
-                    historyThumbnail = { type: 'video', value: url };
-                    break;
-            }
-
-            addHistoryItem({
-                source: { page: 'product-generation', appName: t('productGeneration') },
-                thumbnail: historyThumbnail,
-                title: currentSettings.prompt,
-                payload: {
-                    settings: currentSettings,
-                    productImagePreview,
-                    productImageNoBg,
-                    generatedImages: finalGeneratedImages,
-                    generatedVideoUrl: finalGeneratedVideoUrl,
-                    textOverlays,
+                const finalItem = { ...placeholder, src: productImagePreview!, videoUrl: url, isLoading: false };
+                setGeneratedItems(prev => prev.map(item => item.id === placeholder.id ? finalItem : item));
+    
+                addHistoryItem({
+                    source: { page: 'product-generation', appName: t('productGeneration') },
+                    thumbnail: { type: 'video', value: url },
+                    title: currentSettings.prompt,
+                    payload: { settings: currentSettings, productImagePreview, productImageNoBg, generatedVideoUrl: url, textOverlays }
+                });
+    
+            } else {
+                if (!productImageNoBg) throw new Error("Product image not ready.");
+    
+                const placeholders: GeneratedItem[] = Array(currentSettings.numberOfImages).fill(0).map(() => ({
+                    id: nanoid(),
+                    prompt: currentSettings.prompt,
+                    isLoading: true,
+                }));
+                setGeneratedItems(prev => [...placeholders, ...prev]);
+    
+                const allPromises = placeholders.map((placeholder, i) => {
+                    const seed = currentSettings.seed ? parseInt(currentSettings.seed) + i : null;
+                    const generatorFn = currentSettings.generationMode === 'mockup'
+                        ? geminiService.generateMockup(productImageNoBg, currentSettings.prompt, currentSettings.mockupType)
+                        : geminiService.generateImage(productImageNoBg, currentSettings.prompt, currentSettings.negativePrompt, seed);
+                    
+                    return generatorFn.then(base64 => {
+                        const src = `data:image/png;base64,${base64}`;
+                        setGeneratedItems(prev => prev.map(item => 
+                            item.id === placeholder.id 
+                            ? { ...item, src, isLoading: false } 
+                            : item
+                        ));
+                        return { status: 'fulfilled', value: src };
+                    }).catch(err => {
+                        setGeneratedItems(prev => prev.filter(item => item.id !== placeholder.id));
+                        return { status: 'rejected', reason: err };
+                    });
+                });
+    
+                const results = await Promise.all(allPromises);
+                
+                // FIX: Use a type predicate in the filter to correctly narrow the type for the subsequent map operation.
+                const successfulSrcs = results
+                    .filter((r): r is { status: 'fulfilled'; value: string } => r.status === 'fulfilled')
+                    .map(r => r.value);
+    
+                if (successfulSrcs.length > 0) {
+                    addHistoryItem({
+                        source: { page: 'product-generation', appName: t('productGeneration') },
+                        thumbnail: { type: 'image', value: successfulSrcs[0] },
+                        title: currentSettings.prompt,
+                        payload: { settings: currentSettings, productImagePreview, productImageNoBg, generatedImages: successfulSrcs, textOverlays }
+                    });
+                } else {
+                    throw new Error("All image generations failed.");
                 }
-            });
-
+            }
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'An unknown error occurred during generation.');
+            setError(e instanceof Error ? e.message : 'An unknown error occurred.');
         } finally {
             setIsLoading(false);
             setLoadingMessage('');
         }
     };
+
+
+    const handleDownload = () => {
+        if (!selectedItem) return;
+        const link = document.createElement('a');
+        link.href = selectedItem.videoUrl || selectedItem.src!;
+        link.download = `higgsfield-export.${selectedItem.videoUrl ? 'mp4' : 'png'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
     
+    // UI COMPONENTS
+    const GenerationModeToggle: React.FC = () => {
+        const modes = [
+            { value: 'product', labelKey: 'modeProduct', icon: 'package' },
+            { value: 'video', labelKey: 'modeVideo', icon: 'video' },
+            { value: 'mockup', labelKey: 'modeMockup', icon: 'shirt' },
+            { value: 'social', labelKey: 'modeSocial', icon: 'users' },
+            { value: 'design', labelKey: 'modeDesign', icon: 'pencil' }
+        ];
+        return (
+            <div className="flex items-center gap-1 p-1 bg-muted rounded-lg flex-wrap">
+                {modes.map(mode => (
+                     <button key={mode.value} onClick={() => setSettings(s => ({ ...s, generationMode: mode.value as GenerationMode, editedPrompt: null, selectedPresetId: null, prompt: '' }))} disabled={isLoading}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 flex items-center justify-center gap-2 ${settings.generationMode === mode.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <Icon name={mode.icon} className="w-4 h-4" /> {t(mode.labelKey as any)}
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
     if (!productImagePreview) {
-        return <div className="flex-1 flex flex-col"><WelcomeScreen mode={initialMode} onUpload={handleProductImageUpload} /></div>;
+        return <WelcomeScreen mode={initialMode} onUpload={handleProductImageUpload} />;
     }
 
-
-    return (
-        <div className={`grid flex-1 min-h-0 overflow-hidden transition-all duration-300 md:grid-cols-[auto_1fr_auto]`}>
-            <div className={`transition-all duration-300 overflow-hidden ${isSidebarVisible ? 'w-[350px]' : 'w-0'}`}>
-                <ControlPanel 
-                    settings={settings}
-                    setSettings={setSettings}
-                    onProductImageUpload={handleProductImageUpload}
-                    onClearProductImage={() => setIsStartOverModalOpen(true)}
-                    isLoading={isLoading}
-                    isGeneratingPrompt={!!promptGenerationMessage}
-                    promptGenerationMessage={promptGenerationMessage}
-                    productImage={productImage}
-                    activeBrandKit={activeBrandKit}
-                />
-            </div>
-
-            <div className="flex flex-col relative bg-transparent min-w-0 h-full">
-                 <button onClick={() => setIsSidebarVisible(!isSidebarVisible)} className="absolute top-1/2 -start-3 -translate-y-1/2 z-30 w-6 h-16 bg-card border-y border-e border-border/80 rounded-r-lg flex items-center justify-center hover:bg-accent transition-colors">
-                    <Icon name={isSidebarVisible ? 'arrow-left' : 'arrow-right'} className="w-4 h-4" />
-                 </button>
+    if (selectedImageIndex !== null) {
+        return (
+            <div className="h-screen flex flex-col">
                 <Canvas
                     productImagePreview={productImagePreview}
-                    generatedImages={generatedImages}
-                    generatedVideoUrl={generatedVideoUrl}
-                    selectedImageIndex={selectedImageIndex}
-                    onSelectImage={setSelectedImageIndex}
-                    isLoading={isLoading}
-                    loadingMessage={loadingMessage}
-                    error={error}
-                    onRetry={handleGenerate}
-                    onStartOver={() => setIsStartOverModalOpen(true)}
+                    generatedImages={selectedItem?.src ? [selectedItem.src] : []}
+                    generatedVideoUrl={selectedItem?.videoUrl || null}
+                    selectedImageIndex={0}
+                    onSelectImage={() => {}}
+                    isLoading={isLoading} loadingMessage={loadingMessage} error={error}
+                    onRetry={handleGenerate} onStartOver={() => setIsStartOverModalOpen(true)}
                     aspectRatio={settings.aspectRatio}
-                    editorMode={editorMode}
-                    setEditorMode={setEditorMode}
-                    textOverlays={textOverlays}
-                    setTextOverlays={setTextOverlays}
-                    brandKit={activeBrandKit}
-                    watermarkSettings={settings.watermark}
-                    palette={palette}
-                    onExtractPalette={handleExtractPalette}
-                    onEnhance={handleEnhanceImage}
-                    onMagicEdit={handleMagicEdit}
-                    onRemoveObject={handleRemoveObject}
-                    onExpandImage={handleExpandImage}
+                    editorMode={editorMode} setEditorMode={setEditorMode}
+                    textOverlays={textOverlays} setTextOverlays={setTextOverlays}
+                    brandKit={activeBrandKit} watermarkSettings={settings.watermark}
+                    palette={palette} onExtractPalette={handleExtractPalette}
+                    onEnhance={handleEnhanceImage} onMagicEdit={handleMagicEdit}
+                    onRemoveObject={handleRemoveObject} onExpandImage={handleExpandImage}
                     onGenerateCopy={() => handleGenerateCopy(false)}
                 />
-                <PromptBar
-                    prompt={settings.editedPrompt ?? settings.prompt}
-                    onPromptChange={(p) => setSettings(s => ({ ...s, editedPrompt: p }))}
-                    onGenerate={handleGenerate}
-                    onBrowsePresets={() => setIsPresetModalOpen(true)}
-                    onEnhancePrompt={handleEnhancePrompt}
-                    isGenerating={isLoading}
-                    isEnhancingPrompt={isEnhancingPrompt}
-                    isImageUploaded={!!productImage}
-                />
-                <button onClick={() => setIsWorkspaceVisible(!isWorkspaceVisible)} className="absolute top-1/2 -end-3 -translate-y-1/2 z-30 w-6 h-16 bg-card border-y border-s border-border/80 rounded-l-lg flex items-center justify-center hover:bg-accent transition-colors">
-                    <Icon name={isWorkspaceVisible ? 'arrow-right' : 'arrow-left'} className="w-4 h-4" />
+                 <button onClick={() => setSelectedImageIndex(null)} className="absolute top-4 left-4 z-30 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 hover:bg-accent backdrop-blur-sm text-sm font-medium">
+                    <Icon name="arrow-left" className="w-4 h-4"/> Back to Gallery
                 </button>
             </div>
+        )
+    }
 
-            <div className={`transition-all duration-300 overflow-hidden ${isWorkspaceVisible ? 'w-[350px]' : 'w-0'}`}>
-                 <Tabs tabs={[{key: 'History', label: t('history')}, {key: 'Brand', label: t('brand')}]}>
+    return (
+        <div className="grid flex-1 min-h-0 overflow-hidden md:grid-cols-[380px_1fr_350px]">
+            {/* Left Sidebar */}
+            <div className="bg-card border-r border-border h-full flex flex-col">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                     <CollapsibleSection title="Main Asset">
+                        <FileUpload 
+                            onFileUpload={handleProductImageUpload} 
+                            label={t('uploadPhoto')}
+                            uploadedFileName={productImage?.name} 
+                            onClear={() => setIsStartOverModalOpen(true)}
+                            disabled={isLoading || !!promptGenerationMessage}
+                            disabledReason={promptGenerationMessage || undefined}
+                        />
+                    </CollapsibleSection>
+                    <CollapsibleSection title="Generation Mode">
+                        <GenerationModeToggle />
+                    </CollapsibleSection>
+                    <CollapsibleSection title="Your Imagination">
+                         <div className="relative">
+                            <label className="block text-sm font-medium text-muted-foreground mb-1.5">Prompt</label>
+                            <textarea value={settings.editedPrompt ?? settings.prompt} onChange={(e) => setSettings(s => ({ ...s, editedPrompt: e.target.value }))} rows={4} className="w-full bg-background border border-input p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y min-h-[9rem]"></textarea>
+                            <div className="flex gap-2 mt-2">
+                                <button onClick={() => setIsPresetModalOpen(true)} className="flex-1 text-sm h-9 bg-muted hover:bg-accent rounded-md">{t('browsePresets')}</button>
+                                <button onClick={handleEnhancePrompt} disabled={isEnhancingPrompt} className="flex-1 text-sm h-9 bg-muted hover:bg-accent rounded-md flex items-center justify-center gap-1">
+                                    {isEnhancingPrompt ? <Icon name="spinner" className="animate-spin"/> : <Icon name="wand"/>} {t('enhancePrompt')}
+                                </button>
+                            </div>
+                         </div>
+                         {sceneTemplates.length > 0 && settings.generationMode === 'product' && (
+                            <SceneSuggestions templates={sceneTemplates} onSelect={handleSelectSceneTemplate} isLoading={isLoadingTemplates} />
+                         )}
+                    </CollapsibleSection>
+                    <CollapsibleSection title="Generation Settings">
+                        {settings.generationMode === 'product' && (
+                            <div className="space-y-4">
+                                <Dropdown label="lighting" options={LIGHTING_STYLES} value={settings.lightingStyle} onChange={(val) => setSettings(s => ({ ...s, lightingStyle: val, editedPrompt: null, prompt: '' }))} />
+                                <Dropdown label="perspective" options={CAMERA_PERSPECTIVES} value={settings.cameraPerspective} onChange={(val) => setSettings(s => ({ ...s, cameraPerspective: val, editedPrompt: null, prompt: '' }))} />
+                            </div>
+                        )}
+                        {settings.generationMode === 'video' && (
+                            <div className="space-y-4">
+                                <Dropdown label="length" options={VIDEO_LENGTHS} value={settings.videoLength} onChange={(val) => setSettings(s => ({ ...s, videoLength: val as any, editedPrompt: null, prompt: '' }))} />
+                                <Dropdown label="motion" options={CAMERA_MOTIONS} value={settings.cameraMotion} onChange={(val) => setSettings(s => ({ ...s, cameraMotion: val as any, editedPrompt: null, prompt: '' }))} />
+                            </div>
+                        )}
+                        {settings.generationMode === 'mockup' && (
+                            <Dropdown label="mockupType" options={MOCKUP_TYPES} value={settings.mockupType} onChange={(val) => setSettings(s => ({ ...s, mockupType: val, editedPrompt: null, prompt: '' }))} />
+                        )}
+                         {settings.generationMode === 'social' && (
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1.5">{t('socialMediaTemplate')}</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {SOCIAL_MEDIA_TEMPLATES.map(template => (
+                                        <button
+                                            key={template.id}
+                                            onClick={() => {
+                                                setSettings(s => ({
+                                                    ...s,
+                                                    selectedSocialTemplateId: template.id,
+                                                    aspectRatio: template.aspectRatio,
+                                                    editedPrompt: null,
+                                                    selectedPresetId: null,
+                                                    prompt: ''
+                                                }));
+                                            }}
+                                            className={`p-3 rounded-lg border-2 text-left transition-colors flex flex-col justify-between h-24 ${
+                                                settings.selectedSocialTemplateId === template.id
+                                                    ? 'border-primary bg-primary/10'
+                                                    : 'border-border hover:border-primary/50 hover:bg-accent'
+                                            }`}
+                                        >
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground">{t(template.name as any)}</p>
+                                                <p className="text-xs text-muted-foreground">{template.platform}</p>
+                                            </div>
+                                            <div className="flex items-center text-xs text-muted-foreground gap-1 mt-auto pt-2">
+                                               <Icon name="aspect-ratio" className="w-3 h-3"/>
+                                               <span>{template.aspectRatio}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {settings.generationMode === 'design' && (
+                            <div className="text-sm text-muted-foreground text-center p-4 bg-muted rounded-md">
+                                {t('designModePromptInfo')}
+                            </div>
+                        )}
+                    </CollapsibleSection>
+                </div>
+                <div className="p-4 border-t border-border/80">
+                     <button onClick={handleGenerate} disabled={isLoading || !productImage} className="w-full text-base font-semibold h-12 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+                        {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <><Icon name="wand" className="w-5 h-5" /> {t('generate')}</>}
+                    </button>
+                </div>
+            </div>
+            
+            {/* Center Gallery */}
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+                {generatedItems.length > 0 ? (
+                    <div className="columns-2 gap-6 space-y-6">
+                        {generatedItems.map((item, index) => (
+                            <ImageCard 
+                                key={item.id} 
+                                item={item} 
+                                onSelect={() => setSelectedImageIndex(index)} 
+                                onDownload={() => {
+                                    setSelectedImageIndex(index);
+                                    setTimeout(() => handleDownload(), 0);
+                                }}
+                                onEnhance={() => { setSelectedImageIndex(index); setTimeout(() => handleEnhanceImage(), 0); }}
+                                onGenerateCopy={() => { setSelectedImageIndex(index); setTimeout(() => handleGenerateCopy(false), 0); }}
+                                onSetEditorMode={(mode) => { setSelectedImageIndex(index); setEditorMode(mode); }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-center">
+                        <p>Your generated images will appear here.</p>
+                    </div>
+                )}
+            </main>
+
+            {/* Right Sidebar */}
+            <div className="bg-card border-l border-border">
+                <Tabs tabs={[{key: 'History', label: t('history')}, {key: 'Brand', label: t('brand')}]}>
                     {(activeTab) => (
                         <div className="p-4 h-full">
-                            {activeTab === 'History' && <HistoryPanel history={history} onRestore={onRestore} onToggleFavorite={onToggleFavorite} />}
+                            {activeTab === 'History' && <HistoryPanel history={history} onRestore={onRestore} onToggleFavorite={onToggleFavorite} onDelete={deleteHistoryItem} />}
                             {activeTab === 'Brand' && <BrandKitPanel brandKits={brandKits} setBrandKits={setBrandKits} activeBrandKitId={activeBrandKitId} setActiveBrandKitId={setActiveBrandKitId} />}
                         </div>
                     )}
                 </Tabs>
             </div>
-            
-            <ConfirmationModal 
-                isOpen={isStartOverModalOpen}
-                onClose={() => setIsStartOverModalOpen(false)}
-                onConfirm={handleStartOver}
-                title={t('confirmStartOverTitle')}
-                message={t('confirmStartOverMessage')}
-            />
-            <StylePresetModal 
-                isOpen={isPresetModalOpen}
-                onClose={() => setIsPresetModalOpen(false)}
-                presets={PRESETS}
-                onSelect={(preset) => {
-                    setSettings(s => ({ ...s, selectedPresetId: preset.id, editedPrompt: null }));
-                    setIsPresetModalOpen(false);
-                }}
-                activeMode={settings.generationMode}
-            />
-             <MarketingCopyModal 
-                isOpen={isCopyModalOpen}
-                onClose={() => setIsCopyModalOpen(false)}
-                copy={marketingCopy}
-                onRegenerate={() => handleGenerateCopy(true)}
-                isLoading={isLoading && isCopyModalOpen}
-            />
+
+            {/* Modals */}
+            <ConfirmationModal isOpen={isStartOverModalOpen} onClose={() => setIsStartOverModalOpen(false)} onConfirm={handleStartOver} title={t('confirmStartOverTitle')} message={t('confirmStartOverMessage')} />
+            <StylePresetModal isOpen={isPresetModalOpen} onClose={() => setIsPresetModalOpen(false)} presets={PRESETS} onSelect={(p) => { setSettings(s => ({ ...s, selectedPresetId: p.id, editedPrompt: null })); setIsPresetModalOpen(false); }} activeMode={settings.generationMode} />
+            <MarketingCopyModal isOpen={isCopyModalOpen} onClose={() => setIsCopyModalOpen(false)} copy={marketingCopy} onRegenerate={() => handleGenerateCopy(true)} isLoading={isLoading && isCopyModalOpen} />
         </div>
     );
 };

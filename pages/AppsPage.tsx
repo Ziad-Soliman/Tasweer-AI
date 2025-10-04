@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import BackgroundRemover from './miniapps/BackgroundRemover';
 import MockupGenerator from './miniapps/MockupGenerator';
 import ImageEnhancer from './miniapps/ImageEnhancer';
@@ -10,7 +11,6 @@ import ImageExpander from './miniapps/ImageExpander';
 import ProductNamer from './miniapps/ProductNamer';
 import LogoIdeator from './miniapps/LogoIdeator';
 import VideoAdScripter from './miniapps/VideoAdScripter';
-// FIX: Module '"file:///pages/miniapps/AIPhotoshootDirector"' has no default export.
 import AIPhotoshootDirector from './miniapps/AIPhotoshootDirector';
 import BrandVoiceGuide from './miniapps/BrandVoiceGuide';
 import YouTubeThumbnailGenerator from './miniapps/YouTubeThumbnailGenerator';
@@ -32,6 +32,7 @@ import AICharacterConceptGenerator from './miniapps/AICharacterConceptGenerator'
 import AIProductPackagingDesigner from './miniapps/AIProductPackagingDesigner';
 import AIStoryboardGenerator from './miniapps/AIStoryboardGenerator';
 import { HistoryItem } from '../types';
+import { Icon } from '../components/Icon';
 
 const miniApps: {
     id: string;
@@ -269,6 +270,7 @@ interface AppsPageProps {
 
 export const AppsPage: React.FC<AppsPageProps> = ({ addHistoryItem, restoredState, clearRestoredState }) => {
     const [activeAppId, setActiveAppId] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const { t } = useTranslation();
 
     useEffect(() => {
@@ -276,6 +278,12 @@ export const AppsPage: React.FC<AppsPageProps> = ({ addHistoryItem, restoredStat
             setActiveAppId(restoredState.source.miniAppId || null);
         }
     }, [restoredState]);
+
+    const filteredApps = useMemo(() => miniApps.filter(app => {
+        const title = t(app.titleKey);
+        const description = t(app.descriptionKey);
+        return title.toLowerCase().includes(searchTerm.toLowerCase()) || description.toLowerCase().includes(searchTerm.toLowerCase());
+    }), [searchTerm, t]);
 
     const activeApp = miniApps.find(app => app.id === activeAppId);
 
@@ -294,14 +302,26 @@ export const AppsPage: React.FC<AppsPageProps> = ({ addHistoryItem, restoredStat
     return (
         <main className="w-full flex-1 p-4 md:p-8 overflow-y-auto">
             <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-12">
+                <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold tracking-tight text-foreground">{t('miniAppsTitle')}</h1>
                     <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
                         {t('miniAppsDescription')}
                     </p>
                 </div>
+
+                <div className="mb-8 w-full max-w-lg mx-auto relative">
+                     <Icon name="search" className="w-5 h-5 absolute top-1/2 left-4 -translate-y-1/2 text-muted-foreground" />
+                    <input 
+                        type="text"
+                        placeholder="Search for an app..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full ps-12 pe-4 py-3 rounded-full bg-card border border-border focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {miniApps.map(app => (
+                    {filteredApps.map(app => (
                         <MiniAppCard 
                             key={app.id}
                             title={t(app.titleKey)}

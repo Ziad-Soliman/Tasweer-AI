@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -31,7 +32,7 @@ export const ColorPalette: React.FC<ColorPaletteProps> = ({ palette, onExtract }
     return (
         <div className="flex items-center gap-2 p-1.5 bg-secondary rounded-full">
             {palette.map((color) => (
-                <Tooltip key={color} text={copiedColor === color ? 'Copied!' : color}>
+                <Tooltip key={color} text={copiedColor === color ? t('copied') : color}>
                     <button
                         onClick={() => handleCopy(color)}
                         className="w-7 h-7 rounded-full transition-transform hover:scale-110 border-2 border-background"

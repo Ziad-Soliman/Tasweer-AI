@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GenerationSettings, BrandKit } from '../types';
 import { ASPECT_RATIOS, LIGHTING_STYLES, CAMERA_PERSPECTIVES, VIDEO_LENGTHS, CAMERA_MOTIONS, MOCKUP_TYPES, SOCIAL_MEDIA_TEMPLATES, NEGATIVE_PROMPT_PRESETS } from '../constants';
@@ -24,25 +25,35 @@ const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
     <label className={`block text-sm font-medium text-foreground mb-1.5 ${className}`}>{children}</label>
 );
 
-const Section: React.FC<{ titleKey: string; children: React.ReactNode; }> = ({ titleKey, children }) => {
+const Section: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <div className={`border-b border-border/80 ${className}`}>
+        {children}
+    </div>
+);
+
+const AccordionSection: React.FC<{ titleKey: keyof typeof import('../lib/translations').translations.en; children: React.ReactNode; defaultOpen?: boolean }> = ({ titleKey, children, defaultOpen = false }) => {
     const { t } = useTranslation();
     return (
-    <div className="border-b border-border/80">
-        <h3 className="font-semibold text-foreground px-4 pt-4 pb-2">{t(titleKey as any)}</h3>
-        <div className="p-4 pt-0 space-y-4">
-            {children}
-        </div>
-    </div>
-)};
+        <details className="group" open={defaultOpen}>
+            <summary className="font-semibold text-foreground px-4 py-3 cursor-pointer list-none flex items-center justify-between hover:bg-muted/50">
+                <span>{t(titleKey)}</span>
+                <Icon name="chevron-down" className="w-4 h-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="p-4 pt-2 space-y-4 bg-muted/20">
+                {children}
+            </div>
+        </details>
+    );
+};
 
 const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSettings' | 'isLoading'>> = ({ settings, setSettings, isLoading }) => {
     const { t } = useTranslation();
     const modes = [
-        { value: 'product', labelKey: 'modeProduct' },
-        { value: 'video', labelKey: 'modeVideo' },
-        { value: 'mockup', labelKey: 'modeMockup' },
-        { value: 'social', labelKey: 'modeSocial' },
-        { value: 'design', labelKey: 'modeDesign' }
+        { value: 'product', labelKey: 'modeProduct', icon: 'package' },
+        { value: 'video', labelKey: 'modeVideo', icon: 'video' },
+        { value: 'mockup', labelKey: 'modeMockup', icon: 'shirt' },
+        { value: 'social', labelKey: 'modeSocial', icon: 'users' },
+        { value: 'design', labelKey: 'modeDesign', icon: 'pencil' }
     ];
 
     return (
@@ -52,8 +63,9 @@ const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSe
                     key={mode.value}
                     onClick={() => setSettings(s => ({ ...s, generationMode: mode.value as GenerationSettings['generationMode'], editedPrompt: null, selectedPresetId: null, prompt: '' }))}
                     disabled={isLoading}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${settings.generationMode === mode.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 flex items-center justify-center gap-2 ${settings.generationMode === mode.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
+                    <Icon name={mode.icon} className="w-4 h-4" />
                     {t(mode.labelKey as any)}
                 </button>
             ))}
@@ -61,11 +73,11 @@ const GenerationModeToggle: React.FC<Pick<ControlPanelProps, 'settings' | 'setSe
     );
 };
 
-const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly string[]; disabled?: boolean; label: string }> = ({ value, onChange, options, disabled, label }) => {
+const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: readonly string[]; disabled?: boolean; label: keyof typeof import('../lib/translations').translations.en }> = ({ value, onChange, options, disabled, label }) => {
     const { t } = useTranslation();
     return (
     <div>
-        <Label>{t(label as any)}</Label>
+        <Label>{t(label)}</Label>
         <select
             value={value}
             onChange={onChange}
@@ -138,26 +150,39 @@ const NegativePromptInput: React.FC<{ value: string; onChange: (value: string) =
     };
 
     return (
-        <div className="p-2 border border-input rounded-md bg-background focus-within:ring-2 focus-within:ring-ring">
-            <div className="flex flex-wrap gap-1.5">
-                {prompts.map(p => (
-                    <div key={p} className="flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-sm">
-                        <span>{p}</span>
-                        <button onClick={() => removePrompt(p)} disabled={disabled} className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed" aria-label={`Remove ${p}`}>
-                            <Icon name="close" className="w-3 h-3"/>
-                        </button>
-                    </div>
+        <div>
+            <div className="p-2 border border-input rounded-md bg-background focus-within:ring-2 focus-within:ring-ring">
+                <div className="flex flex-wrap gap-1.5">
+                    {prompts.map(p => (
+                        <div key={p} className="flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-sm">
+                            <span>{p}</span>
+                            <button onClick={() => removePrompt(p)} disabled={disabled} className="text-muted-foreground hover:text-foreground disabled:cursor-not-allowed" aria-label={`Remove ${p}`}>
+                                <Icon name="close" className="w-3 h-3"/>
+                            </button>
+                        </div>
+                    ))}
+                    <input
+                        type="text"
+                        value={inputValue}
+                        onChange={e => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={t('addNegativePrompt')}
+                        className="flex-1 bg-transparent focus:outline-none text-sm min-w-[120px]"
+                        disabled={disabled}
+                    />
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2">
+                {NEGATIVE_PROMPT_PRESETS.filter(p => !prompts.includes(p)).map(p => (
+                    <button 
+                        key={p} 
+                        onClick={() => addPrompt(p)} 
+                        disabled={disabled} 
+                        className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                        + {p}
+                    </button>
                 ))}
-                 <input
-                    type="text"
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    // FIX: Argument of type '"addNegativePrompt"' is not assignable to parameter of type...
-                    placeholder={t('negativePromptPlaceholder')}
-                    className="flex-1 bg-transparent focus:outline-none text-sm min-w-[120px]"
-                    disabled={disabled}
-                />
             </div>
         </div>
     );
@@ -179,7 +204,6 @@ const AdvancedSettingsPanel: React.FC<Pick<ControlPanelProps, 'settings' | 'setS
             </summary>
             <div className="mt-4 space-y-4">
                  <div>
-                    {/* FIX: Argument of type '"negativePrompt"' is not assignable to parameter of type... */}
                     <Label>{t('negativePrompt')}</Label>
                     <NegativePromptInput
                         value={settings.negativePrompt}
@@ -221,8 +245,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                 <h2 className="text-lg font-semibold">{t('controls')}</h2>
             </div>
             <div className="flex-1 overflow-y-auto">
-                <Section titleKey="upload">
-                    <FileUpload 
+                <Section className="p-4">
+                     <FileUpload 
                         onFileUpload={onProductImageUpload} 
                         label={t('uploadPhoto')}
                         uploadedFileName={productImage?.name} 
@@ -231,10 +255,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                         disabledReason={isGeneratingPrompt ? promptGenerationMessage : undefined}
                     />
                 </Section>
-                <Section titleKey="generationMode">
+                <Section className="p-4">
                     <GenerationModeToggle {...props} />
                 </Section>
-                 <Section titleKey="settings">
+                 <AccordionSection titleKey="settings" defaultOpen>
                     {settings.generationMode === 'product' && (
                         <>
                             <Select label="lighting" value={settings.lightingStyle} onChange={(e) => setSettings(s=>({...s, lightingStyle: e.target.value, editedPrompt: null, prompt: ''}))} options={LIGHTING_STYLES} disabled={isLoading || isPromptEdited} />
@@ -291,8 +315,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                             {t('designModePromptInfo')}
                         </div>
                     )}
-                 </Section>
-                 <Section titleKey="output">
+                 </AccordionSection>
+                 <AccordionSection titleKey="output">
                     <div>
                         <Label>{t('aspectRatio')}</Label>
                         <ToggleGroup value={settings.aspectRatio} onValueChange={(val) => setSettings(s => ({...s, aspectRatio: val as GenerationSettings['aspectRatio']}))} options={ASPECT_RATIOS.map(ar => ({value: ar.value, label: t(ar.labelKey as any)}))} disabled={isLoading || settings.generationMode === 'social'}/>
@@ -304,7 +328,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
                         </div>
                     )}
                      <AdvancedSettingsPanel {...props} />
-                </Section>
+                </AccordionSection>
             </div>
         </div>
     );

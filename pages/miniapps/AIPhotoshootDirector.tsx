@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { Chat } from '@google/genai';
@@ -90,30 +92,21 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
-    useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-    
-    const handleGenerateMoodboardImages = async () => {
-        const lastMessageIndex = messages.length - 1;
-        const lastMessage = messages[lastMessageIndex];
-        if (lastMessage.role !== 'model' || typeof lastMessage.content !== 'object') return;
-        
-        const key = `${lastMessageIndex}-moodboard`;
+    const handleGenerateSceneImage = async (messageId: string, sceneIndex: number, scene: PhotoshootScene) => {
+        const key = `${messageId}-scene-${sceneIndex}`;
         setImageGenStates(prev => ({...prev, [key]: {isLoading: true, error: null}}));
-        
-        try {
-            const concept = lastMessage.content as PhotoshootConcept;
-            const imageUrls = await geminiService.generateMoodboardImage(concept.moodboardDescription);
-            const finalImageUrls = imageUrls.map(base64 => `data:image/png;base64,${base64}`);
 
+        try {
+            const imageUrl = await geminiService.generateSceneImage(scene);
             setMessages(prev => {
-                const newMessages = [...prev];
-                const messageToUpdate = newMessages[lastMessageIndex];
-                if (messageToUpdate.role === 'model' && typeof messageToUpdate.content === 'object') {
-                    (messageToUpdate.content as PhotoshootConcept).moodboardImageUrls = finalImageUrls;
-                }
-                return newMessages;
+                return prev.map(msg => {
+                    if (msg.id === messageId && msg.role === 'model' && typeof msg.content === 'object') {
+                        const newContent = { ...(msg.content as PhotoshootConcept) };
+                        newContent.scenes[sceneIndex].imageUrl = `data:image/png;base64,${imageUrl}`;
+                        return { ...msg, content: newContent };
+                    }
+                    return msg;
+                });
             });
         } catch(e) {
             setImageGenStates(prev => ({...prev, [key]: {isLoading: false, error: "Image generation failed."}}));
@@ -121,21 +114,32 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
             setImageGenStates(prev => ({...prev, [key]: {isLoading: false, error: null}}));
         }
     };
-
-    const handleGenerateSceneImage = async (sceneIndex: number, scene: PhotoshootScene) => {
-        const lastMessageIndex = messages.length - 1;
-        const key = `${lastMessageIndex}-scene-${sceneIndex}`;
+    
+    useEffect(() => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+    
+    const handleGenerateMoodboardImages = async (messageId: string) => {
+        const message = messages.find(m => m.id === messageId);
+        if (!message || message.role !== 'model' || typeof message.content !== 'object') return;
+        
+        const key = `${messageId}-moodboard`;
         setImageGenStates(prev => ({...prev, [key]: {isLoading: true, error: null}}));
-
+        
         try {
-            const imageUrl = await geminiService.generateSceneImage(scene);
+            const concept = message.content as PhotoshootConcept;
+            const imageUrls = await geminiService.generateMoodboardImage(concept.moodboardDescription);
+            const finalImageUrls = imageUrls.map(base64 => `data:image/png;base64,${base64}`);
+
             setMessages(prev => {
-                const newMessages = [...prev];
-                const messageToUpdate = newMessages[lastMessageIndex];
-                if (messageToUpdate.role === 'model' && typeof messageToUpdate.content === 'object') {
-                    (messageToUpdate.content as PhotoshootConcept).scenes[sceneIndex].imageUrl = `data:image/png;base64,${imageUrl}`;
-                }
-                return newMessages;
+                 return prev.map(msg => {
+                    if (msg.id === messageId) {
+                        const newContent = { ...(msg.content as PhotoshootConcept) };
+                        newContent.moodboardImageUrls = finalImageUrls;
+                        return { ...msg, content: newContent };
+                    }
+                    return msg;
+                });
             });
         } catch(e) {
             setImageGenStates(prev => ({...prev, [key]: {isLoading: false, error: "Image generation failed."}}));
@@ -149,7 +153,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
         const initialPrompt = `Create a detailed and creative photoshoot concept for a product.
         Product: "${productDescription}"
         Brand Style: "${brandStyle}"
-        The concept should include a title, a moodboard description, a 5-color palette with hex codes and names, and details for two distinct scenes (title, description, lighting, props, camera angle).
+        The concept should include a title, a moodboard description, a 5-color palette with hex codes and names, and details for two distinct scenes (title, description, lighting, props, cameraAngle).
         Your response MUST be a JSON object that follows this schema: ${JSON.stringify({
             conceptTitle: "string", moodboardDescription: "string",
             colorPalette: [{ hex: "string", name: "string" }],
@@ -197,14 +201,14 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
         }
     };
 
-    const renderMessageContent = (message: Message, messageIndex: number) => {
+    const renderMessageContent = (message: Message) => {
         if (message.role === 'user') {
             return <div className="bg-primary/10 p-4 rounded-lg self-end max-w-xl"><p className="whitespace-pre-wrap">{message.content as string}</p></div>;
         }
 
         if (typeof message.content === 'object') {
             const result = message.content as PhotoshootConcept;
-            const moodboardKey = `${messageIndex}-moodboard`;
+            const moodboardKey = `${message.id}-moodboard`;
             const { isLoading: isMoodboardLoading, error: moodboardError } = imageGenStates[moodboardKey] || { isLoading: false, error: null };
 
             return (
@@ -220,9 +224,9 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
                                 {result.moodboardImageUrls.map((url, i) => <img key={i} src={url} alt={`Moodboard image ${i+1}`} className="w-full aspect-video object-cover rounded"/>)}
                             </div>
                         ) : (
-                            <button onClick={handleGenerateMoodboardImages} disabled={isMoodboardLoading} className="mt-2 text-sm inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md hover:bg-accent disabled:opacity-50">
+                            <button onClick={() => handleGenerateMoodboardImages(message.id)} disabled={isMoodboardLoading} className="mt-2 text-sm inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md hover:bg-accent disabled:opacity-50">
                                 {isMoodboardLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="camera" className="w-4 h-4"/>}
-                                Generate Moodboard Images
+                                Generate Moodboard Image
                             </button>
                         )}
                         {moodboardError && <p className="text-xs text-destructive mt-1">{moodboardError}</p>}
@@ -235,7 +239,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
                     </div>
                     <div className="space-y-4">
                         {result.scenes.map((scene, i) => {
-                             const sceneKey = `${messageIndex}-scene-${i}`;
+                             const sceneKey = `${message.id}-scene-${i}`;
                              const { isLoading: isSceneLoading, error: sceneError } = imageGenStates[sceneKey] || { isLoading: false, error: null };
                              return (
                             <div key={i} className="border-t pt-4">
@@ -251,7 +255,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
                                     {scene.imageUrl ? (
                                         <img src={scene.imageUrl} alt={`Scene ${i+1}`} className="w-full aspect-video object-cover rounded bg-muted" />
                                     ) : (
-                                        <button onClick={() => handleGenerateSceneImage(i, scene)} disabled={isSceneLoading} className="w-full aspect-video bg-muted hover:bg-accent rounded flex flex-col items-center justify-center text-xs text-muted-foreground text-center p-1 disabled:opacity-50">
+                                        <button onClick={() => handleGenerateSceneImage(message.id, i, scene)} disabled={isSceneLoading} className="w-full aspect-video bg-muted hover:bg-accent rounded flex flex-col items-center justify-center text-xs text-muted-foreground text-center p-1 disabled:opacity-50">
                                             {isSceneLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin"/> : <><Icon name="camera" className="w-5 h-5 mb-1"/> Generate Scene</>}
                                         </button>
                                     )}
@@ -278,7 +282,7 @@ const AIPhotoshootDirector: React.FC<MiniAppProps> = ({ onBack }) => {
                             <p>Your photoshoot concept will appear here.</p>
                         </div>
                     )}
-                    {messages.map((msg, idx) => <div key={msg.id} className="flex flex-col">{renderMessageContent(msg, idx)}</div>)}
+                    {messages.map((msg) => <div key={msg.id} className="flex flex-col">{renderMessageContent(msg)}</div>)}
                     {isLoading && <div className="self-start"><Icon name="spinner" className="w-6 h-6 animate-spin text-primary" /></div>}
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     <div ref={scrollRef} />

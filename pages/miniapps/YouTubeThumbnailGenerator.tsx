@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import MiniAppLayout from './shared/MiniAppLayout';
@@ -104,6 +105,7 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
+    const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
 
     const updateHistory = useCallback((newElements: ThumbnailElement[]) => {
         const newHistory = history.slice(0, historyIndex + 1);
@@ -118,6 +120,12 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             updateHistory(newElements);
         }
     }, [updateHistory]);
+
+    const addElement = (newElement: Omit<ThumbnailElement, 'id' | 'zIndex'>) => {
+        const zIndex = Math.max(...elements.map(e => e.zIndex), 0) + 1;
+        const element: ThumbnailElement = { ...newElement, id: nanoid(), zIndex };
+        handleSetElements([...elements, element]);
+    };
     
     const updateElement = (id: string, updates: Partial<ThumbnailElement>) => {
         const newElements = elements.map(el => el.id === id ? { ...el, ...updates } : el);
@@ -159,10 +167,26 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         }
     };
 
-    const addElement = (newElement: Omit<ThumbnailElement, 'id' | 'zIndex'>) => {
-        const zIndex = Math.max(...elements.map(e => e.zIndex), 0) + 1;
-        const element: ThumbnailElement = { ...newElement, id: nanoid(), zIndex };
-        handleSetElements([...elements, element]);
+    const applyTitle = (title: string) => {
+        addElement({
+            type: 'text', text: title, x: 50, y: 50,
+            width: 80, height: 15, rotation: 0,
+            fontSize: 10, fontFamily: suggestions?.fontPairing.heading || 'Oswald',
+            color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center'
+        });
+    };
+
+    const applyColor = (color: string) => {
+        const bg = elements.find(el => el.type === 'background');
+        if (bg) {
+            updateElement(bg.id, { backgroundColor: color, src: undefined });
+        }
+    };
+    
+    const copyImagePrompt = (prompt: string) => {
+        navigator.clipboard.writeText(prompt);
+        setCopiedPrompt(prompt);
+        setTimeout(() => setCopiedPrompt(null), 2000);
     };
 
     const deleteElement = (id: string) => {
@@ -326,9 +350,11 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                         {suggestions && (
                             <div className="mt-4 space-y-2 text-xs animate-fade-in">
                                 <h4 className="font-bold">{t('suggestedTitles')}</h4>
-                                {suggestions.titles.map(t => <p key={t} className="bg-muted p-1 rounded">"{t}"</p>)}
-                                 <h4 className="font-bold mt-2">{t('suggestedColors')}</h4>
-                                <div className="flex gap-1">{suggestions.colorPalette.map(c => <div key={c} style={{backgroundColor: c}} className="w-4 h-4 rounded-full border"/>)}</div>
+                                {suggestions.titles.map(title => <button onClick={() => applyTitle(title)} key={title} className="block w-full text-left bg-muted p-1 rounded hover:bg-accent">"{title}"</button>)}
+                                <h4 className="font-bold mt-2">{t('suggestedColors')}</h4>
+                                <div className="flex gap-1">{suggestions.colorPalette.map(c => <button onClick={() => applyColor(c)} key={c} style={{backgroundColor: c}} className="w-4 h-4 rounded-full border"/>)}</div>
+                                <h4 className="font-bold mt-2">Image Prompts</h4>
+                                {suggestions.imagePrompts.map(prompt => <button onClick={() => copyImagePrompt(prompt)} key={prompt} className="block w-full text-left bg-muted p-1 rounded hover:bg-accent">{copiedPrompt === prompt ? 'Copied!' : prompt}</button>)}
                             </div>
                         )}
                     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { Chat } from '@google/genai';
@@ -105,21 +106,24 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
     
-    const handleGenerateSceneImage = async (sceneNumber: number, visual: string) => {
-        const key = `${messages.length-1}-${sceneNumber}`;
+    const handleGenerateSceneImage = async (messageId: string, sceneNumber: number, visual: string) => {
+        const key = `${messageId}-${sceneNumber}`;
         setImageGenStates(prev => ({ ...prev, [key]: {isLoading: true, error: null} }));
 
         try {
             const imageBase64 = await geminiService.generateVideoSceneImage(visual);
             setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage.role === 'model' && typeof lastMessage.content === 'object') {
-                    const script = lastMessage.content as VideoAdScript;
-                    const newScenes = script.scenes.map(s => s.sceneNumber === sceneNumber ? {...s, imageUrl: `data:image/png;base64,${imageBase64}`} : s);
-                    lastMessage.content = { ...script, scenes: newScenes };
-                }
-                return newMessages;
+                return prev.map(msg => {
+                    if (msg.id === messageId && msg.role === 'model' && typeof msg.content === 'object') {
+                        const newContent = { ...(msg.content as VideoAdScript) };
+                        const sceneIndex = newContent.scenes.findIndex(s => s.sceneNumber === sceneNumber);
+                        if (sceneIndex !== -1) {
+                            newContent.scenes[sceneIndex].imageUrl = `data:image/png;base64,${imageBase64}`;
+                        }
+                        return { ...msg, content: newContent };
+                    }
+                    return msg;
+                });
             });
         } catch (e) {
              setImageGenStates(prev => ({ ...prev, [key]: {isLoading: false, error: "Failed to generate image."} }));
@@ -182,7 +186,7 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
         }
     };
 
-    const renderMessageContent = (message: Message, messageIndex: number) => {
+    const renderMessageContent = (message: Message) => {
         if (message.role === 'user') {
             return <div className="bg-primary/10 p-4 rounded-lg self-end max-w-xl"><p className="whitespace-pre-wrap">{message.content as string}</p></div>;
         }
@@ -198,7 +202,7 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
                     
                     <div className="border-t mt-2 pt-2 space-y-4">
                         {result.scenes.map(scene => {
-                            const key = `${messageIndex}-${scene.sceneNumber}`;
+                            const key = `${message.id}-${scene.sceneNumber}`;
                             const { isLoading: isImageLoading, error: imageError } = imageGenStates[key] || { isLoading: false, error: null };
                             return(
                             <div key={scene.sceneNumber} className="grid grid-cols-3 gap-3">
@@ -212,7 +216,7 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
                                     {scene.imageUrl ? (
                                         <img src={scene.imageUrl} className="w-full aspect-[9/16] object-cover rounded bg-muted" />
                                     ) : (
-                                        <button onClick={() => handleGenerateSceneImage(scene.sceneNumber, scene.visual)} disabled={isImageLoading} className="w-full aspect-[9/16] bg-muted hover:bg-accent rounded flex flex-col items-center justify-center text-xs text-muted-foreground text-center p-1 disabled:opacity-50">
+                                        <button onClick={() => handleGenerateSceneImage(message.id, scene.sceneNumber, scene.visual)} disabled={isImageLoading} className="w-full aspect-[9/16] bg-muted hover:bg-accent rounded flex flex-col items-center justify-center text-xs text-muted-foreground text-center p-1 disabled:opacity-50">
                                             {isImageLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin"/> : <><Icon name="camera" className="w-5 h-5 mb-1"/> Generate Scene</>}
                                         </button>
                                     )}
@@ -241,7 +245,7 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
                             <p>Your generated video script will appear here.</p>
                         </div>
                     )}
-                    {messages.map((msg, idx) => <div key={msg.id} className="flex flex-col">{renderMessageContent(msg, idx)}</div>)}
+                    {messages.map((msg) => <div key={msg.id} className="flex flex-col">{renderMessageContent(msg)}</div>)}
                     {isLoading && <div className="self-start"><Icon name="spinner" className="w-6 h-6 animate-spin text-primary" /></div>}
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     <div ref={scrollRef} />

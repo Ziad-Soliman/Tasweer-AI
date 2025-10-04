@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Modality, Part, Type, Chat, Content } from "@google/genai";
 import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene } from "../types";
 import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, FONT_OPTIONS } from '../constants';
@@ -1420,7 +1421,7 @@ export const generateMoodboardImage = async (prompt: string): Promise<string[]> 
         model: 'imagen-4.0-generate-001',
         prompt: `A moodboard for a photoshoot. Theme: ${prompt}. A collage of inspirational images, textures, and colors.`,
         config: {
-          numberOfImages: 4,
+          numberOfImages: 1,
           outputMimeType: 'image/png',
           aspectRatio: '16:9',
         },

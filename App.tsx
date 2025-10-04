@@ -1,6 +1,7 @@
 
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ProductGenerationPage } from './pages/ProductGenerationPage';
+import { CharacterPage } from './pages/CharacterPage';
 import { AppsPage } from './pages/AppsPage';
 import { Icon } from './components/Icon';
 import { translations } from './lib/translations';
@@ -40,7 +41,15 @@ export const useTranslation = () => {
 
 // --- DATA FOR MENUS ---
 
-const imageFeatures = [
+interface MenuItem {
+    name: string;
+    description: string;
+    icon: string;
+    new?: boolean;
+    best?: boolean;
+}
+
+const imageFeatures: MenuItem[] = [
     { name: "Create Image", description: "Generate AI images", icon: "image" },
     { name: "Soul ID Character", description: "Create unique character", icon: "users" },
     { name: "Draw to Edit", description: "From sketch to picture", icon: "pencil" },
@@ -50,7 +59,7 @@ const imageFeatures = [
     { name: "Photodump Studio", description: "Generate Your Aesthetic", new: true, icon: "camera" },
 ];
 
-const imageModels = [
+const imageModels: MenuItem[] = [
     { name: "Higgsfield Soul", description: "Ultra-realistic fashion visuals", best: true, icon: 'sparkles' },
     { name: "Wan 2.2 Image", description: "Realistic images", icon: 'image' },
     { name: "Seedream 4.0", description: "Advanced image editing", new: true, icon: 'sliders' },
@@ -60,7 +69,7 @@ const imageModels = [
     { name: "Topaz", description: "High-resolution upscaler", icon: 'arrow-up' },
 ];
 
-const videoFeatures = [
+const videoFeatures: MenuItem[] = [
     { name: "Create Video", description: "Generate AI videos", icon: 'video' },
     { name: "Lipsync Studio", description: "Create Talking Clips", icon: 'mic' },
     { name: "Talking Avatar", description: "Lipsync with motion", icon: 'history' },
@@ -70,7 +79,7 @@ const videoFeatures = [
     { name: "Higgsfield Animate", description: "Video smart replacement", new: true, icon: 'sun' },
 ];
 
-const videoModels = [
+const videoModels: MenuItem[] = [
     { name: "Higgsfield DOP", description: "VFX and camera control", icon: 'camera' },
     { name: "Google VEO 3", description: "Video with synced audio", icon: 'brand' },
     { name: "Kling 2.5 Turbo", description: "Powerful creation, great value", icon: 'sparkles' },
@@ -80,7 +89,7 @@ const videoModels = [
     { name: "Wan 2.5", description: "Next-gen video generation with sound", new: true, icon: 'video' },
 ];
 
-const editFeatures = [
+const editFeatures: MenuItem[] = [
     { name: "Banana Placement", description: "More control, more products", new: true, icon: 'wand' },
     { name: "Product Placement", description: "Place products in an image", icon: 'package' },
     { name: "Edit Image", description: "Change with inpainting", icon: 'edit' },
@@ -88,20 +97,20 @@ const editFeatures = [
     { name: "Upscale", description: "Enhance resolution and quality", icon: 'expand' },
 ];
 
-const editModels = [
+const editModels: MenuItem[] = [
     { name: "Higgsfield Soul Inpaint", description: "Edit stylish visuals", icon: 'sparkles' },
     { name: "Flux Kontext", description: "Visual edits by prompt", icon: 'pencil' },
     { name: "Nano Banana Edit", description: "Advanced image editing", new: true, icon: 'wand' },
     { name: "Topaz", description: "High-resolution upscaler", icon: 'arrow-up' },
 ];
 
-const menuData: Record<string, { features: any[], models: any[] }> = {
+const menuData: Record<string, { features: MenuItem[], models: MenuItem[] }> = {
     Image: { features: imageFeatures, models: imageModels },
     Video: { features: videoFeatures, models: videoModels },
     Edit: { features: editFeatures, models: editModels },
 };
 
-const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features: any[], models: any[], selectedModel?: string, onSelectModel?: (model: string) => void; }) => {
+const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features: MenuItem[], models: MenuItem[], selectedModel?: string, onSelectModel?: (model: string) => void; }) => {
     return (
         <div className="absolute top-full start-0 mt-2 w-[550px] bg-popover border border-border rounded-lg shadow-2xl p-4 grid grid-cols-2 gap-4 animate-slide-up-fade z-50">
             <div>
@@ -157,14 +166,15 @@ const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
 
 const App: React.FC = () => {
     const [lang, setLang] = useState<'en' | 'ar'>('en');
-    const [currentPage, setCurrentPage] = useState('image');
+    const [currentPage, setCurrentPage] = useState('character');
     const [selectedModel, setSelectedModel] = useState("Higgsfield Soul");
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [restoredState, setRestoredState] = useState<HistoryItem | null>(null);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [menuCloseTimer, setMenuCloseTimer] = useState<number | null>(null);
 
-    const navItems = ["Explore", "Image", "Video", "Edit", "Assist", "Apps", "Community"];
+    const navItems = ["Explore", "Image", "Video", "Edit", "Character", "Assist", "Apps", "Community"];
     const menuRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
@@ -172,6 +182,17 @@ const App: React.FC = () => {
         document.documentElement.lang = lang;
         document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     }, [lang]);
+    
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = ''; // Cleanup on component unmount
+        };
+    }, [isMobileMenuOpen]);
     
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -204,6 +225,10 @@ const App: React.FC = () => {
         setHistory(prev => [newHistoryItem, ...prev.filter(item => item.id !== newHistoryItem.id)]);
     };
 
+    const deleteHistoryItem = (id: string) => {
+        setHistory(prev => prev.filter(item => item.id !== id));
+    };
+
     const toggleFavorite = (id: string) => {
         setHistory(prev => prev.map(item => item.id === id ? { ...item, isFavorite: !item.isFavorite } : item));
     };
@@ -227,6 +252,17 @@ const App: React.FC = () => {
     };
 
     const renderPage = () => {
+        const sharedPageProps = {
+            selectedModel: selectedModel,
+            history: history,
+            onToggleFavorite: toggleFavorite,
+            onRestore: restoreFromHistory,
+            addHistoryItem: addHistoryItem,
+            deleteHistoryItem: deleteHistoryItem,
+            restoredState: restoredState,
+            clearRestoredState: clearRestoredState,
+        };
+
         switch(currentPage) {
             case 'image':
             case 'video':
@@ -234,13 +270,12 @@ const App: React.FC = () => {
                  return <ProductGenerationPage 
                             key={restoredState ? restoredState.id : currentPage}
                             initialMode={currentPage as 'image' | 'video' | 'edit'}
-                            selectedModel={selectedModel} 
-                            history={history}
-                            onToggleFavorite={toggleFavorite}
-                            onRestore={restoreFromHistory}
-                            addHistoryItem={addHistoryItem}
-                            restoredState={restoredState}
-                            clearRestoredState={clearRestoredState}
+                            {...sharedPageProps}
+                       />;
+            case 'character':
+                 return <CharacterPage 
+                            key={restoredState ? restoredState.id : currentPage}
+                            {...sharedPageProps}
                        />;
             case 'apps':
                 return <AppsPage 
@@ -255,16 +290,9 @@ const App: React.FC = () => {
             case 'community':
                 return <ComingSoonPage title="Community" icon="users" />;
             default:
-                 return <ProductGenerationPage 
-                            key="default-image"
-                            initialMode="image"
-                            selectedModel={selectedModel}
-                            history={history}
-                            onToggleFavorite={toggleFavorite}
-                            onRestore={restoreFromHistory}
-                            addHistoryItem={addHistoryItem}
-                            restoredState={restoredState}
-                            clearRestoredState={clearRestoredState}
+                 return <CharacterPage 
+                            key="default-character"
+                            {...sharedPageProps}
                        />;
         }
     };
@@ -279,8 +307,19 @@ const App: React.FC = () => {
 
                             <nav ref={menuRef} className="hidden md:flex items-center gap-1">
                                 {navItems.map(item => (
-                                    <div key={item} onMouseEnter={() => menuData[item] && setOpenMenu(item)} onMouseLeave={() => setOpenMenu(null)} className="relative">
-                                        <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                                    <div 
+                                        key={item} 
+                                        onMouseEnter={() => {
+                                            if (menuCloseTimer) clearTimeout(menuCloseTimer);
+                                            menuData[item] && setOpenMenu(item);
+                                        }} 
+                                        onMouseLeave={() => {
+                                            const timer = window.setTimeout(() => setOpenMenu(null), 200);
+                                            setMenuCloseTimer(timer);
+                                        }} 
+                                        className="relative"
+                                    >
+                                        <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() || openMenu === item ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                                             {item}
                                             {item === 'Community' && <span className="ms-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">New</span>}
                                         </a>

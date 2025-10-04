@@ -1,12 +1,15 @@
+
 import React, { useState, useMemo } from 'react';
 import { HistoryItem } from '../types';
 import { Icon } from './Icon';
 import { useTranslation } from '../App';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface HistoryPanelProps {
     history: HistoryItem[];
     onRestore: (item: HistoryItem) => void;
     onToggleFavorite: (id: string) => void;
+    onDelete: (id: string) => void;
 }
 
 const HistoryThumbnail: React.FC<{ item: HistoryItem }> = ({ item }) => {
@@ -40,7 +43,7 @@ const HistoryThumbnail: React.FC<{ item: HistoryItem }> = ({ item }) => {
 };
 
 
-const HistoryCard: React.FC<{ item: HistoryItem, onRestore: () => void, onToggleFavorite: () => void }> = ({ item, onRestore, onToggleFavorite }) => {
+const HistoryCard: React.FC<{ item: HistoryItem, onRestore: () => void, onToggleFavorite: () => void, onDelete: () => void }> = ({ item, onRestore, onToggleFavorite, onDelete }) => {
     const { t } = useTranslation();
     const { title, timestamp, isFavorite, source } = item;
     
@@ -66,8 +69,8 @@ const HistoryCard: React.FC<{ item: HistoryItem, onRestore: () => void, onToggle
     };
 
     return (
-        <div className="bg-muted/50 p-3 rounded-lg flex gap-4 transition-colors hover:bg-accent">
-            <button onClick={onRestore} className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden group relative bg-muted">
+        <div className="bg-muted/50 p-3 rounded-lg flex gap-4 transition-colors hover:bg-accent group">
+            <button onClick={onRestore} className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden relative bg-muted">
                 <HistoryThumbnail item={item} />
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Icon name="restart" className="text-white w-8 h-8"/>
@@ -84,18 +87,34 @@ const HistoryCard: React.FC<{ item: HistoryItem, onRestore: () => void, onToggle
                      <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary dark:bg-primary/20 font-medium rounded-full capitalize">
                         {source.appName}
                      </span>
-                     <button onClick={onToggleFavorite} className="text-muted-foreground hover:text-yellow-400" title={t(isFavorite ? 'unfavorite' : 'favorite')}>
-                        <Icon name={isFavorite ? 'star-filled' : 'star'} className={`w-5 h-5 ${isFavorite ? 'text-yellow-400' : ''}`}/>
-                     </button>
+                     <div className="flex items-center gap-2">
+                        <button 
+                            onClick={onDelete} 
+                            className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
+                            title={t('delete')}
+                            aria-label={t('delete')}
+                        >
+                            <Icon name="trash" className="w-4 h-4"/>
+                        </button>
+                        <button 
+                            onClick={onToggleFavorite} 
+                            className="text-muted-foreground hover:text-yellow-400" 
+                            title={t(isFavorite ? 'unfavorite' : 'favorite')}
+                            aria-label={t(isFavorite ? 'unfavorite' : 'favorite')}
+                        >
+                            <Icon name={isFavorite ? 'star-filled' : 'star'} className={`w-5 h-5 ${isFavorite ? 'text-yellow-400' : ''}`}/>
+                        </button>
+                     </div>
                 </div>
             </div>
         </div>
     );
 };
 
-export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRestore, onToggleFavorite }) => {
+export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRestore, onToggleFavorite, onDelete }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showFavorites, setShowFavorites] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<HistoryItem | null>(null);
     const { t } = useTranslation();
 
     const filteredHistory = useMemo(() => {
@@ -107,6 +126,13 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRestore, 
             });
     }, [history, searchTerm, showFavorites]);
     
+    const handleDeleteConfirm = () => {
+        if (itemToDelete) {
+            onDelete(itemToDelete.id);
+            setItemToDelete(null);
+        }
+    };
+
     if (history.length === 0) {
         return (
             <div className="text-center text-muted-foreground py-10">
@@ -147,6 +173,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRestore, 
                             item={item} 
                             onRestore={() => onRestore(item)}
                             onToggleFavorite={() => onToggleFavorite(item.id)}
+                            onDelete={() => setItemToDelete(item)}
                         />
                     ))
                 ) : (
@@ -155,6 +182,13 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onRestore, 
                     </div>
                 )}
             </div>
+             <ConfirmationModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={handleDeleteConfirm}
+                title={t('confirmDeleteTitle')}
+                message={t('confirmDeleteMessage')}
+            />
         </div>
     );
 };

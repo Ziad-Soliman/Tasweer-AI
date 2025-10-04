@@ -1,5 +1,7 @@
 {
   "name": "Copy of AI Designer by Ziad Ashraf",
   "description": "An AI-powered tool to generate new, stylized e-commerce and marketing images from a single product photo. Upload a product, select your desired scene, and let AI create stunning visuals.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
