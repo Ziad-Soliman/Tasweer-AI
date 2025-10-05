@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { Chat } from '@google/genai';
@@ -91,7 +92,8 @@ const Controls: React.FC<{
 };
 
 
-const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
+// FIX: Changed to a named export to resolve module resolution error in AppsPage.tsx.
+export const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -250,7 +252,6 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     <div ref={scrollRef} />
                 </div>
-                
                 {messages.length > 0 && (
                     <div className="flex-shrink-0 pt-4 border-t">
                         <div className="relative">
@@ -273,5 +274,3 @@ const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
         </MiniAppLayout>
     );
 };
-
-export default VideoAdScripter;

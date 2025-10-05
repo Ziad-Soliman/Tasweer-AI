@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface IconProps {
@@ -83,9 +82,24 @@ const ICONS: { [key: string]: React.ReactElement } = {
     'high-key':<><circle cx="12" cy="12" r="2.5" /><path d="M12 5.5V3" /><path d="M12 21v-2.5" /><path d="M18.5 12H21" /><path d="M3 12h2.5" /><path d="M16.25 7.75l1.77-1.77" /><path d="M5.98 18.02l1.77-1.77" /><path d="M16.25 16.25l1.77 1.77" /><path d="M5.98 5.98l1.77 1.77" /></>,
     'low-key': <><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 19a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2h14v-2Z"/><circle cx="12" cy="12" r="2"/></>,
     'horror-dim': <><path d="M5.5 12.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5v6h-9v-6z" /><circle cx="9" cy="12" r=".5" /><circle cx="15" cy="12" r=".5" /><path d="M5.5 18.5 7 17l1.5 1.5 1.5-1.5 1.5 1.5 1.5-1.5L18.5 18.5"/></>,
-    'neon-cyberpunk': <><path d="M8 3v18" stroke-width="2" stroke="#FF00FF"/><path d="M16 3v18" stroke-width="2" stroke="#00FFFF"/></>,
+    'neon-cyberpunk': <><path d="M8 3v18" /><path d="M16 3v18" /></>,
     flame: <><path d="M12 22V13" /><path d="M12 13a4 4 0 0 0 4-4V3H8v6a4 4 0 0 0 4 4z"/></>,
     flashlight: <><path d="M18 5H6v2l4 6v6h4v-6l4-6V5zM8 3h8v2H8V3z"/></>,
+    'mug': <><path d="M10 21h4a2 2 0 0 0 2-2V7H8v12a2 2 0 0 0 2 2z"/><path d="M16 7h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/></>,
+    'billboard': <><path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M4 14h16"/><path d="M12 14v-4"/><rect x="2" y="3" width="20" height="7" rx="2"/></>,
+    'smartphone': <><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></>,
+    'shopping-bag': <><path d="M6.333 6.333A2.5 2.5 0 0 1 8.833 4h6.334a2.5 2.5 0 0 1 2.5 2.5v12.5a2.5 2.5 0 0 1-2.5 2.5H8.833a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M8 4a4 4 0 1 0 8 0"/></>,
+    'book': <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v2H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M17.5 2A2.5 2.5 0 0 0 15 4.5v11A2.5 2.5 0 0 0 17.5 18H20V4.5A2.5 2.5 0 0 0 17.5 2z"/></>,
+    'user-circle': <><circle cx="12" cy="8" r="4" /><path d="M12 14c-2.76 0-8 1.79-8 4v2h16v-2c0-2.21-5.24-4-8-4z" /></>,
+    'zoom-in': <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /><path d="M11 8v6M8 11h6" /></>,
+    'focus': <><circle cx="12" cy="12" r="3" /><path d="M3 12h2M19 12h2M12 3v2M12 19v2" /></>,
+    'user-square': <><rect width="18" height="18" x="3" y="3" rx="2" /><circle cx="12" cy="10" r="3" /><path d="M7 21v-2a5 5 0 0 1 10 0v2" /></>,
+    'scan-user': <><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="10" r="3" /><path d="M7 18v-1a5 5 0 0 1 10 0v1" /></>,
+    'mountain': <path d="m8 3 4 8 5-5 5 15H2L8 3z" />,
+    'eye': <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>,
+    'droplet': <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5s-3 3.5-3 5.5a7 7 0 0 0 7 7z" />,
+    'snowflake': <path d="M12 2v20m5-17L7 19m-5-5l10 10M7 5l10 14m-5 3l-5-5m10 0l-5 5m0-10l5 5m-10 0l5-5" />,
+    'contrast': <><circle cx="12" cy="12" r="10" /><path d="M12 18V6a6 6 0 0 1 0 12z" /></>,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, className, style }) => {

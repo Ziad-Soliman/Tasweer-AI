@@ -26,7 +26,8 @@ const AICharacterConceptGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
         setResults([]);
         try {
-            const images = await geminiService.generateCharacterConcepts(description, style, imageFile);
+            // FIX: Corrected function name from `generateCharacterConcepts` to `generateCharacterImages`
+            const images = await geminiService.generateCharacterImages(description, style, imageFile);
             setResults(images.map(base64 => `data:image/png;base64,${base64}`));
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate concepts.");

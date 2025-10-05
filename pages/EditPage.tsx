@@ -1,101 +1,166 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { FileUpload } from '../components/FileUpload';
 import { Icon } from '../components/Icon';
+import * as geminiService from '../services/geminiService';
+import { useTranslation } from '../App';
+import { ImageComparator } from '../components/ImageComparator';
 
-const LogoIcon = () => (
-    <svg width="96" height="96" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="logo-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#34D399" />
-                <stop offset="100%" stopColor="#059669" />
-            </linearGradient>
-        </defs>
-        <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"  stroke="url(#logo-gradient)" stroke-width="1.5" />
-    </svg>
-);
-
-
-const WelcomeScreen = () => (
-    <div className="flex flex-col items-center justify-center text-center animate-fade-in">
-        <LogoIcon />
-        <h1 className="text-5xl font-bold tracking-tighter text-foreground mt-4">HIGGSFIELD EDIT</h1>
-        <p className="text-muted-foreground mt-2">Advanced image editing made easy</p>
-    </div>
-);
-
-const BottomBar = ({ onGenerate, isLoading, selectedModel }: { onGenerate: (prompt: string) => void, isLoading: boolean, selectedModel: string }) => {
+export const EditPage: React.FC = () => {
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [resultImage, setResultImage] = useState<string | null>(null);
     const [prompt, setPrompt] = useState('');
-
-    return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl z-30 px-4">
-            <div className="bg-card/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl p-2 flex items-center gap-2">
-                <button className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-muted rounded-md hover:bg-accent transition-colors">
-                    <Icon name="plus" className="w-5 h-5 text-muted-foreground" />
-                </button>
-                <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Upload an image and describe your edit"
-                    className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground"
-                />
-                <button
-                    onClick={() => onGenerate(prompt)}
-                    disabled={isLoading || !prompt}
-                    className="bg-primary text-primary-foreground h-10 px-6 rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-opacity"
-                >
-                    {isLoading ? (
-                        <Icon name="spinner" className="w-5 h-5 animate-spin" />
-                    ) : (
-                       <>
-                        Generate <Icon name="wand" className="w-4 h-4" />
-                       </>
-                    )}
-                </button>
-            </div>
-        </div>
-    );
-};
-
-
-export const EditPage = ({ selectedModel }: { selectedModel: string }) => {
-    const [editedImage, setEditedImage] = useState<string | null>(null);
+    const [brushSize, setBrushSize] = useState(40);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
-    const handleGenerate = async (prompt: string) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const isDrawing = useRef(false);
+
+    const handleFileUpload = (file: File) => {
+        setImageFile(file);
+        const url = URL.createObjectURL(file);
+        setImagePreview(url);
+        setResultImage(null);
+        setError(null);
+    };
+
+    useEffect(() => {
+        if (!imagePreview || !canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = imagePreview;
+        img.onload = () => {
+            const parent = canvas.parentElement;
+            if (parent) {
+                const { width, height } = parent.getBoundingClientRect();
+                const aspectRatio = img.width / img.height;
+                let newWidth = width;
+                let newHeight = width / aspectRatio;
+
+                if (newHeight > height) {
+                    newHeight = height;
+                    newWidth = height * aspectRatio;
+                }
+
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                canvas.style.width = `${newWidth}px`;
+                canvas.style.height = `${newHeight}px`;
+
+                ctx.drawImage(img, 0, 0);
+            }
+        }
+    }, [imagePreview]);
+
+    const getBrushPos = (canvas: HTMLCanvasElement, e: React.MouseEvent | React.TouchEvent) => {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.nativeEvent instanceof TouchEvent ? e.nativeEvent.touches[0] : null;
+        const clientX = touch ? touch.clientX : (e as React.MouseEvent).clientX;
+        const clientY = touch ? touch.clientY : (e as React.MouseEvent).clientY;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    };
+
+    const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+        isDrawing.current = true;
+        draw(e);
+    };
+
+    const stopDrawing = () => {
+        isDrawing.current = false;
+        canvasRef.current?.getContext('2d')?.beginPath();
+    };
+
+    const draw = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDrawing.current || !canvasRef.current) return;
+        const ctx = canvasRef.current.getContext('2d');
+        if (!ctx) return;
+        
+        const pos = getBrushPos(canvasRef.current, e);
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    };
+
+    const handleApply = async () => {
+        if (!canvasRef.current || !prompt) return;
         setIsLoading(true);
         setError(null);
-        setEditedImage(null);
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            setEditedImage('placeholder');
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'An unknown error occurred.');
+            const imageWithMask = canvasRef.current.toDataURL('image/png').split(',')[1];
+            const resultBase64 = await geminiService.magicEditImage(imageWithMask, prompt);
+            setResultImage(`data:image/png;base64,${resultBase64}`);
+        } catch(e) {
+            setError(e instanceof Error ? e.message : "Magic Edit failed.");
         } finally {
             setIsLoading(false);
         }
     };
-    
+
     return (
-        <main className="flex-1 flex flex-col justify-center items-center p-4 pt-16">
-            {!editedImage && !isLoading ? (
-                <WelcomeScreen />
+        <div className="flex-1 flex flex-col items-center p-4 md:p-8 overflow-y-auto">
+            {!imagePreview ? (
+                <div className="m-auto flex flex-col items-center text-center max-w-md">
+                    <Icon name="edit" className="w-24 h-24 text-primary/50" />
+                    <h1 className="text-4xl font-bold mt-4">Draw to Edit</h1>
+                    <p className="text-muted-foreground mt-2">Upload an image, mask an area, and describe your changes to transform your pictures with AI.</p>
+                    <div className="w-full mt-8">
+                        <FileUpload onFileUpload={handleFileUpload} label={t('uploadToEdit')} />
+                    </div>
+                </div>
             ) : (
-                <div className="w-full max-w-3xl">
-                    {isLoading && (
-                         <div className="aspect-square bg-card rounded-lg flex items-center justify-center animate-pulse">
-                            <Icon name="spinner" className="w-8 h-8 text-muted-foreground animate-spin"/>
-                         </div>
-                    )}
-                    {editedImage && (
-                        <div className="aspect-square bg-card rounded-lg overflow-hidden animate-fade-in flex items-center justify-center">
-                            <p className="text-muted-foreground">Image editing placeholder</p>
+                <div className="flex flex-col gap-4 items-center w-full max-w-4xl">
+                    <div className="w-full">
+                        {resultImage && imagePreview ? (
+                            <ImageComparator baseImage={imagePreview} newImage={resultImage} />
+                        ) : (
+                            <div 
+                                className="relative w-full max-w-2xl mx-auto flex items-center justify-center"
+                                style={{ cursor: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${brushSize}" height="${brushSize}" viewBox="0 0 ${brushSize} ${brushSize}"><circle cx="${brushSize/2}" cy="${brushSize/2}" r="${brushSize/2 - 1}" fill="rgba(255,255,255,0.5)" stroke="black" stroke-width="1"/></svg>') ${brushSize/2} ${brushSize/2}, auto`}}
+                            >
+                                <img src={imagePreview} alt="Original" className="max-w-full max-h-[60vh] object-contain opacity-40 rounded-lg" />
+                                <canvas 
+                                    ref={canvasRef} 
+                                    className="absolute inset-0 m-auto"
+                                    onMouseDown={startDrawing} onMouseUp={stopDrawing} onMouseOut={stopDrawing} onMouseMove={draw}
+                                    onTouchStart={startDrawing} onTouchEnd={stopDrawing} onTouchMove={draw}
+                                />
+                            </div>
+                        )}
+                    </div>
+                    <div className="w-full max-w-2xl p-4 bg-card border rounded-lg shadow-lg flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
+                            <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
                         </div>
-                    )}
-                    {error && <p className="text-destructive text-center mt-4">{error}</p>}
+                        <input
+                            type="text"
+                            value={prompt}
+                            onChange={e => setPrompt(e.target.value)}
+                            placeholder={t('magicEditorPrompt')}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex-1"
+                            disabled={isLoading}
+                        />
+                        <button onClick={handleApply} disabled={!prompt || isLoading} className="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 w-full md:w-auto">
+                            {isLoading ? (<Icon name="spinner" className="animate-spin w-5 h-5" />) : (<Icon name="sparkles" className="w-5 h-5" />)}
+                            {t('magicEditApply')}
+                        </button>
+                    </div>
+                     {error && <p className="text-sm text-destructive text-center">{error}</p>}
                 </div>
             )}
-            <BottomBar onGenerate={handleGenerate} isLoading={isLoading} selectedModel={selectedModel} />
-        </main>
+        </div>
     );
 };

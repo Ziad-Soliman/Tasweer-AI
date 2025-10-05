@@ -1,6 +1,6 @@
 
 
-export type AspectRatio = "1:1" | "4:5" | "16:9" | "9:16";
+export type AspectRatio = "1:1" | "4:5" | "16:9" | "9:16" | "4:3" | "3:4";
 
 export type Theme = 'light' | 'dark';
 
@@ -18,9 +18,9 @@ export interface WatermarkSettings {
     opacity: number; // 0-100
 }
 
-export type GenerationMode = 'product' | 'video' | 'mockup' | 'social' | 'design';
+export type GenerationMode = 'product' | 'video' | 'mockup' | 'social' | 'design' | 'character';
 
-export type PresetCategory = 'Photorealistic' | 'Artistic' | 'Futuristic' | 'Vintage' | 'Abstract';
+export type PresetCategory = 'Photorealistic' | 'Artistic' | 'Futuristic' | 'Vintage' | 'Abstract' | 'Video' | 'Social';
 
 export interface Preset {
   id: string;
@@ -43,6 +43,12 @@ export interface SocialMediaTemplate {
   icon: string;
 }
 
+export interface KeyObject {
+    id: string;
+    name: string;
+    image: File | null;
+}
+
 export interface GenerationSettings {
     generationMode: GenerationMode;
     aspectRatio: AspectRatio;
@@ -58,11 +64,18 @@ export interface GenerationSettings {
     
     negativePrompt: string;
     seed: string;
-    numberOfImages: 1 | 4;
+    numberOfImages: 1 | 2 | 3 | 4;
     
     productDescription: string;
     selectedPresetId: string | null;
     watermark: WatermarkSettings;
+
+    // Cinematic Controls
+    photoStyle: string;
+    cameraZoom: string;
+    shotType: string;
+    colorTone: string;
+    keyObjects: KeyObject[];
 }
 
 export interface TextOverlay {
@@ -77,7 +90,7 @@ export interface TextOverlay {
     width: number; // percentage of container width
 }
 
-type Page = 'product-generation' | 'mini-apps' | 'classic-generation' | 'logo-conceptualization' | 'ai-texture-enhancer';
+type Page = 'product-generation' | 'mini-apps' | 'classic-generation' | 'logo-conceptualization' | 'ai-texture-enhancer' | 'character';
 
 export interface HistoryItem {
     id: string;

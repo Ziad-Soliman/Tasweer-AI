@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from './Icon';
 import { AspectRatio, EditorMode, TextOverlay, BrandKit, WatermarkSettings, HistoryItem } from '../types';
@@ -240,7 +239,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     watermarkSettings, palette, onExtractPalette
 }) => {
     const { t } = useTranslation();
-    const aspectMap: Record<AspectRatio, string> = { '1:1': 'aspect-square', '4:5': 'aspect-[4/5]', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]' };
+    const aspectMap: Record<AspectRatio, string> = { '1:1': 'aspect-square', '4:5': 'aspect-[4/5]', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]', '4:3': 'aspect-[4/3]', '3:4': 'aspect-[3/4]' };
     const hasContent = productImagePreview || generatedImages.length > 0 || generatedVideoUrl;
     const selectedImage = selectedImageIndex !== null ? generatedImages[selectedImageIndex] : null;
     const isVideoMode = !!generatedVideoUrl;

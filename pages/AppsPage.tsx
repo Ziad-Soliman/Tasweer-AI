@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import BackgroundRemover from './miniapps/BackgroundRemover';
 import MockupGenerator from './miniapps/MockupGenerator';
@@ -10,7 +9,8 @@ import PaletteExtractor from './miniapps/PaletteExtractor';
 import ImageExpander from './miniapps/ImageExpander';
 import ProductNamer from './miniapps/ProductNamer';
 import LogoIdeator from './miniapps/LogoIdeator';
-import VideoAdScripter from './miniapps/VideoAdScripter';
+// FIX: Changed to named import to resolve module resolution error.
+import { VideoAdScripter } from './miniapps/VideoAdScripter';
 import AIPhotoshootDirector from './miniapps/AIPhotoshootDirector';
 import BrandVoiceGuide from './miniapps/BrandVoiceGuide';
 import YouTubeThumbnailGenerator from './miniapps/YouTubeThumbnailGenerator';
@@ -31,6 +31,8 @@ import AIPatternGenerator from './miniapps/AIPatternGenerator';
 import AICharacterConceptGenerator from './miniapps/AICharacterConceptGenerator';
 import AIProductPackagingDesigner from './miniapps/AIProductPackagingDesigner';
 import AIStoryboardGenerator from './miniapps/AIStoryboardGenerator';
+import NeuroSalesCopywriter from './miniapps/NeuroSalesCopywriter';
+import SketchToImage from './miniapps/SketchToImage';
 import { HistoryItem } from '../types';
 import { Icon } from '../components/Icon';
 
@@ -41,6 +43,20 @@ const miniApps: {
     imageUrl: string;
     component: React.ComponentType<any>; // Allow additional props
 }[] = [
+    { 
+        id: 'sketch-to-image', 
+        titleKey: 'sketch-to-image-title',
+        descriptionKey: 'sketch-to-image-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M2.5 14.5L7.5 9.5L11.5 13.5L16.5 8.5L21.5 13.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='2 2'/%3e%3crect x='2' y='3' width='20' height='18' rx='2' stroke='hsl(var(--foreground))' stroke-width='1.5'/%3e%3cpath d='M7 15C7 15 8.5 12.5 11 14C13.5 15.5 15.5 13.5 17 12' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round'/%3e%3ccircle cx='17' cy='7' r='1' fill='hsl(var(--primary))'/%3e%3c/svg%3e`,
+        component: SketchToImage
+    },
+    { 
+        id: 'neurosales-copywriter', 
+        titleKey: 'neurosales-copywriter-title',
+        descriptionKey: 'neurosales-copywriter-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M9.5 2C5.358 2 2 5.358 2 9.5C2 12.421 3.535 15.003 5.938 16.347L6 18H18L18.062 16.347C20.465 15.003 22 12.421 22 9.5C22 5.358 18.642 2 14.5 2' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M9.5 2C10.5 3.5 11 5 12 5C13 5 13.5 3.5 14.5 2' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M2 9.5C3.5 10.5 5 11 6 12C7 13 8.5 13.5 9.5 14.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M22 9.5C20.5 10.5 19 11 18 12C17 13 15.5 13.5 14.5 14.5' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 21V18' stroke='hsl(var(--foreground))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 9L10.5 11.5L12 14L13.5 11.5L12 9Z' fill='hsl(var(--primary)/0.2)' stroke='hsl(var(--primary))' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e`,
+        component: NeuroSalesCopywriter
+    },
     { 
         id: 'video-generator', 
         titleKey: 'video-generator-title',
@@ -278,12 +294,17 @@ export const AppsPage: React.FC<AppsPageProps> = ({ addHistoryItem, restoredStat
             setActiveAppId(restoredState.source.miniAppId || null);
         }
     }, [restoredState]);
+    
+    // FIX: Moved sorting logic inside the component to have access to `t`
+    const sortedMiniApps = useMemo(() => 
+        [...miniApps].sort((a, b) => t(a.titleKey).localeCompare(t(b.titleKey))), 
+    [t]);
 
-    const filteredApps = useMemo(() => miniApps.filter(app => {
+    const filteredApps = useMemo(() => sortedMiniApps.filter(app => {
         const title = t(app.titleKey);
         const description = t(app.descriptionKey);
         return title.toLowerCase().includes(searchTerm.toLowerCase()) || description.toLowerCase().includes(searchTerm.toLowerCase());
-    }), [searchTerm, t]);
+    }), [searchTerm, t, sortedMiniApps]);
 
     const activeApp = miniApps.find(app => app.id === activeAppId);
 

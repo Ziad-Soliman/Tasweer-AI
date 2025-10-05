@@ -11,7 +11,7 @@ interface StylePresetModalProps {
     activeMode: GenerationMode;
 }
 
-const CATEGORIES: PresetCategory[] = ['Photorealistic', 'Artistic', 'Futuristic', 'Vintage', 'Abstract'];
+const CATEGORIES: PresetCategory[] = ['Photorealistic', 'Artistic', 'Futuristic', 'Vintage', 'Abstract', 'Video', 'Social'];
 
 const PresetCard: React.FC<{ preset: Preset; onSelect: () => void }> = ({ preset, onSelect }) => (
     <button

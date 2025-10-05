@@ -1,8 +1,15 @@
 
+
+
+
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
-import { ProductGenerationPage } from './pages/ProductGenerationPage';
+import { ImagePage } from './pages/ImagePage';
+import { VideoPage } from './pages/VideoPage';
+import { EditPage } from './pages/EditPage';
 import { CharacterPage } from './pages/CharacterPage';
 import { AppsPage } from './pages/AppsPage';
+import { ExplorePage } from './pages/ExplorePage';
+import { LiveAssistPage } from './pages/LiveAssistPage';
 import { Icon } from './components/Icon';
 import { translations } from './lib/translations';
 import { HistoryItem } from './types';
@@ -235,10 +242,12 @@ const App: React.FC = () => {
 
     const restoreFromHistory = (item: HistoryItem) => {
         setRestoredState(item);
-        if (item.source.page === 'product-generation') {
+        if (item.source.page === 'product-generation') { // Keep this for backward compatibility
             const mode = item.payload.settings.generationMode;
              if (['video'].includes(mode)) {
                 setCurrentPage('video');
+            } else if (['character'].includes(mode)) {
+                setCurrentPage('character');
             } else { // product, mockup, social, design
                 setCurrentPage('image');
             }
@@ -265,16 +274,17 @@ const App: React.FC = () => {
 
         switch(currentPage) {
             case 'image':
-            case 'video':
-            case 'edit':
-                 return <ProductGenerationPage 
-                            key={restoredState ? restoredState.id : currentPage}
-                            initialMode={currentPage as 'image' | 'video' | 'edit'}
+                 return <ImagePage 
+                            key={restoredState ? restoredState.id : 'image'}
                             {...sharedPageProps}
                        />;
+            case 'video':
+                return <VideoPage {...sharedPageProps} />;
+            case 'edit':
+                return <EditPage {...sharedPageProps} />;
             case 'character':
                  return <CharacterPage 
-                            key={restoredState ? restoredState.id : currentPage}
+                            key={restoredState ? restoredState.id : 'character'}
                             {...sharedPageProps}
                        />;
             case 'apps':
@@ -284,9 +294,9 @@ const App: React.FC = () => {
                             clearRestoredState={clearRestoredState}
                        />;
             case 'explore':
-                return <ComingSoonPage title="Explore" icon="search" />;
+                return <ExplorePage />;
             case 'assist':
-                return <ComingSoonPage title="Higgsfield Assist" icon="sparkles" />;
+                return <LiveAssistPage />;
             case 'community':
                 return <ComingSoonPage title="Community" icon="users" />;
             default:
@@ -306,33 +316,37 @@ const App: React.FC = () => {
                             <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43NDkgNS4yOTEgMjEgNy41IDIxSDE2LjVDMTguNzQ5IDIxIDIxIDE4Ljc0OSAyMSAxNi41VjcuNUMyMSA1LjI1MSAxODc0OSAzIDE2LjUgM0g3LjVaTTcuNSA0LjVIMTYuNUMxNy44NjkgNC41IDE5IDUuNjMxIDE5IDcuNVYxNi45IDE3Ljg2OSAxNy44NjkgMTkgMTYuNSAxOUg3LjVDNi4xMzEgMTkgNSAxNy44NjkgNSAxNi41VjcuNUM1IDYuMTMxIDYuMTMxIDQuNSA3LjUgNC41WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+" alt="Logo" className="w-8 h-8"/>
 
                             <nav ref={menuRef} className="hidden md:flex items-center gap-1">
-                                {navItems.map(item => (
-                                    <div 
-                                        key={item} 
-                                        onMouseEnter={() => {
-                                            if (menuCloseTimer) clearTimeout(menuCloseTimer);
-                                            menuData[item] && setOpenMenu(item);
-                                        }} 
-                                        onMouseLeave={() => {
-                                            const timer = window.setTimeout(() => setOpenMenu(null), 200);
-                                            setMenuCloseTimer(timer);
-                                        }} 
-                                        className="relative"
-                                    >
-                                        <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() || openMenu === item ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                                            {item}
-                                            {item === 'Community' && <span className="ms-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">New</span>}
-                                        </a>
-                                        {openMenu === item && menuData[item] && (
-                                            <AppMenu 
-                                                features={menuData[item].features} 
-                                                models={menuData[item].models} 
-                                                selectedModel={selectedModel} 
-                                                onSelectModel={(model) => { setSelectedModel(model); setOpenMenu(null); }} 
-                                            />
-                                        )}
-                                    </div>
-                                ))}
+                                {navItems.map(item => {
+                                    const isActive = currentPage === item.toLowerCase() || openMenu === item;
+                                    return (
+                                        <div 
+                                            key={item} 
+                                            onMouseEnter={() => {
+                                                if (menuCloseTimer) clearTimeout(menuCloseTimer);
+                                                menuData[item] && setOpenMenu(item);
+                                            }} 
+                                            onMouseLeave={() => {
+                                                const timer = window.setTimeout(() => setOpenMenu(null), 200);
+                                                setMenuCloseTimer(timer);
+                                            }} 
+                                            className="relative"
+                                        >
+                                            <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-all relative ${isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                                                {item}
+                                                {item === 'Community' && <span className="ms-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">New</span>}
+                                                {isActive && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full animate-glow"></div>}
+                                            </a>
+                                            {openMenu === item && menuData[item] && (
+                                                <AppMenu 
+                                                    features={menuData[item].features} 
+                                                    models={menuData[item].models} 
+                                                    selectedModel={selectedModel} 
+                                                    onSelectModel={(model) => { setSelectedModel(model); setOpenMenu(null); }} 
+                                                />
+                                            )}
+                                        </div>
+                                    )
+                                })}
                             </nav>
                         </div>
                         <div className="hidden md:flex items-center gap-4 text-sm font-medium">

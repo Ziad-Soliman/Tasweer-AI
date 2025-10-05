@@ -1,7 +1,10 @@
 
+
+
 import { GoogleGenAI, Modality, Part, Type, Chat, Content } from "@google/genai";
-import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene } from "../types";
-import { LIGHTING_STYLES, CAMERA_PERSPECTIVES, FONT_OPTIONS } from '../constants';
+import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene, GenerationMode, KeyObject } from "../types";
+// FIX: Changed import from CAMERA_PERSPECTIVES to CAMERA_PERSPECTIVE_OPTIONS to match the exported member from constants.ts.
+import { LIGHTING_STYLES, CAMERA_PERSPECTIVE_OPTIONS, FONT_OPTIONS } from '../constants';
 
 
 if (!process.env.API_KEY) {
@@ -21,6 +24,28 @@ export const startChat = (model: 'gemini-2.5-flash', history: Content[], systemI
     });
 };
 
+export const generateGroundedContent = async (query: string): Promise<{ text: string, sources: { uri: string, title: string }[] }> => {
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: query,
+        config: {
+            tools: [{ googleSearch: {} }],
+        },
+    });
+
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
+        ?.map((chunk: any) => chunk.web)
+        .filter((web: any) => web?.uri && web?.title) || [];
+
+    // Deduplicate sources based on URI
+    const uniqueSources = Array.from(new Map(sources.map((item: any) => [item.uri, item])).values());
+    
+    return {
+        text: response.text,
+        sources: uniqueSources as { uri: string, title: string }[]
+    };
+};
+
 
 export const fileToGenerativePart = async (file: File): Promise<Part> => {
     const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -36,7 +61,7 @@ export const fileToGenerativePart = async (file: File): Promise<Part> => {
     };
 };
 
-const base64ToGenerativePart = (base64: string, mimeType: string = 'image/png'): Part => {
+export const base64ToGenerativePart = (base64: string, mimeType: string = 'image/png'): Part => {
     return {
         inlineData: {
             data: base64,
@@ -54,10 +79,26 @@ export const describeProduct = async (imageFile: File): Promise<string> => {
     return result.text.trim();
 };
 
-export const generateSceneTemplates = async (productDescription: string): Promise<SceneTemplate[]> => {
+export const generateSuggestions = async (productDescription: string, mode: GenerationMode): Promise<{name: string, prompt: string}[]> => {
+    let systemPrompt = '';
+    switch (mode) {
+        case 'video':
+            systemPrompt = `You are a creative video director. Based on the product, generate 4 diverse and visually appealing short video scene ideas. For each, provide a short name (e.g., 'Dynamic Reveal') and a detailed generation prompt to create a cinematic video.`;
+            break;
+        case 'mockup':
+            systemPrompt = `You are a branding expert. Based on the product, generate 4 creative contexts for a mockup. For each, provide a short name (e.g., 'Urban Street Style') and a detailed generation prompt describing the scene.`;
+            break;
+        case 'character':
+             systemPrompt = `You are a creative movie director and storyteller. Based on the character description, generate 4 diverse and visually interesting scene ideas. For each, provide a short name (e.g., 'Rooftop Standoff') and a detailed generation prompt describing the setting, action, and mood.`;
+            break;
+        case 'product':
+        default:
+             systemPrompt = `You are a professional product photographer. Based on the product, generate 4 diverse and visually appealing scene templates. For each, provide a short name (e.g., 'Minimalist Studio') and a detailed image generation prompt.`;
+    }
+
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Based on the product "${productDescription}", generate 4 diverse and visually appealing scene templates for a professional product photograph. Provide the response as a JSON array of objects. Ensure lighting and perspective values are ONLY from the provided lists.`,
+        contents: `${systemPrompt}\n\nProduct: "${productDescription}"`,
         config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -65,12 +106,10 @@ export const generateSceneTemplates = async (productDescription: string): Promis
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        name: { type: Type.STRING, description: "A short, catchy name for the scene (e.g., 'Minimalist Studio')." },
-                        prompt: { type: Type.STRING, description: "A detailed image generation prompt for this scene, incorporating the product." },
-                        lighting: { type: Type.STRING, description: `A suitable lighting style from this list: ${LIGHTING_STYLES.join(', ')}.` },
-                        perspective: { type: Type.STRING, description: `A suitable camera perspective from this list: ${CAMERA_PERSPECTIVES.join(', ')}.` }
+                        name: { type: Type.STRING, description: "A short, catchy name for the scene/idea." },
+                        prompt: { type: Type.STRING, description: "A detailed generation prompt for this scene/idea." },
                     },
-                    required: ["name", "prompt", "lighting", "perspective"]
+                    required: ["name", "prompt"]
                 }
             }
         }
@@ -78,13 +117,13 @@ export const generateSceneTemplates = async (productDescription: string): Promis
 
     try {
         const jsonString = result.text.trim().replace(/^```json/, '').replace(/```$/, '');
-        const templates = JSON.parse(jsonString);
-        if (Array.isArray(templates)) {
-            return templates.filter(t => t.name && t.prompt && t.lighting && t.perspective);
+        const suggestions = JSON.parse(jsonString);
+        if (Array.isArray(suggestions)) {
+             return suggestions.filter(s => s.name && s.prompt);
         }
         return [];
     } catch (e) {
-        console.error("Failed to parse scene templates:", e);
+        console.error("Failed to parse suggestions:", e);
         return [];
     }
 };
@@ -115,19 +154,10 @@ export const removeBackground = async (imageFile: File): Promise<string> => {
     throw new Error('Background removal failed: No image part in response.');
 };
 
-export const generateImage = async (
-    productImageBase64: string, 
-    prompt: string, 
-    negativePrompt: string,
+export const generateImageFromParts = async (
+    parts: Part[], 
     seed: number | null
 ): Promise<string> => {
-    const fullPrompt = `${prompt}${negativePrompt ? `. Negative prompt: do not include ${negativePrompt}.` : ''}`;
-
-    const parts: Part[] = [
-        base64ToGenerativePart(productImageBase64),
-        { text: fullPrompt },
-    ];
-    
     const config: { responseModalities: Modality[], seed?: number } = {
         responseModalities: [Modality.IMAGE, Modality.TEXT],
     };
@@ -153,6 +183,22 @@ export const generateImage = async (
     throw new Error('Image generation failed: No image part in response.');
 };
 
+export const generateImage = async (
+    productImageBase64: string, 
+    prompt: string, 
+    negativePrompt: string,
+    seed: number | null
+): Promise<string> => {
+    const fullPrompt = `${prompt}${negativePrompt ? `. Negative prompt: do not include ${negativePrompt}.` : ''}`;
+
+    const parts: Part[] = [
+        base64ToGenerativePart(productImageBase64),
+        { text: fullPrompt },
+    ];
+    
+    return generateImageFromParts(parts, seed);
+};
+
 export const generateSocialPost = async (
     referencePostFile: File,
     logoDataUrl: string, // e.g., "data:image/png;base64,iVBORw..."
@@ -173,23 +219,7 @@ export const generateSocialPost = async (
         { text: fullPrompt },
     ];
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts },
-        config: {
-            responseModalities: [Modality.IMAGE, Modality.TEXT],
-        },
-    });
-
-    const candidate = result.candidates?.[0];
-    if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-            if (part.inlineData) {
-                return part.inlineData.data;
-            }
-        }
-    }
-    throw new Error('Social post generation failed: No image part in response.');
+    return generateImageFromParts(parts, null);
 };
 
 export const generateDesignAlternative = async (
@@ -203,55 +233,23 @@ export const generateDesignAlternative = async (
         { text: prompt },
     ];
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts },
-        config: {
-            responseModalities: [Modality.IMAGE, Modality.TEXT],
-        },
-    });
-
-    const candidate = result.candidates?.[0];
-    if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-            if (part.inlineData) {
-                return part.inlineData.data;
-            }
-        }
-    }
-    throw new Error('Design generation failed: No image part in response.');
+    return generateImageFromParts(parts, null);
 };
 
 
 export const generateMockup = async (
     productImageBase64: string,
     prompt: string,
-    mockupType: string
+    mockupPromptFragment: string
 ): Promise<string> => {
-    const fullPrompt = `${prompt}. The provided image is a product with a transparent background. Seamlessly and realistically place this product onto the ${mockupType}. The final image should be a single, cohesive, photorealistic scene.`;
+    const fullPrompt = `${prompt}. The provided image is a product with a transparent background. Seamlessly and realistically place this product onto the ${mockupPromptFragment}. The final image should be a single, cohesive, photorealistic scene.`;
 
     const parts: Part[] = [
         base64ToGenerativePart(productImageBase64),
         { text: fullPrompt },
     ];
 
-    const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts },
-        config: {
-            responseModalities: [Modality.IMAGE, Modality.TEXT],
-        },
-    });
-
-    const candidate = result.candidates?.[0];
-    if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-            if (part.inlineData) {
-                return part.inlineData.data;
-            }
-        }
-    }
-    throw new Error('Mockup generation failed: No image part in response.');
+    return generateImageFromParts(parts, null);
 };
 
 
@@ -536,6 +534,63 @@ export const generateProductNames = async (description: string, keywords: string
         console.error("Failed to parse product names:", e);
         throw new Error("Could not generate product names.");
     }
+};
+
+export const generateNeuroSalesCopy = async (
+    taskID: string,
+    userInput: {
+        productService: string;
+        targetAudience: string;
+        buyingMotivations: string;
+        selectedStoryType: string;
+    },
+    aiOutput: {
+        rapport: string;
+        wordPicture: string;
+        buyingTrance: string;
+        story: string;
+        canDoStack: string;
+        hypnoticCopy?: string;
+    }
+): Promise<string> => {
+    const systemInstruction = `You are a world-class expert in 'NeuroSales' and 'Brainvertise®', methodologies designed to craft highly persuasive sales and marketing copy by appealing directly to the reader's subconscious mind. Your entire knowledge base is built upon the foundational principles of legendary copywriters and psychological marketing pioneers like Robert Collier, Dr. Joe Vitale, and Donald Moine.
+Core Principles to Embody:
+The Sale is in the Mind: You operate under the unwavering belief that "Your sale must be made in your reader’s mind." Your primary goal is not to list features, but to guide the reader's imagination and emotions to a place where purchasing becomes the natural, logical conclusion.
+Brainvertise®: You adhere to the mantra: "Customers are brains. Advertise to their brains. Brainvertise®." Every piece of copy you generate must be psychologically resonant, bypassing conscious resistance and speaking to fundamental human drives.
+Strict Output Format: You will ONLY provide the requested text for each step. You must not include any preamble, self-reflection, or explanations like "Here is the text for..." or "Based on your input...". Your response is the raw, unadorned copy itself.`;
+
+    const context = `--- START OF CONTEXT ---
+**PRODUCT/SERVICE:** 
+${userInput.productService}
+
+**TARGET AUDIENCE & CURRENT TRANCE:** 
+${userInput.targetAudience}
+
+**AUDIENCE BUYING MOTIVATIONS & PAIN POINTS:**
+${userInput.buyingMotivations}
+
+**SELECTED STORY TYPE:**
+${userInput.selectedStoryType}
+
+**PREVIOUSLY GENERATED TEXT:**
+Rapport-Building Intro: ${aiOutput.rapport || 'Not generated yet.'}
+Word Picture: ${aiOutput.wordPicture || 'Not generated yet.'}
+Buying Trance Lead-in: ${aiOutput.buyingTrance || 'Not generated yet.'}
+Story: ${aiOutput.story || 'Not generated yet.'}
+Can-Do Stack: ${taskID === 'final-review' ? aiOutput.hypnoticCopy || 'Not generated yet.' : aiOutput.canDoStack || 'Not generated yet.'}
+--- END OF CONTEXT ---`;
+
+    const finalPrompt = `${context}\n\nTASK ID: ${taskID}`;
+    
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: finalPrompt,
+        config: {
+            systemInstruction,
+        }
+    });
+
+    return result.text.trim();
 };
 
 export const generateLogoConcepts = async (prompt: string, count: number = 4): Promise<string[]> => {
@@ -910,12 +965,28 @@ export const generateTattooDesigns = async (description: string, style: string):
     throw new Error('Tattoo generation failed: No images were returned.');
 };
 
-export const generateCharacterConcepts = async (description: string, style: string, referenceImageFile?: File | null): Promise<string[]> => {
-    if (referenceImageFile) {
-        const imagePart = await fileToGenerativePart(referenceImageFile);
-        const textPrompt = `Using the provided reference image for style and inspiration, create a ${style} character concept art of ${description}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
-        
-        const parts: Part[] = [imagePart, { text: textPrompt }];
+export const generateCharacterImages = async (description: string, style: string, referenceImageFile?: File | null, keyObjects: KeyObject[] = []): Promise<string[]> => {
+    const hasImageInputs = referenceImageFile || keyObjects.some(o => o.image);
+
+    if (hasImageInputs) {
+        const parts: Part[] = [];
+        if (referenceImageFile) {
+            parts.push(await fileToGenerativePart(referenceImageFile));
+        }
+        for (const obj of keyObjects) {
+            if (obj.image) {
+                parts.push(await fileToGenerativePart(obj.image));
+            }
+        }
+
+        let keyObjectsPrompt = '';
+        const objectNames = keyObjects.map(o => o.name).filter(Boolean);
+        if (objectNames.length > 0) {
+            keyObjectsPrompt = ` The scene should also include: ${objectNames.join(', ')}.`;
+        }
+
+        const textPrompt = `Using the provided reference image(s) for style and inspiration, create a ${style} character concept art of ${description}.${keyObjectsPrompt} Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        parts.push({ text: textPrompt });
         
         const generateOneImage = async (): Promise<string> => {
             const result = await ai.models.generateContent({
@@ -936,9 +1007,7 @@ export const generateCharacterConcepts = async (description: string, style: stri
             throw new Error('Character concept generation failed: No image part in response.');
         };
 
-        // Generate 4 images in parallel
         const generationPromises = Array(4).fill(0).map(() => generateOneImage());
-        
         return await Promise.all(generationPromises);
 
     } else {
@@ -1470,4 +1539,41 @@ export const generateVideoSceneImage = async (visualDescription: string): Promis
     }
     
     throw new Error('Video scene image generation failed: No image was returned.');
+};
+
+export const sketchToImage = async (sketchBase64: string, prompt: string, referenceImageBase64?: string | null): Promise<string> => {
+    const parts: Part[] = [];
+    let textContent = '';
+
+    const sketchPart = base64ToGenerativePart(sketchBase64, 'image/png');
+
+    if (referenceImageBase64) {
+        const referencePart = base64ToGenerativePart(referenceImageBase64);
+        parts.push(referencePart);
+        parts.push(sketchPart);
+        textContent = `Using the first image as a reference, apply the edits from the second image (a transparent sketch overlay) to generate a new, cohesive image based on this description: "${prompt}". Blend the sketch elements naturally into the reference image.`;
+    } else {
+        parts.push(sketchPart);
+        textContent = `Transform this rough sketch into a detailed image based on the following description: "${prompt}". Interpret the shapes and lines in the sketch as the primary subjects of the image.`;
+    }
+    
+    parts.push({ text: textContent });
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
+        }
+    }
+    throw new Error('Sketch to Image failed: No image part in response.');
 };

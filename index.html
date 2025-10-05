@@ -121,11 +121,16 @@
                 '0%': { opacity: '0', transform: 'scale(0.95)' },
                 '100%': { opacity: '1', transform: 'scale(1)' },
             },
+            'glow': {
+              '0%, 100%': { boxShadow: '0 0 2px hsl(var(--primary)), 0 0 4px hsl(var(--primary))' },
+              '50%': { boxShadow: '0 0 6px hsl(var(--primary)), 0 0 12px hsl(var(--primary))' },
+            },
           },
           animation: {
             'fade-in': 'fade-in 0.3s ease-out forwards',
             'slide-up-fade': 'slide-up-fade 0.3s ease-out forwards',
             'scale-in': 'scale-in 0.2s ease-out forwards',
+            'glow': 'glow 2.5s ease-in-out infinite',
           },
         },
       },

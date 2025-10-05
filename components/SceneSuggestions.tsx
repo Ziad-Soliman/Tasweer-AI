@@ -1,15 +1,15 @@
 
+
 import React from 'react';
-import { SceneTemplate } from '../types';
 import { Icon } from './Icon';
 
 interface SceneSuggestionsProps {
-    templates: SceneTemplate[];
-    onSelect: (template: SceneTemplate) => void;
+    templates: { name: string; prompt: string }[];
+    onSelect: (template: { name: string; prompt: string }) => void;
     isLoading: boolean;
 }
 
-const SuggestionCard: React.FC<{ template: SceneTemplate; onClick: () => void }> = ({ template, onClick }) => (
+const SuggestionCard: React.FC<{ template: { name: string; prompt: string }; onClick: () => void }> = ({ template, onClick }) => (
     <button
         onClick={onClick}
         className="flex-shrink-0 w-48 bg-muted/50 p-3 rounded-lg flex flex-col gap-2 text-left transition-colors hover:bg-accent"
