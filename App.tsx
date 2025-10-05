@@ -2,6 +2,7 @@
 
 
 
+
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
@@ -173,7 +174,7 @@ const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
 
 const App: React.FC = () => {
     const [lang, setLang] = useState<'en' | 'ar'>('en');
-    const [currentPage, setCurrentPage] = useState('character');
+    const [currentPage, setCurrentPage] = useState('image');
     const [selectedModel, setSelectedModel] = useState("Higgsfield Soul");
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [restoredState, setRestoredState] = useState<HistoryItem | null>(null);

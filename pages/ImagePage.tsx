@@ -1,6 +1,7 @@
 // This is a new, dedicated page for Image Generation.
 // It is a refactored and streamlined version of the 'product', 'mockup', 'social', and 'design' modes from the old ProductGenerationPage.
 
+// FIX: Corrected React import to include necessary hooks like useState, useEffect, etc.
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { Part } from '@google/genai';
@@ -21,19 +22,21 @@ import { FileUpload } from '../components/FileUpload';
 import { Icon } from '../components/Icon';
 import { Tooltip } from '../components/Tooltip';
 
-const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = true }) => {
-    return (
-        <details className="group border border-border rounded-lg bg-card overflow-hidden" open={defaultOpen}>
-            <summary className="font-semibold text-foreground px-4 py-3 cursor-pointer list-none flex items-center justify-between hover:bg-muted/50 transition-colors">
-                <span>{title}</span>
-                <Icon name="chevron-down" className="w-5 h-5 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="p-4 pt-2 border-t border-border bg-background space-y-4">
+const SelectControl: React.FC<{ icon: string; label: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; children: React.ReactNode; }> = ({ icon, label, value, onChange, children }) => (
+    <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Icon name={icon} className="w-5 h-5" />
+            <span>{label}</span>
+        </div>
+        <div className="relative">
+            <select value={value} onChange={onChange} className="bg-input border border-border rounded-md pl-3 pr-8 py-1.5 text-sm w-48 truncate appearance-none focus:outline-none focus:ring-2 focus:ring-primary">
                 {children}
-            </div>
-        </details>
-    );
-};
+            </select>
+            <Icon name="chevron-down" className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+        </div>
+    </div>
+);
+
 
 interface GeneratedItem {
     id: string;
@@ -43,14 +46,14 @@ interface GeneratedItem {
 }
 
 const LoadingCard = () => (
-    <div className="w-full bg-[#111118] border border-slate-700/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
+    <div className="w-full bg-[#111118] border border-border/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
         <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute w-12 h-12 bg-blue-500 rounded-full animate-pulse opacity-50"></div>
-            <div className="absolute w-5 h-5 bg-pink-500 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
-            <div className="absolute w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-700 rounded-full"></div>
+            <div className="absolute w-12 h-12 bg-primary/20 rounded-full animate-pulse opacity-50"></div>
+            <div className="absolute w-5 h-5 bg-pink-500/20 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
+            <div className="absolute w-10 h-10 bg-gradient-to-br from-primary/30 to-purple-700/30 rounded-full"></div>
         </div>
-        <p className="mt-6 font-semibold text-slate-200 tracking-wide">Forging New Realities ...</p>
-        <p className="mt-1 text-sm text-slate-400">Rendering impossible landscapes...</p>
+        <p className="mt-6 font-semibold text-foreground tracking-wide">Forging New Realities ...</p>
+        <p className="mt-1 text-sm text-muted-foreground">Rendering impossible landscapes...</p>
     </div>
 );
 
@@ -70,18 +73,19 @@ const ImageCard: React.FC<ImageCardProps> = ({ item, onSelect, onDownload, onEnh
     const handleAction = (e: React.MouseEvent, action: () => void) => {
         e.stopPropagation();
         onSelect();
-        action();
+        // Use a short timeout to allow the Canvas component to mount before the action is called
+        setTimeout(action, 50);
     }
     
     return (
-        <div className="break-inside-avoid">
+        <div className="break-inside-avoid mb-4">
             {item.isLoading || !item.src ? (
                 <LoadingCard />
             ) : (
                 <>
                     <div className="group relative overflow-hidden rounded-lg cursor-pointer" onClick={onSelect}>
                         <img src={item.src} alt={item.prompt} className="w-full h-auto block bg-muted" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-start justify-end p-2">
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-start justify-end p-2">
                             <div className="flex items-center gap-1.5">
                                 <Tooltip text={t('editorToolExpandImage')}><button onClick={(e) => handleAction(e, () => onSetEditorMode('expand'))} className="p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 backdrop-blur-sm"><Icon name="expand" className="w-4 h-4" /></button></Tooltip>
                                 <Tooltip text={t('enhance')}><button onClick={(e) => handleAction(e, onEnhance)} className="p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 backdrop-blur-sm"><Icon name="wand" className="w-4 h-4" /></button></Tooltip>
@@ -136,21 +140,6 @@ const DEFAULT_SETTINGS: GenerationSettings = {
     keyObjects: [],
 };
 
-const WelcomeScreen = ({ onUpload }: { onUpload: (file: File) => void }) => {
-    const { t } = useTranslation();
-    return (
-        <div className="flex-1 flex flex-col justify-center items-center p-8 text-center animate-fade-in h-full">
-            <div className="w-full max-w-lg">
-                 <Icon name="wand" className="w-24 h-24 text-primary/20 mx-auto mb-4" />
-                 <h2 className="text-4xl font-bold tracking-tight text-foreground">AI Image Studio</h2>
-                 <p className="text-muted-foreground mt-2 mb-8 max-w-md mx-auto">Generate new, stylized e-commerce and marketing images from a single product photo.</p>
-                 <FileUpload onFileUpload={onUpload} label={t('uploadPhoto')}/>
-            </div>
-        </div>
-    );
-};
-
-
 interface ImagePageProps {
     selectedModel: string;
     history: HistoryItem[];
@@ -166,32 +155,8 @@ const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
     <label className={`block text-sm font-medium text-muted-foreground mb-1.5 ${className}`}>{children}</label>
 );
 
-const IconGridSelector: React.FC<{
-    label: string;
-    options: readonly { id: string; name: string; icon: string }[];
-    value: string;
-    onChange: (id: string) => void;
-    gridCols?: string;
-}> = ({ label, options, value, onChange, gridCols = 'grid-cols-5' }) => (
-    <div>
-        <Label>{label}</Label>
-        <div className={`grid ${gridCols} gap-2`}>
-            {options.map(option => (
-                <Tooltip key={option.id} text={option.name}>
-                    <button onClick={() => onChange(option.id)}
-                        className={`h-20 w-full flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200 text-xs focus:outline-none ${value === option.id ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-transparent bg-background hover:bg-muted'}`}>
-                        <Icon name={option.icon} className="w-6 h-6 mb-1.5" />
-                        <span className="text-center leading-tight">{option.name}</span>
-                    </button>
-                </Tooltip>
-            ))}
-        </div>
-    </div>
-);
-
-
 export const ImagePage: React.FC<ImagePageProps> = (props) => {
-    const { history, onToggleFavorite, onRestore, addHistoryItem, deleteHistoryItem, restoredState, clearRestoredState } = props;
+    const { history, onToggleFavorite, onRestore, addHistoryItem, deleteHistoryItem, restoredState, clearRestoredState, selectedModel } = props;
     const { t } = useTranslation();
 
     const [settings, setSettings] = useState<GenerationSettings>({ ...DEFAULT_SETTINGS, generationMode: 'product' });
@@ -224,13 +189,13 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
     const [designRefImage, setDesignRefImage] = useState<File | null>(null);
     const [styleRefImage, setStyleRefImage] = useState<File | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const aspectRatios: { id: AspectRatio; icon: string }[] = [{ id: '1:1', icon: 'aspect-ratio-1-1' }, { id: '9:16', icon: 'aspect-ratio-9-16' }, { id: '16:9', icon: 'aspect-ratio-16-9' }, { id: '4:3', icon: 'aspect-ratio-4-3' }, { id: '3:4', icon: 'aspect-ratio-3-4' }];
+    
     const numImages: GenerationSettings['numberOfImages'][] = [1, 2, 3, 4];
-    const generationModes: {id: GenerationMode, name: string}[] = [
-        {id: 'product', name: 'Product Photos'},
-        {id: 'mockup', name: 'Mockups'},
-        {id: 'social', name: 'Social Media'},
-        {id: 'design', name: 'Designs'},
+    const generationModes: {id: GenerationMode, name: string, icon: string}[] = [
+        {id: 'product', name: 'Product', icon: 'package'},
+        {id: 'mockup', name: 'Mockup', icon: 'shirt'},
+        {id: 'social', name: 'Social', icon: 'users'},
+        {id: 'design', name: 'Design', icon: 'sparkles'},
     ];
     
     useEffect(() => {
@@ -379,7 +344,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                 const basePrompt = `${sceneDescription}, ${cinematicPrompt}${keyObjectsPrompt}`;
                 
                 const placeholders: GeneratedItem[] = Array(settings.numberOfImages).fill(0).map(() => ({ id: nanoid(), prompt: basePrompt, isLoading: true }));
-                setGeneratedItems(prev => [...placeholders, ...prev]);
+                setGeneratedItems(prev => [...placeholders, ...prev.filter(i => !i.isLoading)]);
         
                 const keyObjectParts: Part[] = [];
                 for (const obj of settings.keyObjects) {
@@ -446,7 +411,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                         source: { page: 'product-generation', appName: t(`mode${settings.generationMode.charAt(0).toUpperCase() + settings.generationMode.slice(1)}` as any)},
                         thumbnail: { type: 'image', value: results[0].src },
                         title: results[0].prompt,
-                        payload: { settings: {...settings, prompt: results[0].prompt}, productImagePreview, productImageNoBg, generatedImages: results.map(r => r.src), textOverlays }
+                        payload: { settings: {...settings, prompt: results[0].prompt}, productImagePreview, productImageNoBg, generatedItems: results.map(r => ({id: nanoid(), src: r.src, prompt: r.prompt, isLoading: false})), textOverlays }
                     });
                 }
             } catch (e) {
@@ -521,10 +486,6 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
     };
 
 
-    if (!productImagePreview && !['design', 'social'].includes(settings.generationMode)) {
-        return <WelcomeScreen onUpload={handleProductImageUpload} />;
-    }
-
     if (selectedImageIndex !== null) {
         return (
             <div className="h-full flex flex-col">
@@ -556,223 +517,141 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
             {/* Left Sidebar */}
             <div className="bg-card border-b md:border-b-0 md:border-r border-border md:w-[380px] flex-shrink-0 flex flex-col">
-                <div className="p-4 border-b">
-                    <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="wand"/> Image Studio</h2>
-                </div>
-                 <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
-                     <CollapsibleSection title="Main Asset">
-                        <FileUpload 
-                            onFileUpload={handleProductImageUpload} 
-                            label={t('uploadPhoto')}
-                            uploadedFileName={productImage?.name} 
-                            onClear={() => setIsStartOverModalOpen(true)}
-                            disabled={isLoading || !!promptGenerationMessage || ['design', 'social'].includes(settings.generationMode)}
-                            disabledReason={promptGenerationMessage || (['design', 'social'].includes(settings.generationMode) ? "Use Mode-Specific uploads" : undefined)}
-                        />
-                    </CollapsibleSection>
-                     <CollapsibleSection title="Style & Composition">
-                        <FileUpload 
-                            onFileUpload={setStyleRefImage} 
-                            label="Upload Style Reference"
-                            uploadedFileName={styleRefImage?.name}
-                            onClear={() => setStyleRefImage(null)}
-                        />
-                        <p className="text-xs text-muted-foreground mt-2">Upload an image to influence the style, colors, and composition of your generation.</p>
-                    </CollapsibleSection>
-                     <CollapsibleSection title="Key Objects">
-                        <div className="space-y-3">
-                            {settings.keyObjects.map((obj, index) => (
-                                <div key={obj.id} className="bg-background p-2 rounded-md border flex items-start gap-2">
-                                    <div className="flex-1 space-y-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Object name (e.g., 'red apple')"
-                                            value={obj.name}
-                                            onChange={(e) => {
-                                                const newObjects = [...settings.keyObjects];
-                                                newObjects[index].name = e.target.value;
-                                                setSettings(s => ({...s, keyObjects: newObjects}));
-                                            }}
-                                            className="w-full bg-muted border-none rounded-md p-2 text-sm h-8"
-                                        />
-                                        <FileUpload 
-                                            onFileUpload={(file) => {
-                                                const newObjects = [...settings.keyObjects];
-                                                newObjects[index].image = file;
-                                                setSettings(s => ({...s, keyObjects: newObjects}));
-                                            }}
-                                            label="Upload object image (optional)"
-                                            uploadedFileName={obj.image?.name}
-                                            onClear={() => {
-                                                const newObjects = [...settings.keyObjects];
-                                                newObjects[index].image = null;
-                                                setSettings(s => ({...s, keyObjects: newObjects}));
-                                            }}
-                                        />
-                                    </div>
-                                    <button onClick={() => {
-                                        setSettings(s => ({...s, keyObjects: s.keyObjects.filter(o => o.id !== obj.id)}));
-                                    }} className="p-2 text-muted-foreground hover:text-destructive"><Icon name="trash" className="w-4 h-4" /></button>
-                                </div>
-                            ))}
-                        </div>
-                        <button 
-                            onClick={() => {
-                                const newObject: KeyObject = { id: nanoid(), name: '', image: null };
-                                setSettings(s => ({...s, keyObjects: [...s.keyObjects, newObject]}));
-                            }}
-                            className="mt-2 w-full text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"
-                        >
-                            <Icon name="plus" className="w-4 h-4" /> Add Object
+                 <div className="p-4 border-b flex justify-between items-center">
+                    <div>
+                        <h2 className="text-lg font-bold">AI Multi-Modal Generation</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Create stunning AI-generated content</p>
+                    </div>
+                    <Tooltip text={t('startOver')}>
+                        <button onClick={() => setIsStartOverModalOpen(true)} className="p-2 rounded-md hover:bg-accent text-muted-foreground">
+                            <Icon name="restart" className="w-5 h-5" />
                         </button>
-                    </CollapsibleSection>
-                     <CollapsibleSection title="Mode-Specific Settings">
-                        {settings.generationMode === 'mockup' && (
-                             <IconGridSelector
-                                label="Mockup Type"
-                                options={MOCKUP_TYPES}
-                                value={settings.mockupType}
-                                onChange={(v) => { setSettings(s => ({...s, mockupType: v})); setIsPromptDirty(false); }}
-                                gridCols="grid-cols-5"
-                            />
-                        )}
-                        {settings.generationMode === 'social' && <>
-                            <div>
-                                <Label>Social Template</Label>
-                                <select value={settings.selectedSocialTemplateId!} onChange={(e) => { setSettings(s => ({...s, selectedSocialTemplateId: e.target.value})); setIsPromptDirty(false); }}
-                                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring">
-                                    {SOCIAL_MEDIA_TEMPLATES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-                                </select>
-                            </div>
-                            <FileUpload onFileUpload={setSocialRefPost} label="Upload Style Reference Post" uploadedFileName={socialRefPost?.name} onClear={() => setSocialRefPost(null)} />
-                        </>}
-                        {settings.generationMode === 'design' && <FileUpload onFileUpload={setDesignRefImage} label="Upload Design to Iterate On" uploadedFileName={designRefImage?.name} onClear={() => setDesignRefImage(null)} />}
-                     </CollapsibleSection>
-                    <CollapsibleSection title="Cinematic Controls">
-                        <IconGridSelector gridCols="grid-cols-3" label="Lighting Style" options={CINEMATIC_LIGHTING_STYLES} value={settings.lightingStyle} onChange={(v) => setSettings(s => ({...s, lightingStyle: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Photo Style" options={PHOTO_STYLES} value={settings.photoStyle} onChange={(v) => setSettings(s => ({...s, photoStyle: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Camera Perspective" options={CAMERA_PERSPECTIVE_OPTIONS} value={settings.cameraPerspective} onChange={(v) => setSettings(s => ({...s, cameraPerspective: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Camera Zoom" options={CAMERA_ZOOMS} value={settings.cameraZoom} onChange={(v) => setSettings(s => ({...s, cameraZoom: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Shot Type" options={SHOT_TYPES} value={settings.shotType} onChange={(v) => setSettings(s => ({...s, shotType: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Color Tone" options={COLOR_TONES} value={settings.colorTone} onChange={(v) => setSettings(s => ({...s, colorTone: v}))} />
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Output">
-                        <div>
-                            <Label>Aspect Ratio</Label>
-                            <div className="grid grid-cols-5 gap-2">
-                                {aspectRatios.map(ratio => (
-                                    <Tooltip key={ratio.id} text={ratio.id}>
-                                        <button onClick={() => setSettings(s => ({ ...s, aspectRatio: ratio.id }))}
-                                            className={`h-10 w-full flex items-center justify-center rounded-md border transition-colors ${settings.aspectRatio === ratio.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent'}`}>
-                                            <Icon name={ratio.icon} className="w-6 h-6" />
-                                        </button>
-                                    </Tooltip>
-                                ))}
-                            </div>
-                        </div>
-                         <div>
-                            <Label>{t('numberOfImages')}</Label>
-                            <div className="grid grid-cols-4 gap-2">
-                                {numImages.map(num => (
-                                     <button key={num} onClick={() => setSettings(s => ({ ...s, numberOfImages: num }))}
-                                        className={`h-10 w-full flex items-center justify-center rounded-md border transition-colors text-sm font-semibold ${settings.numberOfImages === num ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent'}`}>
-                                        {num}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Advanced">
-                         <div>
-                            <Label>{t('negativePrompt')}</Label>
-                            <div className="flex flex-wrap gap-1.5 mb-2">
-                                {NEGATIVE_PROMPT_PRESETS.map(preset => {
-                                    const isActive = settings.negativePrompt.includes(preset);
-                                    return (
-                                        <button
-                                            key={preset}
-                                            onClick={() => {
-                                                const current = settings.negativePrompt.split(', ').filter(Boolean);
-                                                const newPrompt = isActive ? current.filter(p => p !== preset) : [...current, preset];
-                                                setSettings(s => ({...s, negativePrompt: newPrompt.join(', ')}));
-                                            }}
-                                            className={`px-2 py-1 text-xs rounded-full border transition-colors ${isActive ? 'bg-destructive/20 text-destructive-foreground border-destructive' : 'bg-secondary text-secondary-foreground hover:bg-accent'}`}
-                                        >
-                                            {preset}
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                            <textarea value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))}
-                                placeholder="Add custom negative prompts, separated by commas..."
-                                className="w-full bg-background border border-input rounded-md p-2 text-sm min-h-[60px] resize-none"
-                            />
-                        </div>
-                        <div>
-                           <Label>{t('seed')}</Label>
-                           <input type="text" value={settings.seed} onChange={(e) => setSettings(s => ({...s, seed: e.target.value}))}
-                                placeholder={t('seedPlaceholder')}
-                                className="w-full bg-background border border-input rounded-md p-2 text-sm h-10" />
-                        </div>
-                    </CollapsibleSection>
-                 </div>
-            </div>
-            {/* Center Content */}
-            <main className="flex-1 flex flex-col min-h-0 bg-background/95">
-                 <div className="flex-shrink-0 px-4 pt-4">
-                    <div className="p-1.5 bg-muted rounded-full flex items-center w-fit mx-auto shadow-inner">
+                    </Tooltip>
+                </div>
+
+                <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-6">
+                    <div className="p-1 bg-muted rounded-lg grid grid-cols-4 items-center shadow-inner">
                         {generationModes.map(mode => (
                             <button key={mode.id} onClick={() => {
                                 setSettings(s => ({...s, generationMode: mode.id}));
-                                setIsPromptDirty(false); // Reset prompt dirtiness on mode change
+                                setIsPromptDirty(false);
                             }}
-                            className={`px-6 py-2 text-sm font-semibold rounded-full transition-colors ${settings.generationMode === mode.id ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
+                            className={`flex-1 text-center px-2 py-1.5 text-xs font-semibold rounded-md transition-colors flex flex-col items-center gap-1 ${settings.generationMode === mode.id ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
+                                <Icon name={mode.icon} className="w-4 h-4" />
                                 {mode.name}
                             </button>
                         ))}
                     </div>
+
+                    {['product', 'mockup'].includes(settings.generationMode) && (
+                         <div>
+                            <Label>Product Image</Label>
+                            <FileUpload onFileUpload={handleProductImageUpload} label="Upload product image" uploadedFileName={productImage?.name} onClear={() => resetState(true)} />
+                            {promptGenerationMessage && <p className="text-xs text-muted-foreground mt-2 animate-pulse">{promptGenerationMessage}</p>}
+                        </div>
+                    )}
+                     {['social', 'design'].includes(settings.generationMode) && (
+                        <div>
+                            <Label>Core Subject / Idea</Label>
+                            <textarea
+                                value={settings.productDescription}
+                                onChange={(e) => setSettings(s => ({ ...s, productDescription: e.target.value }))}
+                                placeholder={settings.generationMode === 'social' ? "e.g., A promotional post for a new coffee shop" : "e.g., A futuristic cityscape in a retro style"}
+                                className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[70px] resize-none"
+                            />
+                        </div>
+                    )}
+                    {settings.generationMode === 'social' && (
+                        <div>
+                            <Label>Reference Post</Label>
+                            <FileUpload onFileUpload={setSocialRefPost} label="Upload reference post" uploadedFileName={socialRefPost?.name} onClear={() => setSocialRefPost(null)} />
+                        </div>
+                    )}
+                     {settings.generationMode === 'design' && (
+                        <div>
+                            <Label>Reference Design</Label>
+                            <FileUpload onFileUpload={setDesignRefImage} label="Upload reference design" uploadedFileName={designRefImage?.name} onClear={() => setDesignRefImage(null)} />
+                        </div>
+                    )}
+                    
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                             <Label className="flex items-center gap-2 font-semibold text-foreground mb-0">
+                                <Icon name="pencil" className="w-4 h-4 text-muted-foreground" /> Prompt
+                            </Label>
+                            <Tooltip text={t('enhancePrompt')}><button onClick={handleEnhancePrompt} disabled={isEnhancingPrompt || !sceneDescription} className="p-1 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-50"><Icon name="wand" className={`w-4 h-4 ${isEnhancingPrompt ? 'animate-pulse' : ''}`}/></button></Tooltip>
+                        </div>
+                        <SceneSuggestions templates={suggestions} onSelect={(s) => { setSceneDescription(s.prompt); setIsPromptDirty(true); }} isLoading={isLoadingSuggestions} />
+                         <textarea ref={textareaRef} value={sceneDescription} onChange={(e) => {setSceneDescription(e.target.value); setIsPromptDirty(true);}}
+                            placeholder="Describe your scene..." className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[100px] resize-none mt-2"
+                            rows={3} disabled={isLoading || !!promptGenerationMessage} />
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground mb-2">Advanced Mode</p>
+                        <div className="bg-card border border-border rounded-lg p-2 space-y-2">
+                             <SelectControl icon="cube" label="AI Model" value={selectedModel} onChange={() => {}} children={<option>{selectedModel}</option>} />
+                             <SelectControl icon="aspect-ratio" label="Aspect Ratio" value={settings.aspectRatio} onChange={e => setSettings(s => ({...s, aspectRatio: e.target.value as AspectRatio}))}>
+                                {(['1:1', '4:5', '16:9', '9:16', '4:3', '3:4'] as AspectRatio[]).map(r => <option key={r} value={r}>{r}</option>)}
+                            </SelectControl>
+                            <SelectControl icon="wand" label="Style" value={settings.photoStyle} onChange={e => setSettings(s => ({...s, photoStyle: e.target.value}))}>
+                                {PHOTO_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                            <SelectControl icon="sun" label="Lighting" value={settings.lightingStyle} onChange={e => setSettings(s => ({...s, lightingStyle: e.target.value}))}>
+                                {CINEMATIC_LIGHTING_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                            <SelectControl icon="camera" label="Perspective" value={settings.cameraPerspective} onChange={e => setSettings(s => ({...s, cameraPerspective: e.target.value}))}>
+                                {CAMERA_PERSPECTIVE_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                            {settings.generationMode === 'mockup' && (
+                                <SelectControl icon="shirt" label="Mockup Type" value={settings.mockupType} onChange={(e) => { setSettings(s => ({...s, mockupType: e.target.value})); setIsPromptDirty(false); }}>
+                                    {MOCKUP_TYPES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                                </SelectControl>
+                            )}
+                             <div className="p-2">
+                                 <Label>Negative Prompt</Label>
+                                <input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))} placeholder="e.g. text, watermark, blurry..." className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"/>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                 <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
+
+                 <div className="p-4 border-t mt-auto">
+                    <button onClick={handleGenerate} disabled={isLoading || !!promptGenerationMessage || !sceneDescription} className="w-full h-12 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
+                        {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <><Icon name="sparkles" className="w-5 h-5" /> {t('generate')}</>}
+                    </button>
+                </div>
+            </div>
+            
+            {/* Center Content */}
+            <main className="flex-1 flex flex-col min-h-0 bg-background/95">
+                 <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-8">
+                    {error && (
+                        <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-md mb-6 relative">
+                            <h3 className="font-bold">Generation Failed</h3>
+                            <p className="text-sm">{error}</p>
+                            <button onClick={() => setError(null)} className="absolute top-2 right-2 p-1"><Icon name="close" className="w-4 h-4"/></button>
+                        </div>
+                    )}
                     {generatedItems.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {generatedItems.map((item, index) => (
                                 <ImageCard 
                                     key={item.id} item={item} onSelect={() => setSelectedImageIndex(index)} 
                                     onDownload={() => handleDownload(item.src!)}
-                                    onEnhance={() => { setSelectedImageIndex(index); setTimeout(() => handleEnhanceImage(), 0); }}
-                                    onGenerateCopy={() => { setSelectedImageIndex(index); setTimeout(() => handleGenerateCopy(false), 0); }}
-                                    onSetEditorMode={(mode) => { setSelectedImageIndex(index); setEditorMode(mode); }}
+                                    onEnhance={() => handleEnhanceImage()}
+                                    onGenerateCopy={() => handleGenerateCopy(false)}
+                                    onSetEditorMode={(mode) => setEditorMode(mode)}
                                 />
                             ))}
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center text-muted-foreground text-center">
-                            <p>Configure your generation and your results will appear here.</p>
+                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-8 animate-fade-in">
+                            <Icon name="image" className="w-24 h-24 text-primary/20" />
+                            <h2 className="text-2xl font-bold mt-4 text-foreground">Image Studio</h2>
+                            <p className="max-w-sm mt-2">Configure your generation in the left panel. Your results will appear here.</p>
                         </div>
                     )}
-                </div>
-                 <div className="flex-shrink-0 px-4 pb-4 mt-auto">
-                    <div className="max-w-3xl mx-auto space-y-3">
-                        <SceneSuggestions templates={suggestions} onSelect={(s) => { setSceneDescription(s.prompt); setIsPromptDirty(true); }} isLoading={isLoadingSuggestions} />
-                        <div className="relative bg-card border border-border rounded-2xl shadow-lg flex items-center p-2 gap-2">
-                             <Tooltip text={t('browsePresets')}>
-                                <button onClick={() => setIsPresetModalOpen(true)} disabled={isLoading || isEnhancingPrompt} className="p-2 rounded-full hover:bg-muted disabled:opacity-50 flex-shrink-0">
-                                    <Icon name="sparkles" className="w-5 h-5 text-primary"/>
-                                </button>
-                            </Tooltip>
-                            <textarea ref={textareaRef} value={sceneDescription} onChange={(e) => {setSceneDescription(e.target.value); setIsPromptDirty(true);}}
-                                placeholder="Describe your scene..." className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground p-2 resize-none"
-                                rows={1} disabled={isLoading || !!promptGenerationMessage} />
-                            <Tooltip text={t('enhancePrompt')}>
-                                <button onClick={handleEnhancePrompt} disabled={isEnhancingPrompt || !sceneDescription || isLoading} className="p-2 rounded-full hover:bg-muted disabled:opacity-50 flex-shrink-0">
-                                    {isEnhancingPrompt ? <Icon name="spinner" className="w-5 h-5 animate-spin"/> : <Icon name="wand" className="w-5 h-5 text-primary"/>}
-                                </button>
-                            </Tooltip>
-                            <button onClick={handleGenerate} disabled={isLoading || !!promptGenerationMessage || !sceneDescription} className="h-10 px-6 rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-all bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
-                                {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <><span>{t('generate')}</span> <Icon name="arrow-right" className="w-4 h-4"/></>}
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </main>
             {/* Right Sidebar */}

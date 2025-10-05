@@ -79,26 +79,40 @@ export const describeProduct = async (imageFile: File): Promise<string> => {
     return result.text.trim();
 };
 
-export const generateSuggestions = async (productDescription: string, mode: GenerationMode): Promise<{name: string, prompt: string}[]> => {
+export const generateSuggestions = async (subject: string, mode: GenerationMode): Promise<{name: string, prompt: string}[]> => {
     let systemPrompt = '';
+    let contextLabel = 'Subject';
+
     switch (mode) {
         case 'video':
-            systemPrompt = `You are a creative video director. Based on the product, generate 4 diverse and visually appealing short video scene ideas. For each, provide a short name (e.g., 'Dynamic Reveal') and a detailed generation prompt to create a cinematic video.`;
+            systemPrompt = `You are a creative video director. Based on the subject, generate 4 diverse and visually appealing short video scene ideas. For each, provide a short name (e.g., 'Dynamic Reveal') and a detailed generation prompt to create a cinematic video.`;
+            contextLabel = 'Subject';
             break;
         case 'mockup':
             systemPrompt = `You are a branding expert. Based on the product, generate 4 creative contexts for a mockup. For each, provide a short name (e.g., 'Urban Street Style') and a detailed generation prompt describing the scene.`;
+            contextLabel = 'Product';
+            break;
+        case 'social':
+            systemPrompt = `You are a social media expert. Based on the core subject, generate 4 creative and engaging visual ideas for a social media post. For each, provide a short name (e.g., 'Minimalist Showcase') and a detailed image generation prompt.`;
+            contextLabel = 'Core Subject';
+            break;
+        case 'design':
+            systemPrompt = `You are a creative art director. Based on the core subject, generate 4 diverse and artistic design concepts. For each, provide a short name (e.g., 'Abstract Flow') and a detailed image generation prompt.`;
+            contextLabel = 'Core Subject';
             break;
         case 'character':
              systemPrompt = `You are a creative movie director and storyteller. Based on the character description, generate 4 diverse and visually interesting scene ideas. For each, provide a short name (e.g., 'Rooftop Standoff') and a detailed generation prompt describing the setting, action, and mood.`;
+             contextLabel = 'Character Description';
             break;
         case 'product':
         default:
              systemPrompt = `You are a professional product photographer. Based on the product, generate 4 diverse and visually appealing scene templates. For each, provide a short name (e.g., 'Minimalist Studio') and a detailed image generation prompt.`;
+             contextLabel = 'Product';
     }
 
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `${systemPrompt}\n\nProduct: "${productDescription}"`,
+        contents: `${systemPrompt}\n\n${contextLabel}: "${subject}"`,
         config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -965,7 +979,7 @@ export const generateTattooDesigns = async (description: string, style: string):
     throw new Error('Tattoo generation failed: No images were returned.');
 };
 
-export const generateCharacterImages = async (description: string, style: string, referenceImageFile?: File | null, keyObjects: KeyObject[] = []): Promise<string[]> => {
+export const generateCharacterImages = async (description: string, style: string, referenceImageFile?: File | null, keyObjects: KeyObject[] = [], count: number = 4): Promise<string[]> => {
     const hasImageInputs = referenceImageFile || keyObjects.some(o => o.image);
 
     if (hasImageInputs) {
@@ -1007,7 +1021,7 @@ export const generateCharacterImages = async (description: string, style: string
             throw new Error('Character concept generation failed: No image part in response.');
         };
 
-        const generationPromises = Array(4).fill(0).map(() => generateOneImage());
+        const generationPromises = Array(count).fill(0).map(() => generateOneImage());
         return await Promise.all(generationPromises);
 
     } else {
@@ -1016,7 +1030,7 @@ export const generateCharacterImages = async (description: string, style: string
             model: 'imagen-4.0-generate-001',
             prompt: prompt,
             config: {
-              numberOfImages: 4,
+              numberOfImages: count,
               outputMimeType: 'image/png',
               aspectRatio: '9:16',
             },

@@ -13,19 +13,21 @@ import { Icon } from '../components/Icon';
 import { Tooltip } from '../components/Tooltip';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
-const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = true }) => {
-    return (
-        <details className="group border border-border rounded-lg bg-card overflow-hidden" open={defaultOpen}>
-            <summary className="font-semibold text-foreground px-4 py-3 cursor-pointer list-none flex items-center justify-between hover:bg-muted/50 transition-colors">
-                <span>{title}</span>
-                <Icon name="chevron-down" className="w-5 h-5 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="p-4 pt-2 border-t border-border bg-background space-y-4">
+
+const SelectControl: React.FC<{ icon: string; label: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; children: React.ReactNode; }> = ({ icon, label, value, onChange, children }) => (
+    <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Icon name={icon} className="w-5 h-5" />
+            <span>{label}</span>
+        </div>
+        <div className="relative">
+            <select value={value} onChange={onChange} className="bg-input border border-border rounded-md pl-3 pr-8 py-1.5 text-sm w-48 truncate appearance-none focus:outline-none focus:ring-2 focus:ring-primary">
                 {children}
-            </div>
-        </details>
-    );
-};
+            </select>
+            <Icon name="chevron-down" className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+        </div>
+    </div>
+);
 
 interface GeneratedItem {
     id: string;
@@ -35,14 +37,14 @@ interface GeneratedItem {
 }
 
 const LoadingCard = () => (
-    <div className="w-full bg-[#111118] border border-slate-700/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
+    <div className="w-full bg-[#111118] border border-border/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
         <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute w-12 h-12 bg-blue-500 rounded-full animate-pulse opacity-50"></div>
-            <div className="absolute w-5 h-5 bg-pink-500 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
-            <div className="absolute w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-700 rounded-full"></div>
+            <div className="absolute w-12 h-12 bg-primary/20 rounded-full animate-pulse opacity-50"></div>
+            <div className="absolute w-5 h-5 bg-pink-500/20 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
+            <div className="absolute w-10 h-10 bg-gradient-to-br from-primary/30 to-purple-700/30 rounded-full"></div>
         </div>
-        <p className="mt-6 font-semibold text-slate-200 tracking-wide">Summoning Digital Souls...</p>
-        <p className="mt-1 text-sm text-slate-400">Rendering alternate realities...</p>
+        <p className="mt-6 font-semibold text-foreground tracking-wide">Summoning Digital Souls...</p>
+        <p className="mt-1 text-sm text-muted-foreground">Rendering alternate realities...</p>
     </div>
 );
 
@@ -57,7 +59,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ item, onSelect, onDownload }) => 
     const { t } = useTranslation();
     
     return (
-        <div className="break-inside-avoid">
+        <div className="break-inside-avoid mb-4">
             {item.isLoading || !item.src ? (
                 <LoadingCard />
             ) : (
@@ -110,29 +112,6 @@ const Label: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
     <label className={`block text-sm font-medium text-muted-foreground mb-1.5 ${className}`}>{children}</label>
 );
 
-const IconGridSelector: React.FC<{
-    label: string;
-    options: readonly { id: string; name: string; icon: string }[];
-    value: string;
-    onChange: (id: string) => void;
-    gridCols?: string;
-}> = ({ label, options, value, onChange, gridCols = 'grid-cols-5' }) => (
-    <div>
-        <Label>{label}</Label>
-        <div className={`grid ${gridCols} gap-2`}>
-            {options.map(option => (
-                <Tooltip key={option.id} text={option.name}>
-                    <button onClick={() => onChange(option.id)}
-                        className={`h-20 w-full flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200 text-xs focus:outline-none ${value === option.id ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-transparent bg-background hover:bg-muted'}`}>
-                        <Icon name={option.icon} className="w-6 h-6 mb-1.5" />
-                        <span className="text-center leading-tight">{option.name}</span>
-                    </button>
-                </Tooltip>
-            ))}
-        </div>
-    </div>
-);
-
 interface CharacterPageProps {
     selectedModel: string;
     history: HistoryItem[];
@@ -145,9 +124,9 @@ interface CharacterPageProps {
 }
 
 export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
-    const { addHistoryItem } = props;
+    const { addHistoryItem, selectedModel } = props;
     const { t } = useTranslation();
-
+    const numImages: GenerationSettings['numberOfImages'][] = [1, 2, 3, 4];
     const [settings, setSettings] = useState<GenerationSettings>({ ...DEFAULT_SETTINGS });
     const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -155,6 +134,17 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
     const [characterDescription, setCharacterDescription] = useState('');
     const [characterRefImage, setCharacterRefImage] = useState<File | null>(null);
     const [sceneDescription, setSceneDescription] = useState('');
+
+    const handleAddKeyObject = () => {
+        setSettings(s => ({ ...s, keyObjects: [...s.keyObjects, { id: nanoid(), name: '', image: null }] }));
+    };
+    const handleUpdateKeyObject = (id: string, updates: Partial<KeyObject>) => {
+        setSettings(s => ({...s, keyObjects: s.keyObjects.map(o => o.id === id ? { ...o, ...updates } : o)}));
+    };
+    const handleRemoveKeyObject = (id: string) => {
+        setSettings(s => ({ ...s, keyObjects: s.keyObjects.filter(o => o.id !== id) }));
+    };
+
 
     const handleGenerate = async () => {
         setError(null);
@@ -189,7 +179,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
             const placeholders: GeneratedItem[] = Array(settings.numberOfImages).fill(0).map(() => ({ id: nanoid(), prompt: fullPrompt, isLoading: true }));
             setGeneratedItems(placeholders);
 
-            const results = await geminiService.generateCharacterImages(fullPrompt, selectedStyle, characterRefImage, settings.keyObjects);
+            const results = await geminiService.generateCharacterImages(fullPrompt, selectedStyle, characterRefImage, settings.keyObjects, settings.numberOfImages);
             
             const newItems: GeneratedItem[] = results.map((base64, index) => ({
                 id: placeholders[index]?.id || nanoid(),
@@ -224,138 +214,97 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
         document.body.removeChild(link);
     }
     
-    const aspectRatios: { id: AspectRatio; icon: string }[] = [{ id: '1:1', icon: 'aspect-ratio-1-1' }, { id: '9:16', icon: 'aspect-ratio-9-16' }, { id: '16:9', icon: 'aspect-ratio-16-9' }, { id: '4:3', icon: 'aspect-ratio-4-3' }, { id: '3:4', icon: 'aspect-ratio-3-4' }];
-    const numImages: GenerationSettings['numberOfImages'][] = [1, 2, 3, 4];
-
     return (
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
             {/* Left Sidebar */}
             <div className="bg-card border-b md:border-b-0 md:border-r border-border md:w-[380px] flex-shrink-0 flex flex-col">
-                <div className="p-4 border-b">
-                    <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="users"/> Soul ID Studio</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Create and visualize consistent characters.</p>
+                <div className="p-4 border-b flex justify-between items-center">
+                    <div>
+                        <h2 className="text-lg font-bold">AI Character Generation</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Create stunning AI-generated characters</p>
+                    </div>
                 </div>
-                <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
-                    <CollapsibleSection title="Character Definition" defaultOpen={true}>
-                        <div>
-                            <Label>Reference Image (Optional)</Label>
-                            <FileUpload 
-                                onFileUpload={setCharacterRefImage} 
-                                label="Upload character reference"
-                                uploadedFileName={characterRefImage?.name}
-                                onClear={() => setCharacterRefImage(null)}
-                            />
-                        </div>
-                        <div>
-                            <Label>Character Description</Label>
-                            <textarea value={characterDescription} onChange={(e) => setCharacterDescription(e.target.value)}
-                                placeholder="e.g., A grizzled space pirate with a robotic eye and a leather jacket..."
-                                className="w-full bg-background border border-input rounded-md p-2 text-sm min-h-[100px] resize-none"
-                            />
-                        </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Key Objects">
-                        <div className="space-y-3">
-                            {settings.keyObjects.map((obj, index) => (
-                                <div key={obj.id} className="bg-background p-2 rounded-md border flex items-start gap-2">
-                                    <div className="flex-1 space-y-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Object name (e.g., 'red apple')"
-                                            value={obj.name}
-                                            onChange={(e) => {
-                                                const newObjects = [...settings.keyObjects];
-                                                newObjects[index].name = e.target.value;
-                                                setSettings(s => ({...s, keyObjects: newObjects}));
-                                            }}
-                                            className="w-full bg-muted border-none rounded-md p-2 text-sm h-8"
-                                        />
-                                        <FileUpload 
-                                            onFileUpload={(file) => {
-                                                const newObjects = [...settings.keyObjects];
-                                                newObjects[index].image = file;
-                                                setSettings(s => ({...s, keyObjects: newObjects}));
-                                            }}
-                                            label="Upload object image (optional)"
-                                            uploadedFileName={obj.image?.name}
-                                            onClear={() => {
-                                                const newObjects = [...settings.keyObjects];
-                                                newObjects[index].image = null;
-                                                setSettings(s => ({...s, keyObjects: newObjects}));
-                                            }}
-                                        />
-                                    </div>
-                                    <button onClick={() => {
-                                        setSettings(s => ({...s, keyObjects: s.keyObjects.filter(o => o.id !== obj.id)}));
-                                    }} className="p-2 text-muted-foreground hover:text-destructive"><Icon name="trash" className="w-4 h-4" /></button>
+                
+                <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-6">
+                     <div>
+                        <Label className="flex items-center gap-2 mb-2 font-semibold text-foreground"><Icon name="user-circle" className="w-4 h-4 text-muted-foreground" /> Character</Label>
+                        <FileUpload 
+                            onFileUpload={setCharacterRefImage} 
+                            label="Upload character reference"
+                            uploadedFileName={characterRefImage?.name}
+                            onClear={() => setCharacterRefImage(null)}
+                        />
+                        <textarea value={characterDescription} onChange={(e) => setCharacterDescription(e.target.value)}
+                            placeholder="e.g., A grizzled space pirate with a robotic eye and a leather jacket..."
+                            className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[100px] resize-none mt-2"
+                        />
+                    </div>
+
+                    <div>
+                        <Label className="flex items-center gap-2 mb-2 font-semibold text-foreground"><Icon name="image" className="w-4 h-4 text-muted-foreground" /> Scene</Label>
+                        <textarea value={sceneDescription} onChange={(e) => setSceneDescription(e.target.value)}
+                            placeholder="Describe the scene... e.g., 'standing on a rainy neon-lit street of a futuristic city'"
+                            className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[100px] resize-none"
+                        />
+                    </div>
+                    
+                    <div>
+                         <Label className="flex items-center gap-2 mb-2 font-semibold text-foreground"><Icon name="sparkles" className="w-4 h-4 text-muted-foreground" /> Key Objects</Label>
+                        <div className="space-y-2">
+                             {settings.keyObjects.map(obj => (
+                                <div key={obj.id} className="flex items-center gap-2">
+                                    <input type="text" placeholder="Object name" value={obj.name} onChange={e => handleUpdateKeyObject(obj.id, { name: e.target.value })} className="flex-1 bg-input border border-border rounded-md px-2 py-1 text-sm"/>
+                                    <FileUpload onFileUpload={file => handleUpdateKeyObject(obj.id, { image: file })} label="Img" />
+                                    <button onClick={() => handleRemoveKeyObject(obj.id)} className="p-1 text-muted-foreground hover:text-destructive"><Icon name="close" className="w-4 h-4"/></button>
                                 </div>
-                            ))}
+                             ))}
                         </div>
-                        <button 
-                            onClick={() => {
-                                const newObject: KeyObject = { id: nanoid(), name: '', image: null };
-                                setSettings(s => ({...s, keyObjects: [...s.keyObjects, newObject]}));
-                            }}
-                            className="mt-2 w-full text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"
-                        >
-                            <Icon name="plus" className="w-4 h-4" /> Add Object
-                        </button>
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Cinematic Controls">
-                        <IconGridSelector gridCols="grid-cols-3" label="Lighting Style" options={CINEMATIC_LIGHTING_STYLES} value={settings.lightingStyle} onChange={(v) => setSettings(s => ({...s, lightingStyle: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Photo Style" options={PHOTO_STYLES} value={settings.photoStyle} onChange={(v) => setSettings(s => ({...s, photoStyle: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Camera Perspective" options={CAMERA_PERSPECTIVE_OPTIONS} value={settings.cameraPerspective} onChange={(v) => setSettings(s => ({ ...s, cameraPerspective: v }))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Camera Zoom" options={CAMERA_ZOOMS} value={settings.cameraZoom} onChange={(v) => setSettings(s => ({...s, cameraZoom: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Shot Type" options={SHOT_TYPES} value={settings.shotType} onChange={(v) => setSettings(s => ({...s, shotType: v}))} />
-                        <IconGridSelector gridCols="grid-cols-3" label="Color Tone" options={COLOR_TONES} value={settings.colorTone} onChange={(v) => setSettings(s => ({...s, colorTone: v}))} />
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Output">
-                        <div>
-                            <Label>Aspect Ratio</Label>
-                            <div className="grid grid-cols-5 gap-2">
-                                {aspectRatios.map(ratio => (
-                                    <Tooltip key={ratio.id} text={ratio.id}>
-                                        <button onClick={() => setSettings(s => ({ ...s, aspectRatio: ratio.id }))}
-                                            className={`h-10 w-full flex items-center justify-center rounded-md border transition-colors ${settings.aspectRatio === ratio.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent'}`}>
-                                            <Icon name={ratio.icon} className="w-6 h-6" />
-                                        </button>
-                                    </Tooltip>
-                                ))}
+                        <button onClick={handleAddKeyObject} className="text-xs font-semibold text-primary mt-2">+ Add Object</button>
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground mb-2">Advanced Mode</p>
+                        <div className="bg-card border border-border rounded-lg p-2 space-y-2">
+                            <SelectControl icon="cube" label="AI Model" value={selectedModel} onChange={() => {}} children={<option>{selectedModel}</option>} />
+                            <SelectControl icon="aspect-ratio" label="Aspect Ratio" value={settings.aspectRatio} onChange={e => setSettings(s => ({...s, aspectRatio: e.target.value as AspectRatio}))}>
+                                {(['9:16', '1:1', '16:9', '4:3', '3:4'] as AspectRatio[]).map(r => <option key={r} value={r}>{r}</option>)}
+                            </SelectControl>
+                            <SelectControl icon="wand" label="Style" value={settings.photoStyle} onChange={e => setSettings(s => ({...s, photoStyle: e.target.value}))}>
+                                {PHOTO_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                             <SelectControl icon="sun" label="Lighting" value={settings.lightingStyle} onChange={e => setSettings(s => ({...s, lightingStyle: e.target.value}))}>
+                                {CINEMATIC_LIGHTING_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                            <SelectControl icon="camera" label="Perspective" value={settings.cameraPerspective} onChange={e => setSettings(s => ({...s, cameraPerspective: e.target.value}))}>
+                                {CAMERA_PERSPECTIVE_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                             <SelectControl icon="zoom-in" label="Zoom" value={settings.cameraZoom} onChange={e => setSettings(s => ({...s, cameraZoom: e.target.value}))}>
+                                {CAMERA_ZOOMS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                             <SelectControl icon="scan-user" label="Shot Type" value={settings.shotType} onChange={e => setSettings(s => ({...s, shotType: e.target.value}))}>
+                                {SHOT_TYPES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                            <SelectControl icon="palette" label="Color Tone" value={settings.colorTone} onChange={e => setSettings(s => ({...s, colorTone: e.target.value}))}>
+                                {COLOR_TONES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                            </SelectControl>
+                            <div className="p-2">
+                                <Label>Negative Prompt</Label>
+                                <input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))} placeholder={t('addNegativePrompt')} className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"/>
                             </div>
                         </div>
-                         <div>
-                            <Label>{t('numberOfImages')}</Label>
-                            <div className="grid grid-cols-4 gap-2">
-                                {numImages.map(num => (
-                                     <button key={num} onClick={() => setSettings(s => ({ ...s, numberOfImages: num }))}
-                                        className={`h-10 w-full flex items-center justify-center rounded-md border transition-colors text-sm font-semibold ${settings.numberOfImages === num ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent'}`}>
-                                        {num}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title="Advanced">
-                         <div>
-                            <Label>{t('negativePrompt')}</Label>
-                            <textarea value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))}
-                                placeholder="e.g., blurry, deformed, text, watermark..."
-                                className="w-full bg-background border border-input rounded-md p-2 text-sm min-h-[80px] resize-none"
-                            />
-                        </div>
-                        <div>
-                           <Label>{t('seed')}</Label>
-                           <input type="text" value={settings.seed} onChange={(e) => setSettings(s => ({...s, seed: e.target.value}))}
-                                placeholder={t('seedPlaceholder')}
-                                className="w-full bg-background border border-input rounded-md p-2 text-sm h-10" />
-                        </div>
-                    </CollapsibleSection>
+                    </div>
+                </div>
+
+                 <div className="p-4 border-t mt-auto">
+                    <button onClick={handleGenerate} disabled={isLoading || !characterDescription || !sceneDescription} className="w-full h-12 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
+                        {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <><Icon name="sparkles" className="w-5 h-5" /> Generate Portrait</>}
+                    </button>
                 </div>
             </div>
             
             {/* Center Content */}
             <main className="flex-1 flex flex-col min-h-0 bg-background/95">
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6">
                     {error && (
                         <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-md mb-6 relative">
                             <h3 className="font-bold">Generation Failed</h3>
@@ -364,7 +313,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
                         </div>
                     )}
                     {generatedItems.length > 0 ? (
-                        <div className="columns-2 gap-4">
+                        <div className="columns-2 md:columns-2 lg:columns-3 xl:columns-4 gap-4">
                             {generatedItems.map((item) => (
                                 <ImageCard 
                                     key={item.id} 
@@ -378,31 +327,9 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-8 animate-fade-in">
                             <Icon name="users" className="w-24 h-24 text-primary/20" />
                             <h2 className="text-2xl font-bold mt-4 text-foreground">Character Studio</h2>
-                            <p className="max-w-sm mt-2">Design your character in the left panel, then describe the scene you want to see them in below to bring them to life.</p>
+                            <p className="max-w-sm mt-2">Design your character and describe a scene in the left panel to bring them to life.</p>
                         </div>
                     )}
-                </div>
-
-                 <div className="flex-shrink-0 px-4 pb-4 mt-auto">
-                    <div className="max-w-3xl mx-auto">
-                         <div className="bg-card border border-border rounded-lg shadow-lg p-2 flex items-center gap-2">
-                            <textarea
-                                value={sceneDescription}
-                                onChange={(e) => setSceneDescription(e.target.value)}
-                                placeholder="Describe the scene... e.g., 'standing on a rainy neon-lit street of a futuristic city'"
-                                className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground px-2 resize-none"
-                                rows={1}
-                                disabled={isLoading}
-                            />
-                            <button
-                                onClick={handleGenerate}
-                                disabled={isLoading || !characterDescription || !sceneDescription}
-                                className="bg-primary text-primary-foreground h-10 px-6 rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-opacity"
-                            >
-                                {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <>Generate <Icon name="wand" className="w-4 h-4" /></>}
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </main>
         </div>
