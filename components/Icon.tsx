@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface IconProps {
@@ -100,6 +101,7 @@ const ICONS: { [key: string]: React.ReactElement } = {
     'droplet': <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5s-3 3.5-3 5.5a7 7 0 0 0 7 7z" />,
     'snowflake': <path d="M12 2v20m5-17L7 19m-5-5l10 10M7 5l10 14m-5 3l-5-5m10 0l-5 5m0-10l5 5m-10 0l5-5" />,
     'contrast': <><circle cx="12" cy="12" r="10" /><path d="M12 18V6a6 6 0 0 1 0 12z" /></>,
+    lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
 };
 
 export const Icon: React.FC<IconProps> = ({ name, className, style }) => {

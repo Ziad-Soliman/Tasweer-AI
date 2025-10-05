@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Modality, Part, Type, Chat, Content } from "@google/genai";
 import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene, GenerationMode, KeyObject } from "../types";
 // FIX: Changed import from CAMERA_PERSPECTIVES to CAMERA_PERSPECTIVE_OPTIONS to match the exported member from constants.ts.
@@ -362,6 +363,54 @@ export const enhanceImage = async (
     }
     throw new Error('Enhancement failed: No image part in response.');
 };
+
+export const upscaleImage = async (
+    imageBase64: string,
+    upscaleType: 'Portrait' | 'Image' | 'Quick',
+    isPortrait: boolean,
+    mode: 'Fast' | 'Professional'
+): Promise<string> => {
+    let prompt = '';
+    switch (upscaleType) {
+        case 'Portrait':
+            prompt = `Upscale this portrait with extreme detail, focusing on enhancing facial features, skin texture, hair, and eyes with photorealistic quality. Ensure the result is a high-resolution, professional portrait.`;
+            break;
+        case 'Image':
+            prompt = `Enhance and upscale this image to 4k resolution. Add photorealistic details, improve texture, and increase sharpness while maintaining the original subject and style.`;
+            break;
+        case 'Quick':
+            prompt = `Quickly upscale this image, improving resolution while preserving the original details and style.`;
+            break;
+    }
+    if (isPortrait) {
+        prompt += ' This is a portrait image.';
+    }
+    if (mode === 'Professional') {
+        prompt += ' Use the highest quality professional settings.';
+    }
+
+    const imagePart = base64ToGenerativePart(imageBase64);
+    const textPart = { text: prompt };
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [imagePart, textPart] },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
+        }
+    }
+    throw new Error('Upscaling failed: No image part in response.');
+};
+
 
 export const extractPalette = async (imageBase64: string): Promise<string[]> => {
     const imagePart = base64ToGenerativePart(imageBase64);

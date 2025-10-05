@@ -5,6 +5,7 @@ import { VideoPage } from './pages/VideoPage';
 import { EditPage } from './pages/EditPage';
 import { SkinEditorPage } from './pages/SkinEditorPage';
 import { CharacterPage } from './pages/CharacterPage';
+import { UpscalerPage } from './pages/UpscalerPage';
 import { AppsPage } from './pages/AppsPage';
 import { ExplorePage } from './pages/ExplorePage';
 import { LiveAssistPage } from './pages/LiveAssistPage';
@@ -178,7 +179,7 @@ const App: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [menuCloseTimer, setMenuCloseTimer] = useState<number | null>(null);
 
-    const navItems = ["Explore", "Image", "Video", "Edit", "Skin Editor", "Character", "Assist", "Apps", "Community"];
+    const navItems = ["Explore", "Image", "Video", "Edit", "Upscale", "Skin Editor", "Character", "Assist", "Apps", "Community"];
     const menuRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
@@ -279,6 +280,8 @@ const App: React.FC = () => {
                 return <VideoPage {...sharedPageProps} />;
             case 'edit':
                 return <EditPage {...sharedPageProps} />;
+            case 'upscale':
+                return <UpscalerPage />;
             case 'skin editor':
                 return <SkinEditorPage />;
             case 'character':
