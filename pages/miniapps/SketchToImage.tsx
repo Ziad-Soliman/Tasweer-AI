@@ -70,7 +70,8 @@ const Controls: React.FC<{
                 <div>
                     <label className="text-sm text-muted-foreground">Style</label>
                     <select value={props.style} onChange={(e) => props.setStyle(e.target.value)} className="h-10 w-full rounded-md border-input bg-background px-3 py-2 text-sm mt-1">
-                        {PHOTO_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
+                        {/* FIX: Correctly map over PHOTO_STYLES array, using `s.id` for the key and `s.name` for the value and display text. */}
+                        {PHOTO_STYLES.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                     </select>
                 </div>
             </div>

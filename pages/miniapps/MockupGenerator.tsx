@@ -37,7 +37,8 @@ const MockupGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             reader.readAsDataURL(imageFile);
             reader.onloadend = async () => {
                 const base64Image = (reader.result as string).split(',')[1];
-                const resultBase64 = await geminiService.generateMockup(base64Image, prompt, mockupType);
+                // FIX: Pass the `promptFragment` property of the mockupType object, not the whole object.
+                const resultBase64 = await geminiService.generateMockup(base64Image, prompt, mockupType.promptFragment);
                 setResultImage(`data:image/png;base64,${resultBase64}`);
                 setIsLoading(false);
             };
@@ -64,12 +65,15 @@ const MockupGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                     <div>
                         <label className="block text-sm font-medium text-foreground mb-1.5">{t('mockupType')}</label>
                         <select
-                            value={mockupType}
-                            onChange={(e) => setMockupType(e.target.value)}
+                            // FIX: The select value must be a string (the ID), not the entire object.
+                            value={mockupType.id}
+                            // FIX: The onChange handler must find the corresponding object by ID and set it in the state.
+                            onChange={(e) => setMockupType(MOCKUP_TYPES.find(m => m.id === e.target.value)!)}
                             disabled={!imageFile || isLoading}
                             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
-                            {MOCKUP_TYPES.map(opt => <option key={opt} value={opt}>{t(opt as any)}</option>)}
+                            {/* FIX: Use the `id` for key and value, and `name` for the display text. */}
+                            {MOCKUP_TYPES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
                         </select>
                     </div>
                     <div>

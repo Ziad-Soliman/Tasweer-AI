@@ -27,7 +27,19 @@ const AICharacterConceptGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setResults([]);
         try {
             // FIX: Corrected function name from `generateCharacterConcepts` to `generateCharacterImages`
-            const images = await geminiService.generateCharacterImages(description, style, imageFile);
+            // FIX: Corrected function call to pass a single options object.
+            const images = await geminiService.generateCharacterImages({
+                description: description,
+                style: style,
+                referenceImageFile: imageFile,
+                count: 4,
+                aspectRatio: '9:16',
+                styleRefImageFile: null,
+                keyObjects: [],
+                lightingStyle: 'none',
+                cameraPerspective: 'None',
+                negativePrompt: '',
+            });
             setResults(images.map(base64 => `data:image/png;base64,${base64}`));
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate concepts.");

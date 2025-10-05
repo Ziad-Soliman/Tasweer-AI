@@ -1,12 +1,9 @@
 
-
-
-
-
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
 import { EditPage } from './pages/EditPage';
+import { SkinEditorPage } from './pages/SkinEditorPage';
 import { CharacterPage } from './pages/CharacterPage';
 import { AppsPage } from './pages/AppsPage';
 import { ExplorePage } from './pages/ExplorePage';
@@ -68,7 +65,7 @@ const imageFeatures: MenuItem[] = [
 ];
 
 const imageModels: MenuItem[] = [
-    { name: "Higgsfield Soul", description: "Ultra-realistic fashion visuals", best: true, icon: 'sparkles' },
+    { name: "Imagen 4.0", description: "Google's most powerful image model", best: true, icon: 'sparkles' },
     { name: "Wan 2.2 Image", description: "Realistic images", icon: 'image' },
     { name: "Seedream 4.0", description: "Advanced image editing", new: true, icon: 'sliders' },
     { name: "Nano Banana", description: "Smart image editing", icon: 'wand' },
@@ -106,7 +103,6 @@ const editFeatures: MenuItem[] = [
 ];
 
 const editModels: MenuItem[] = [
-    { name: "Higgsfield Soul Inpaint", description: "Edit stylish visuals", icon: 'sparkles' },
     { name: "Flux Kontext", description: "Visual edits by prompt", icon: 'pencil' },
     { name: "Nano Banana Edit", description: "Advanced image editing", new: true, icon: 'wand' },
     { name: "Topaz", description: "High-resolution upscaler", icon: 'arrow-up' },
@@ -175,14 +171,14 @@ const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
 const App: React.FC = () => {
     const [lang, setLang] = useState<'en' | 'ar'>('en');
     const [currentPage, setCurrentPage] = useState('image');
-    const [selectedModel, setSelectedModel] = useState("Higgsfield Soul");
+    const [selectedModel, setSelectedModel] = useState("Imagen 4.0");
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [restoredState, setRestoredState] = useState<HistoryItem | null>(null);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [menuCloseTimer, setMenuCloseTimer] = useState<number | null>(null);
 
-    const navItems = ["Explore", "Image", "Video", "Edit", "Character", "Assist", "Apps", "Community"];
+    const navItems = ["Explore", "Image", "Video", "Edit", "Skin Editor", "Character", "Assist", "Apps", "Community"];
     const menuRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
@@ -283,6 +279,8 @@ const App: React.FC = () => {
                 return <VideoPage {...sharedPageProps} />;
             case 'edit':
                 return <EditPage {...sharedPageProps} />;
+            case 'skin editor':
+                return <SkinEditorPage />;
             case 'character':
                  return <CharacterPage 
                             key={restoredState ? restoredState.id : 'character'}
@@ -297,6 +295,7 @@ const App: React.FC = () => {
             case 'explore':
                 return <ExplorePage />;
             case 'assist':
+// FIX: The LiveAssistPage component does not accept any props. Removed sharedPageProps.
                 return <LiveAssistPage />;
             case 'community':
                 return <ComingSoonPage title="Community" icon="users" />;

@@ -1,6 +1,3 @@
-
-
-
 import { GoogleGenAI, Modality, Part, Type, Chat, Content } from "@google/genai";
 import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene, GenerationMode, KeyObject } from "../types";
 // FIX: Changed import from CAMERA_PERSPECTIVES to CAMERA_PERSPECTIVE_OPTIONS to match the exported member from constants.ts.
@@ -979,27 +976,59 @@ export const generateTattooDesigns = async (description: string, style: string):
     throw new Error('Tattoo generation failed: No images were returned.');
 };
 
-export const generateCharacterImages = async (description: string, style: string, referenceImageFile?: File | null, keyObjects: KeyObject[] = [], count: number = 4): Promise<string[]> => {
-    const hasImageInputs = referenceImageFile || keyObjects.some(o => o.image);
+export const generateCharacterImages = async (options: {
+    description: string;
+    style: string;
+    referenceImageFile?: File | null;
+    styleRefImageFile?: File | null;
+    keyObjects: KeyObject[];
+    count: number;
+    aspectRatio: string;
+    lightingStyle: string;
+    cameraPerspective: string;
+    negativePrompt: string;
+}): Promise<string[]> => {
+    const { description, style, referenceImageFile, styleRefImageFile, keyObjects, count, aspectRatio, lightingStyle, cameraPerspective, negativePrompt } = options;
+
+    const hasImageInputs = referenceImageFile || styleRefImageFile || keyObjects.some(o => o.image);
+    
+    const promptAdditions = [
+        lightingStyle,
+        cameraPerspective,
+    ].filter(p => p && p !== 'None' && p !== 'none').join(', ');
 
     if (hasImageInputs) {
         const parts: Part[] = [];
+        const promptSegments: string[] = [];
+
         if (referenceImageFile) {
             parts.push(await fileToGenerativePart(referenceImageFile));
+            promptSegments.push("The first image is a reference for the character's appearance.");
         }
+        if (styleRefImageFile) {
+            parts.push(await fileToGenerativePart(styleRefImageFile));
+            promptSegments.push("The next image is a strong reference for the artistic style, color palette, and mood.");
+        }
+
         for (const obj of keyObjects) {
             if (obj.image) {
                 parts.push(await fileToGenerativePart(obj.image));
             }
         }
 
-        let keyObjectsPrompt = '';
         const objectNames = keyObjects.map(o => o.name).filter(Boolean);
         if (objectNames.length > 0) {
-            keyObjectsPrompt = ` The scene should also include: ${objectNames.join(', ')}.`;
+            promptSegments.push(`The scene should also include these objects (provided in the subsequent images): ${objectNames.join(', ')}.`);
         }
 
-        const textPrompt = `Using the provided reference image(s) for style and inspiration, create a ${style} character concept art of ${description}.${keyObjectsPrompt} Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        let textPrompt = `Create a ${style} character concept art of ${description}. ${promptAdditions}. Aspect ratio ${aspectRatio}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        if (promptSegments.length > 0) {
+            textPrompt = `${promptSegments.join(' ')} ${textPrompt}`;
+        }
+        if (negativePrompt) {
+            textPrompt += ` Negative prompt: do not include ${negativePrompt}.`;
+        }
+        
         parts.push({ text: textPrompt });
         
         const generateOneImage = async (): Promise<string> => {
@@ -1025,14 +1054,18 @@ export const generateCharacterImages = async (description: string, style: string
         return await Promise.all(generationPromises);
 
     } else {
-        const prompt = `${style} character concept art of ${description}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        let prompt = `${style} character concept art of ${description}. ${promptAdditions}. Full body portrait, dynamic pose, detailed, on a simple grey background.`;
+        if (negativePrompt) {
+            prompt += ` Do not include: ${negativePrompt}.`;
+        }
+
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: prompt,
             config: {
               numberOfImages: count,
               outputMimeType: 'image/png',
-              aspectRatio: '9:16',
+              aspectRatio: aspectRatio,
             },
         });
     

@@ -184,10 +184,10 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
     const [suggestions, setSuggestions] = useState<{name: string; prompt: string}[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [sceneDescription, setSceneDescription] = useState('');
-    const [isPromptDirty, setIsPromptDirty] = useState(false);
-    const [socialRefPost, setSocialRefPost] = useState<File | null>(null);
-    const [designRefImage, setDesignRefImage] = useState<File | null>(null);
+    const isPromptDirty = useRef(false);
     const [styleRefImage, setStyleRefImage] = useState<File | null>(null);
+    const [styleRefImagePreview, setStyleRefImagePreview] = useState<string | null>(null);
+    const [keyObjectPreviews, setKeyObjectPreviews] = useState<Record<string, string>>({});
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
     const numImages: GenerationSettings['numberOfImages'][] = [1, 2, 3, 4];
@@ -205,6 +205,30 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
             textareaRef.current.style.height = `${Math.min(scrollHeight, 160)}px`;
         }
     }, [sceneDescription]);
+
+    useEffect(() => {
+        if (styleRefImage) {
+            const url = URL.createObjectURL(styleRefImage);
+            setStyleRefImagePreview(url);
+            return () => URL.revokeObjectURL(url);
+        } else {
+            setStyleRefImagePreview(null);
+        }
+    }, [styleRefImage]);
+
+    useEffect(() => {
+        const newPreviews: Record<string, string> = {};
+        settings.keyObjects.forEach(obj => {
+            if (obj.image) {
+                newPreviews[obj.id] = URL.createObjectURL(obj.image);
+            }
+        });
+        setKeyObjectPreviews(newPreviews);
+
+        return () => {
+            Object.values(newPreviews).forEach(URL.revokeObjectURL);
+        };
+    }, [settings.keyObjects]);
 
     const resetState = (keepImage = false) => {
         const currentMode = settings.generationMode;
@@ -225,9 +249,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         setPalette(undefined);
         setSuggestions([]);
         setSceneDescription('');
-        setIsPromptDirty(false);
-        setSocialRefPost(null);
-        setDesignRefImage(null);
+        isPromptDirty.current = false;
         setStyleRefImage(null);
     };
 
@@ -240,9 +262,11 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
             const desc = await geminiService.describeProduct(file);
             setSettings(s => ({ ...s, productDescription: desc }));
             
-            setPromptGenerationMessage(t('loadingRemovingBackground'));
-            const base64NoBg = await geminiService.removeBackground(file);
-            setProductImageNoBg(base64NoBg);
+            if (['product', 'mockup'].includes(settings.generationMode)) {
+                setPromptGenerationMessage(t('loadingRemovingBackground'));
+                const base64NoBg = await geminiService.removeBackground(file);
+                setProductImageNoBg(base64NoBg);
+            }
 
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to process image.');
@@ -274,17 +298,18 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
     }, [generateSuggestions]);
 
     useEffect(() => {
-        if (isPromptDirty) return;
-        if (!settings.productDescription && !['design', 'social'].includes(settings.generationMode)) {
-            setSceneDescription(''); return;
-        }
-
+        if (isPromptDirty.current) return;
+        
         let autoPrompt = '';
         switch (settings.generationMode) {
-            case 'product': autoPrompt = `A professional product photograph of ${settings.productDescription}`; break;
+            case 'product': 
+                if (settings.productDescription) autoPrompt = `A professional product photograph of ${settings.productDescription}`; 
+                break;
             case 'mockup':
-                const selectedMockup = MOCKUP_TYPES.find(m => m.id === settings.mockupType);
-                autoPrompt = `A photorealistic mockup of ${settings.productDescription} ${selectedMockup?.promptFragment || 'on a mockup'}.`;
+                if (settings.productDescription) {
+                    const selectedMockup = MOCKUP_TYPES.find(m => m.id === settings.mockupType);
+                    autoPrompt = `A photorealistic mockup of ${settings.productDescription} ${selectedMockup?.promptFragment || 'on a mockup'}.`;
+                }
                 break;
             case 'social':
                 const template = SOCIAL_MEDIA_TEMPLATES.find(t => t.id === settings.selectedSocialTemplateId);
@@ -296,7 +321,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         }
         setSceneDescription(autoPrompt);
 
-    }, [settings.productDescription, settings.generationMode, settings.mockupType, settings.selectedSocialTemplateId, isPromptDirty]);
+    }, [settings.productDescription, settings.generationMode, settings.mockupType, settings.selectedSocialTemplateId]);
     
     const handleEnhancePrompt = async () => {
         if (!sceneDescription) return;
@@ -305,7 +330,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         try {
             const enhancedPrompt = await geminiService.enhancePrompt(sceneDescription);
             setSceneDescription(enhancedPrompt);
-            setIsPromptDirty(true);
+            isPromptDirty.current = true;
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to enhance prompt.");
         } finally {
@@ -313,6 +338,21 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         }
     };
 
+    const handleAddKeyObject = () => {
+        setSettings(s => ({ ...s, keyObjects: [...s.keyObjects, { id: nanoid(), name: '', image: null }] }));
+    };
+    const handleUpdateKeyObject = (id: string, updates: Partial<KeyObject>) => {
+        setSettings(s => ({
+            ...s,
+            keyObjects: s.keyObjects.map(o => o.id === id ? { ...o, ...updates } : o)
+        }));
+    };
+    const handleRemoveKeyObject = (id: string) => {
+        setSettings(s => ({
+            ...s,
+            keyObjects: s.keyObjects.filter(o => o.id !== id)
+        }));
+    };
     const handleGenerate = async () => {
         setError(null); setIsLoading(true); setPalette(undefined); setSelectedImageIndex(null);
     
@@ -320,84 +360,73 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
             try {
                 let keyObjectsPrompt = '';
                 if (settings.keyObjects.length > 0) {
-                    const objectNames = settings.keyObjects.map(o => o.name).filter(Boolean);
-                    if (objectNames.length > 0) {
-                        keyObjectsPrompt = ` The scene should include these objects: ${objectNames.join(', ')}.`;
-                    }
+                     const objectNames = settings.keyObjects.map(o => o.name).filter(Boolean);
+                     if (objectNames.length > 0) {
+                         keyObjectsPrompt = ` The scene should include these objects (provided as reference images): ${objectNames.join(', ')}.`;
+                     }
                 }
         
                 const selectedLightingStyle = CINEMATIC_LIGHTING_STYLES.find(ls => ls.id === settings.lightingStyle)?.name;
                 const selectedPhotoStyle = PHOTO_STYLES.find(s => s.id === settings.photoStyle)?.name;
-                const selectedCameraZoom = CAMERA_ZOOMS.find(z => z.id === settings.cameraZoom)?.name;
-                const selectedShotType = SHOT_TYPES.find(st => st.id === settings.shotType)?.name;
-                const selectedColorTone = COLOR_TONES.find(ct => ct.id === settings.colorTone)?.name;
         
                 const cinematicPrompt = [
                     selectedPhotoStyle,
                     selectedLightingStyle,
                     settings.cameraPerspective,
-                    selectedCameraZoom,
-                    selectedShotType,
-                    selectedColorTone,
                 ].filter(p => p && p !== 'None').join(', ');
         
                 const basePrompt = `${sceneDescription}, ${cinematicPrompt}${keyObjectsPrompt}`;
                 
-                const placeholders: GeneratedItem[] = Array(settings.numberOfImages).fill(0).map(() => ({ id: nanoid(), prompt: basePrompt, isLoading: true }));
+                const placeholders: GeneratedItem[] = Array(settings.numberOfImages).fill(null).map(() => ({ id: nanoid(), prompt: basePrompt, isLoading: true }));
                 setGeneratedItems(prev => [...placeholders, ...prev.filter(i => !i.isLoading)]);
-        
-                const keyObjectParts: Part[] = [];
-                for (const obj of settings.keyObjects) {
-                    if (obj.image) {
-                        keyObjectParts.push(await geminiService.fileToGenerativePart(obj.image));
-                    }
-                }
-        
+
                 const allPromises = placeholders.map(async (placeholder, i) => {
                     const seed = settings.seed ? parseInt(settings.seed) + i : null;
-                    let finalPrompt: string;
-                    const parts: Part[] = [...keyObjectParts];
+                    let textPrompt = basePrompt;
+                    const parts: Part[] = [];
 
+                    // Add style reference image first
                     if (styleRefImage) {
-                        parts.unshift(await geminiService.fileToGenerativePart(styleRefImage));
+                        parts.push(await geminiService.fileToGenerativePart(styleRefImage));
+                        textPrompt = `Use the first image as a strong style reference for composition, mood, and color palette. ${textPrompt}`;
                     }
-        
+
+                    // Add key object images
+                    for (const obj of settings.keyObjects) {
+                        if (obj.image) {
+                            parts.push(await geminiService.fileToGenerativePart(obj.image));
+                        }
+                    }
+
+                    // Add main subject image last, and clarify its role
                     switch(settings.generationMode) {
-                        case 'social':
-                            if (!socialRefPost || !activeBrandKit?.logo) throw new Error("Reference post and brand logo required.");
-                            setLoadingMessage(t('loadingGeneratingSocialPost'));
-                            parts.push(await geminiService.fileToGenerativePart(socialRefPost));
-                            parts.push(geminiService.base64ToGenerativePart(activeBrandKit.logo.split(',')[1], 'image/png'));
-                            finalPrompt = `Using the provided images for reference (style, objects, layout, logo), create a new social media post based on the user's request: "${basePrompt}"`;
-                            break;
-                        case 'design':
-                            if (!designRefImage) throw new Error("Reference design required.");
-                            setLoadingMessage(t('loadingGeneratingDesign'));
-                            parts.push(await geminiService.fileToGenerativePart(designRefImage));
-                            finalPrompt = `Using the provided images (style, objects, design reference), create a new design based on: "${basePrompt}"`;
-                            break;
                         case 'mockup':
-                            if (!productImageNoBg) throw new Error("Product image not ready.");
+                            if (!productImageNoBg) throw new Error("Product image not ready for mockup.");
                             const selectedMockup = MOCKUP_TYPES.find(m => m.id === settings.mockupType);
                             if (!selectedMockup) throw new Error("Invalid mockup type selected.");
                             setLoadingMessage(t('loadingGeneratingMockup'));
                             parts.push(geminiService.base64ToGenerativePart(productImageNoBg));
-                            finalPrompt = `Using any style/object references, place the product with the transparent background realistically onto the described mockup scene: "${basePrompt}"`;
+                            textPrompt += ` The final reference image is the main subject (with a transparent background); place it realistically onto a ${selectedMockup.promptFragment}.`;
                             break;
                         case 'product':
+                        case 'social':
+                        case 'design':
                         default:
-                            if (!productImageNoBg) throw new Error("Product image not ready.");
                             setLoadingMessage(t('loadingGeneratingImages', {count: settings.numberOfImages}));
-                            parts.push(geminiService.base64ToGenerativePart(productImageNoBg));
-                            finalPrompt = `Using the provided style/object references, place the main product (with transparent background) into the scene described: "${basePrompt}"`;
+                            if (productImageNoBg) {
+                                parts.push(geminiService.base64ToGenerativePart(productImageNoBg));
+                                textPrompt += ` The final reference image is the main subject (with a transparent background); place it realistically into the scene.`;
+                            } else if (productImage) {
+                                parts.push(await geminiService.fileToGenerativePart(productImage));
+                                textPrompt += ` The final reference image is the main subject; use it as the focus of the scene.`;
+                            }
                             break;
                     }
                     
-                    if (styleRefImage) {
-                         finalPrompt = `Use the first image as a strong style reference for composition and color palette. ${finalPrompt}`;
-                    }
+                    const finalPromptWithNegative = `${textPrompt}${settings.negativePrompt ? `. Negative prompt: do not include ${settings.negativePrompt}.` : ''}`;
         
-                    parts.push({ text: `${finalPrompt}${settings.negativePrompt ? `. Negative prompt: do not include ${settings.negativePrompt}.` : ''}` });
+                    parts.push({ text: finalPromptWithNegative });
+                    
                     const resultBase64 = await geminiService.generateImageFromParts(parts, seed);
                     const src = `data:image/png;base64,${resultBase64}`;
                     setGeneratedItems(prev => prev.map(item => item.id === placeholder.id ? { ...item, src, prompt: basePrompt, isLoading: false } : item));
@@ -485,6 +514,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         }, t('loadingExtractingPalette'), "Palette extraction failed.");
     };
 
+    const mainImageLabel = settings.generationMode === 'product' || settings.generationMode === 'mockup' ? 'Product Image' : 'Main Subject Image';
 
     if (selectedImageIndex !== null) {
         return (
@@ -494,7 +524,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                     generatedImages={selectedItem?.src ? [selectedItem.src] : []}
                     generatedVideoUrl={null}
                     selectedImageIndex={0}
-                    onSelectImage={() => {}}
+                    onSelectImage={(index) => setSelectedImageIndex(index)}
                     isLoading={isLoading} loadingMessage={loadingMessage} error={error}
                     onRetry={handleGenerate} onStartOver={() => setIsStartOverModalOpen(true)}
                     aspectRatio={settings.aspectRatio}
@@ -506,7 +536,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                     onRemoveObject={handleRemoveObject} onExpandImage={handleExpandImage}
                     onGenerateCopy={() => handleGenerateCopy(false)}
                 />
-                 <button onClick={() => setSelectedImageIndex(null)} className="absolute top-4 left-4 z-30 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 hover:bg-accent backdrop-blur-sm text-sm font-medium">
+                 <button onClick={() => setSelectedImageIndex(null)} className="absolute top-20 left-4 z-50 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 hover:bg-accent backdrop-blur-sm text-sm font-medium">
                     <Icon name="arrow-left" className="w-4 h-4"/> Back to Gallery
                 </button>
             </div>
@@ -534,7 +564,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                         {generationModes.map(mode => (
                             <button key={mode.id} onClick={() => {
                                 setSettings(s => ({...s, generationMode: mode.id}));
-                                setIsPromptDirty(false);
+                                isPromptDirty.current = false;
                             }}
                             className={`flex-1 text-center px-2 py-1.5 text-xs font-semibold rounded-md transition-colors flex flex-col items-center gap-1 ${settings.generationMode === mode.id ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
                                 <Icon name={mode.icon} className="w-4 h-4" />
@@ -543,14 +573,62 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                         ))}
                     </div>
 
-                    {['product', 'mockup'].includes(settings.generationMode) && (
+                    {settings.generationMode === 'mockup' && (
+                        <div className="animate-fade-in">
+                            <Label>Mockup Type</Label>
+                            <select
+                                value={settings.mockupType}
+                                onChange={(e) => {
+                                    setSettings(s => ({...s, mockupType: e.target.value}));
+                                    isPromptDirty.current = false;
+                                }}
+                                className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"
+                            >
+                                {MOCKUP_TYPES.map(mockup => (
+                                    <option key={mockup.id} value={mockup.id}>{mockup.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {settings.generationMode === 'social' && (
+                        <div className="animate-fade-in">
+                            <Label>Social Media Template</Label>
+                            <select
+                                value={settings.selectedSocialTemplateId || ''}
+                                onChange={(e) => {
+                                    setSettings(s => ({...s, selectedSocialTemplateId: e.target.value}));
+                                    isPromptDirty.current = false;
+                                }}
+                                className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"
+                            >
+                                {SOCIAL_MEDIA_TEMPLATES.map(template => (
+                                    <option key={template.id} value={template.id}>{template.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    
+                    {['product', 'mockup', 'social', 'design'].includes(settings.generationMode) && (
                          <div>
-                            <Label>Product Image</Label>
-                            <FileUpload onFileUpload={handleProductImageUpload} label="Upload product image" uploadedFileName={productImage?.name} onClear={() => resetState(true)} />
+                            <Label>{mainImageLabel}</Label>
+                            <div className="flex gap-2 items-start">
+                                {productImagePreview && (
+                                    <img src={productImagePreview} alt="Main subject preview" className="w-20 h-20 object-contain rounded-md border bg-muted flex-shrink-0" />
+                                )}
+                                <div className="flex-1">
+                                    <FileUpload 
+                                        onFileUpload={handleProductImageUpload} 
+                                        label={mainImageLabel} 
+                                        uploadedFileName={productImage?.name} 
+                                        onClear={() => resetState(true)} 
+                                    />
+                                </div>
+                            </div>
                             {promptGenerationMessage && <p className="text-xs text-muted-foreground mt-2 animate-pulse">{promptGenerationMessage}</p>}
                         </div>
                     )}
-                     {['social', 'design'].includes(settings.generationMode) && (
+                     {['social', 'design'].includes(settings.generationMode) && !productImage && (
                         <div>
                             <Label>Core Subject / Idea</Label>
                             <textarea
@@ -561,18 +639,6 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                             />
                         </div>
                     )}
-                    {settings.generationMode === 'social' && (
-                        <div>
-                            <Label>Reference Post</Label>
-                            <FileUpload onFileUpload={setSocialRefPost} label="Upload reference post" uploadedFileName={socialRefPost?.name} onClear={() => setSocialRefPost(null)} />
-                        </div>
-                    )}
-                     {settings.generationMode === 'design' && (
-                        <div>
-                            <Label>Reference Design</Label>
-                            <FileUpload onFileUpload={setDesignRefImage} label="Upload reference design" uploadedFileName={designRefImage?.name} onClear={() => setDesignRefImage(null)} />
-                        </div>
-                    )}
                     
                     <div>
                         <div className="flex justify-between items-center mb-2">
@@ -581,10 +647,10 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                             </Label>
                             <Tooltip text={t('enhancePrompt')}><button onClick={handleEnhancePrompt} disabled={isEnhancingPrompt || !sceneDescription} className="p-1 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-50"><Icon name="wand" className={`w-4 h-4 ${isEnhancingPrompt ? 'animate-pulse' : ''}`}/></button></Tooltip>
                         </div>
-                        <SceneSuggestions templates={suggestions} onSelect={(s) => { setSceneDescription(s.prompt); setIsPromptDirty(true); }} isLoading={isLoadingSuggestions} />
-                         <textarea ref={textareaRef} value={sceneDescription} onChange={(e) => {setSceneDescription(e.target.value); setIsPromptDirty(true);}}
+                        <SceneSuggestions templates={suggestions} onSelect={(s) => { setSceneDescription(s.prompt); isPromptDirty.current = true; }} isLoading={isLoadingSuggestions} />
+                         <textarea ref={textareaRef} value={sceneDescription} onChange={(e) => {setSceneDescription(e.target.value); isPromptDirty.current = true;}}
                             placeholder="Describe your scene..." className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[100px] resize-none mt-2"
-                            rows={3} disabled={isLoading || !!promptGenerationMessage} />
+                            rows={3} disabled={isLoading || !!promptGenerationMessage} onFocus={() => isPromptDirty.current = true} />
                     </div>
 
                     <div>
@@ -593,6 +659,9 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                              <SelectControl icon="cube" label="AI Model" value={selectedModel} onChange={() => {}} children={<option>{selectedModel}</option>} />
                              <SelectControl icon="aspect-ratio" label="Aspect Ratio" value={settings.aspectRatio} onChange={e => setSettings(s => ({...s, aspectRatio: e.target.value as AspectRatio}))}>
                                 {(['1:1', '4:5', '16:9', '9:16', '4:3', '3:4'] as AspectRatio[]).map(r => <option key={r} value={r}>{r}</option>)}
+                            </SelectControl>
+                             <SelectControl icon="image" label={t('numberOfImages')} value={String(settings.numberOfImages)} onChange={e => setSettings(s => ({...s, numberOfImages: parseInt(e.target.value, 10) as GenerationSettings['numberOfImages']}))}>
+                                {numImages.map(num => <option key={num} value={num}>{num}</option>)}
                             </SelectControl>
                             <SelectControl icon="wand" label="Style" value={settings.photoStyle} onChange={e => setSettings(s => ({...s, photoStyle: e.target.value}))}>
                                 {PHOTO_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
@@ -603,16 +672,45 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                             <SelectControl icon="camera" label="Perspective" value={settings.cameraPerspective} onChange={e => setSettings(s => ({...s, cameraPerspective: e.target.value}))}>
                                 {CAMERA_PERSPECTIVE_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
                             </SelectControl>
-                            {settings.generationMode === 'mockup' && (
-                                <SelectControl icon="shirt" label="Mockup Type" value={settings.mockupType} onChange={(e) => { setSettings(s => ({...s, mockupType: e.target.value})); setIsPromptDirty(false); }}>
-                                    {MOCKUP_TYPES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-                                </SelectControl>
-                            )}
                              <div className="p-2">
                                  <Label>Negative Prompt</Label>
                                 <input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))} placeholder="e.g. text, watermark, blurry..." className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"/>
                             </div>
                         </div>
+                    </div>
+
+                     <div>
+                         <Label>Style Reference Image</Label>
+                        <div className="flex gap-2 items-start">
+                            {styleRefImagePreview && (
+                                <img src={styleRefImagePreview} alt="Style Preview" className="w-20 h-20 object-contain rounded-md border bg-muted flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                                <FileUpload onFileUpload={setStyleRefImage} label="Upload style reference" uploadedFileName={styleRefImage?.name} onClear={() => setStyleRefImage(null)} />
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                         <Label className="flex items-center gap-2 mb-2 font-semibold text-foreground"><Icon name="sparkles" className="w-4 h-4 text-muted-foreground" /> Key Objects</Label>
+                        <div className="space-y-3">
+                             {settings.keyObjects.map(obj => (
+                                 <div key={obj.id} className="bg-input/50 p-2 rounded-md space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <input type="text" placeholder="Object name" value={obj.name} onChange={e => handleUpdateKeyObject(obj.id, { name: e.target.value })} className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-sm"/>
+                                        <button onClick={() => handleRemoveKeyObject(obj.id)} className="p-1 text-muted-foreground hover:text-destructive"><Icon name="close" className="w-4 h-4"/></button>
+                                    </div>
+                                    <div className="flex gap-2 items-center">
+                                        {keyObjectPreviews[obj.id] && (
+                                            <img src={keyObjectPreviews[obj.id]} alt={obj.name} className="w-12 h-12 object-contain rounded-md border bg-muted flex-shrink-0" />
+                                        )}
+                                        <div className="flex-1">
+                                            <FileUpload onFileUpload={file => handleUpdateKeyObject(obj.id, { image: file })} label="Object Image" uploadedFileName={obj.image?.name} onClear={() => handleUpdateKeyObject(obj.id, { image: null })} />
+                                        </div>
+                                    </div>
+                                </div>
+                             ))}
+                        </div>
+                        <button onClick={handleAddKeyObject} className="text-xs font-semibold text-primary mt-2">+ Add Object</button>
                     </div>
                 </div>
 
@@ -673,7 +771,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                 presets={PRESETS}
                 onSelect={(preset: Preset) => {
                     setSceneDescription(prev => `${prev}${prev ? ', ' : ''}${preset.promptFragment}`);
-                    setIsPromptDirty(true);
+                    isPromptDirty.current = true;
                     setIsPresetModalOpen(false);
                 }}
                 activeMode={settings.generationMode}

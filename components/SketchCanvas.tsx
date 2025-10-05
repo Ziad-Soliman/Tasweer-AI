@@ -51,24 +51,26 @@ export const SketchCanvas = forwardRef<SketchCanvasRef, SketchCanvasProps>(({ br
         }
     }, [saveState, historyIndex]);
 
+// FIX: Replaced the `getCoords` function with a more robust, type-safe version
+// that correctly handles both React SyntheticEvents and native browser events.
     const getCoords = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if (!canvasRef.current) return { x: 0, y: 0 };
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        
-        if (e instanceof MouseEvent) {
-            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        }
-        
-        if (e.nativeEvent instanceof TouchEvent) {
-            return { x: e.nativeEvent.touches[0].clientX - rect.left, y: e.nativeEvent.touches[0].clientY - rect.top };
+
+        let eventSource: MouseEvent | Touch;
+        if ('nativeEvent' in e) { // It's a React SyntheticEvent
+            eventSource = e.nativeEvent instanceof TouchEvent ? e.nativeEvent.touches[0] : e.nativeEvent as MouseEvent;
+        } else { // It's a native event
+            eventSource = e instanceof TouchEvent ? e.touches[0] : e as MouseEvent;
         }
 
-        if (e instanceof TouchEvent) {
-             return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-        }
-        
-        return { x: (e as React.MouseEvent).clientX - rect.left, y: (e as React.MouseEvent).clientY - rect.top };
+        if (!eventSource) return {x: 0, y: 0};
+
+        return {
+            x: eventSource.clientX - rect.left,
+            y: eventSource.clientY - rect.top,
+        };
     };
 
 
