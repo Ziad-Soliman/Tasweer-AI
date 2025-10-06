@@ -32,17 +32,18 @@ const ImageEnhancer: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
         setResultImage(null);
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            reader.onloadend = async () => {
-                const base64Image = (reader.result as string).split(',')[1];
-                const finalPrompt = prompt || `a high-quality photograph of the subject`;
-                const resultBase64 = await geminiService.enhanceImage(base64Image, finalPrompt);
-                setResultImage(`data:image/png;base64,${resultBase64}`);
-                setIsLoading(false);
-            };
+            const base64Image = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(imageFile);
+            });
+            const finalPrompt = prompt || `a high-quality photograph of the subject`;
+            const resultBase64 = await geminiService.enhanceImage(base64Image, finalPrompt);
+            setResultImage(`data:image/png;base64,${resultBase64}`);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to enhance image.");
+        } finally {
             setIsLoading(false);
         }
     };

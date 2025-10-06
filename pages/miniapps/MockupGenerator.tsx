@@ -33,17 +33,19 @@ const MockupGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
         setResultImage(null);
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            reader.onloadend = async () => {
-                const base64Image = (reader.result as string).split(',')[1];
-                // FIX: Pass the `promptFragment` property of the mockupType object, not the whole object.
-                const resultBase64 = await geminiService.generateMockup(base64Image, prompt, mockupType.promptFragment);
-                setResultImage(`data:image/png;base64,${resultBase64}`);
-                setIsLoading(false);
-            };
+            const base64Image = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(imageFile);
+            });
+
+            // FIX: Pass the `promptFragment` property of the mockupType object, not the whole object.
+            const resultBase64 = await geminiService.generateMockup(base64Image, prompt, mockupType.promptFragment);
+            setResultImage(`data:image/png;base64,${resultBase64}`);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate mockup.");
+        } finally {
             setIsLoading(false);
         }
     };

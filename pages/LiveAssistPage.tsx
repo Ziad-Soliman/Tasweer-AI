@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob } from '@google/genai';
+// FIX: LiveSession is not an exported member of '@google/genai'. It has been removed from the import.
+import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { Icon } from '../components/Icon';
 import { useTranslation } from '../App';
 
@@ -68,7 +69,8 @@ export const LiveAssistPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [transcriptionHistory, setTranscriptionHistory] = useState<TranscriptionTurn[]>([]);
     
-    const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
+    // FIX: The type for the session promise ref is changed to `any` because `LiveSession` is not exported.
+    const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
     const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
 

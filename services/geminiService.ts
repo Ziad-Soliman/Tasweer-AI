@@ -1,9 +1,7 @@
-
 import { GoogleGenAI, Modality, Part, Type, Chat, Content } from "@google/genai";
 import { SceneTemplate, MarketingCopy, ProductNameSuggestion, VideoAdScript, PhotoshootConcept, BrandVoiceGuide, AISuggestions, Recipe, StoryboardScene, AdCopyVariant, PodcastShowNotes, Presentation, ComicPanel, PhotoshootScene, GenerationMode, KeyObject } from "../types";
 // FIX: Changed import from CAMERA_PERSPECTIVES to CAMERA_PERSPECTIVE_OPTIONS to match the exported member from constants.ts.
 import { LIGHTING_STYLES, CAMERA_PERSPECTIVE_OPTIONS, FONT_OPTIONS } from '../constants';
-
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -411,6 +409,53 @@ export const upscaleImage = async (
     throw new Error('Upscaling failed: No image part in response.');
 };
 
+// New function for generic portrait editing
+export const editPortrait = async (
+    imageBase64: string,
+    prompt: string
+): Promise<string> => {
+    const imagePart = base64ToGenerativePart(imageBase64);
+    const textPart = { text: prompt };
+
+    const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [imagePart, textPart] },
+        config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
+        },
+    });
+
+    const candidate = result.candidates?.[0];
+    if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
+        }
+    }
+    throw new Error('Portrait editing failed: No image part in response.');
+};
+
+export const enhanceSkin = async (
+    imageBase64: string,
+    enhancementMode: 'Standard' | 'Detailed' | 'Heavy'
+): Promise<string> => {
+    let promptText = 'Enhance the skin in this portrait. ';
+    switch (enhancementMode) {
+        case 'Detailed':
+            promptText += 'Focus on improving skin texture, reducing blemishes, and evening out skin tone while maintaining a very natural and realistic look. Add subtle, photorealistic details.';
+            break;
+        case 'Heavy':
+            promptText += 'Perform a significant retouching of the skin. Smooth out imperfections, remove most blemishes, and create a flawless, magazine-cover look. The result should be polished but still look like a real person.';
+            break;
+        case 'Standard':
+        default:
+            promptText += 'Gently retouch the skin to reduce minor blemishes and even out the skin tone. The result should be natural and preserve the original skin texture as much as possible.';
+            break;
+    }
+
+    return editPortrait(imageBase64, promptText);
+};
 
 export const extractPalette = async (imageBase64: string): Promise<string[]> => {
     const imagePart = base64ToGenerativePart(imageBase64);

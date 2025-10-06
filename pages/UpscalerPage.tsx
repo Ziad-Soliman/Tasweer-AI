@@ -53,16 +53,18 @@ export const UpscalerPage = () => {
         setResultImage(null);
 
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            reader.onloadend = async () => {
-                const base64Image = (reader.result as string).split(',')[1];
-                const resultBase64 = await geminiService.upscaleImage(base64Image, upscaleType, isPortrait, mode);
-                setResultImage(`data:image/png;base64,${resultBase64}`);
-                setIsLoading(false);
-            };
+            const base64Image = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(imageFile);
+            });
+
+            const resultBase64 = await geminiService.upscaleImage(base64Image, upscaleType, isPortrait, mode);
+            setResultImage(`data:image/png;base64,${resultBase64}`);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'An unknown error occurred during upscaling.');
+        } finally {
             setIsLoading(false);
         }
     };

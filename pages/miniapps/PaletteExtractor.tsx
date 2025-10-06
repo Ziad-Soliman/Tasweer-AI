@@ -32,16 +32,18 @@ const PaletteExtractor: React.FC<MiniAppProps> = ({ onBack }) => {
         setError(null);
         setPalette(null);
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            reader.onloadend = async () => {
-                const base64Image = (reader.result as string).split(',')[1];
-                const result = await geminiService.extractPalette(base64Image);
-                setPalette(result);
-                setIsLoading(false);
-            };
+            const base64Image = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(imageFile);
+            });
+
+            const result = await geminiService.extractPalette(base64Image);
+            setPalette(result);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to extract palette.");
+        } finally {
             setIsLoading(false);
         }
     };

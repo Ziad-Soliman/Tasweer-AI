@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
@@ -277,9 +279,11 @@ const App: React.FC = () => {
                             {...sharedPageProps}
                        />;
             case 'video':
-                return <VideoPage {...sharedPageProps} />;
+                // FIX: The VideoPage component only accepts the `selectedModel` prop.
+                return <VideoPage selectedModel={selectedModel} />;
             case 'edit':
-                return <EditPage {...sharedPageProps} />;
+                // FIX: The EditPage component does not accept any props.
+                return <EditPage />;
             case 'upscale':
                 return <UpscalerPage />;
             case 'skin editor':
