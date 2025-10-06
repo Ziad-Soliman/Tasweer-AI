@@ -1,4 +1,7 @@
 
+
+
+
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
@@ -158,7 +161,7 @@ const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features:
 };
 
 const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
-    <div className="flex-1 flex items-center justify-center text-center p-8 flex-col animate-fade-in">
+    <div className="flex-1 flex items-center justify-center text-center p-8 flex-col">
         <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
             <Icon name={icon} className="w-10 h-10 text-primary" />
         </div>
@@ -178,7 +181,7 @@ const App: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [menuCloseTimer, setMenuCloseTimer] = useState<number | null>(null);
 
-    const navItems = ["Product Studio", "Portrait Studio", "Character Studio", "Video Gen", "Live", "Canvas Board", "Upscale", "Mini Apps"];
+    const navItems = ["Product Studio", "Portrait Studio", "Character Studio", "Video Gen", "Canvas Board", "Upscale", "Mini Apps", "Live Assistant", "Gallery", "Pricing"];
     const menuRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
@@ -279,7 +282,7 @@ const App: React.FC = () => {
                        />;
             case 'video gen':
                 return <VideoPage selectedModel={selectedModel} />;
-            case 'live':
+            case 'live assistant':
                 return <LivePage />;
             case 'canvas board':
                 return <EditPage />;
@@ -299,6 +302,10 @@ const App: React.FC = () => {
                             restoredState={restoredState}
                             clearRestoredState={clearRestoredState}
                        />;
+            case 'gallery':
+                return <ComingSoonPage title="Gallery" icon="layout-grid" />;
+            case 'pricing':
+                return <ComingSoonPage title="Pricing" icon="credit-card" />;
             default:
                  return <ImagePage 
                             key="default-product-studio"
@@ -311,7 +318,89 @@ const App: React.FC = () => {
         <LanguageContext.Provider value={{ lang, setLang }}>
             <div className="h-screen flex flex-col">
                  <header className="fixed top-0 start-0 end-0 z-40 bg-background/50 backdrop-blur-md border-b border-border/50">
-                    <div className="container mx-auto px-4 flex justify-between items-center h-16">
+                    <div className="px-4 flex justify-between items-center h-16">
                         <div className="flex items-center gap-6">
-                            <a href="#" className="flex items-center gap-2" onClick={(e) => { e.preventDefault(); handleNavClick('Product Studio'); }}>
-                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43
+                            <a href="#" className="flex items-center" onClick={(e) => { e.preventDefault(); handleNavClick('Product Studio'); }}>
+                                <span className="font-bold text-lg tracking-tight">CRE8 <span className="text-muted-foreground font-normal">by Ziad Ashraf</span></span>
+                            </a>
+                            <nav ref={menuRef} className="hidden md:flex items-center gap-1 bg-card/50 border border-border/50 rounded-full px-2 shadow-sm">
+                                {navItems.map(item => {
+                                    const page = item.toLowerCase();
+                                    const hasMenu = ['Product Studio', 'Video Gen', 'Canvas Board'].includes(item);
+                                    
+                                    const handleMouseEnter = () => {
+                                        if (menuCloseTimer) clearTimeout(menuCloseTimer);
+                                        if (hasMenu) setOpenMenu(item);
+                                    };
+                                    
+                                    const handleMouseLeave = () => {
+                                        if (hasMenu) {
+                                            const timer = window.setTimeout(() => setOpenMenu(null), 150);
+                                            setMenuCloseTimer(timer);
+                                        }
+                                    };
+
+                                    return (
+                                        <div key={item} className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                                            <button
+                                                onClick={() => handleNavClick(item)}
+                                                className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors flex items-center gap-2 ${currentPage === page ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                            >
+                                                <span>{item}</span>
+                                                {hasMenu && <Icon name="chevron-down" className={`w-3 h-3 transition-transform ${openMenu === item ? 'rotate-180' : ''}`} />}
+                                            </button>
+                                            {hasMenu && openMenu === item && (
+                                                <AppMenu
+                                                    features={menuData[item].features}
+                                                    models={menuData[item].models}
+                                                    selectedModel={selectedModel}
+                                                    onSelectModel={(model) => {
+                                                        setSelectedModel(model);
+                                                        setOpenMenu(null);
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </nav>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={toggleLang} className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10 bg-secondary hover:bg-accent text-secondary-foreground">
+                                {lang.toUpperCase()}
+                            </button>
+                            <button className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-semibold h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90">
+                                Sign Up
+                            </button>
+                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 text-muted-foreground">
+                                <Icon name={isMobileMenuOpen ? "close" : "menu"} className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                 </header>
+
+                {isMobileMenuOpen && (
+                     <div className="fixed inset-0 top-16 bg-background z-30 md:hidden animate-fade-in">
+                        <nav className="flex flex-col p-4 space-y-2">
+                             {navItems.map(item => (
+                                <button
+                                    key={item}
+                                    onClick={() => handleNavClick(item)}
+                                    className={`w-full text-left p-3 text-lg font-semibold rounded-lg ${currentPage === item.toLowerCase() ? 'bg-muted text-primary' : 'hover:bg-muted'}`}
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+                )}
+                
+                <div key={currentPage} className="flex-1 flex pt-16 animate-fade-in">
+                     {renderPage()}
+                </div>
+            </div>
+        </LanguageContext.Provider>
+    );
+};
+
+export default App;
