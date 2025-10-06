@@ -10,7 +10,7 @@ const WelcomeScreen = () => {
             <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                  <Icon name="video" className="w-12 h-12 text-primary" />
             </div>
-            <h1 className="text-5xl font-bold tracking-tighter text-foreground">AI Video Studio</h1>
+            <h1 className="text-5xl font-bold tracking-tighter text-foreground">Video Generation Studio</h1>
             <p className="text-muted-foreground mt-2 max-w-md">{t('video-generator-desc')}</p>
         </div>
     );
@@ -82,7 +82,7 @@ export const VideoPage = ({ selectedModel }: { selectedModel: string }) => {
             )}
             
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl z-30 px-4">
-                <div className="bg-card/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl p-2 flex items-center gap-2">
+                <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl p-2 flex items-center gap-2">
                     <input
                         type="text"
                         value={prompt}

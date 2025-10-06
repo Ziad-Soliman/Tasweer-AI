@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Icon } from '../components/Icon';
 import { FileUpload } from '../components/FileUpload';
@@ -80,7 +81,7 @@ export const UpscalerPage = () => {
     return (
         <div className="flex flex-1 flex-col md:flex-row min-h-0">
             {/* Left Panel - Controls */}
-            <aside className="w-full md:w-96 bg-card border-b md:border-r md:border-b-0 border-border flex-shrink-0 flex flex-col">
+            <aside className="w-full md:w-96 bg-card/50 backdrop-blur-md border-b md:border-r md:border-b-0 border-border/50 flex-shrink-0 flex flex-col">
                 <div className="p-4 border-b">
                     <h2 className="text-xl font-semibold">Upscaler</h2>
                     <p className="text-sm text-muted-foreground mt-1">Enhance image resolution and add detail with AI.</p>
@@ -135,9 +136,9 @@ export const UpscalerPage = () => {
             </aside>
 
             {/* Right Panel - Preview */}
-            <main className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto bg-zinc-950">
+            <main className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
                 <h2 className="text-xl font-semibold">Output Preview</h2>
-                 <div className="relative flex-1 bg-zinc-900 border border-border rounded-lg flex items-center justify-center min-h-[300px] p-4">
+                 <div className="relative flex-1 border border-border rounded-lg flex items-center justify-center min-h-[300px] p-4">
                     {isLoading && <Icon name="spinner" className="w-10 h-10 animate-spin text-primary" />}
                     {error && <p className="text-destructive p-4 text-center">{error}</p>}
                     {!isLoading && !error && resultImage && imagePreview && (

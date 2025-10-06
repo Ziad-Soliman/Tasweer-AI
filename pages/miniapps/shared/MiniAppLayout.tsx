@@ -18,7 +18,7 @@ const MiniAppLayout: React.FC<MiniAppLayoutProps> = ({ controls, children, title
   if (controls) {
     return (
       <main className="flex-1 flex md:flex-row flex-col min-h-0 h-full animate-fade-in">
-        <aside className="w-full md:w-80 lg:w-96 flex-shrink-0 border-e p-4 md:p-6 overflow-y-auto bg-card">
+        <aside className="w-full md:w-80 lg:w-96 flex-shrink-0 border-e border-border/50 p-4 md:p-6 overflow-y-auto bg-card/50 backdrop-blur-md">
           {controls}
         </aside>
         <div className="flex-1 min-h-0 relative">

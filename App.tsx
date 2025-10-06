@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
@@ -9,8 +6,7 @@ import { SkinEditorPage } from './pages/SkinEditorPage';
 import { CharacterPage } from './pages/CharacterPage';
 import { UpscalerPage } from './pages/UpscalerPage';
 import { AppsPage } from './pages/AppsPage';
-import { ExplorePage } from './pages/ExplorePage';
-import { LiveAssistPage } from './pages/LiveAssistPage';
+import { LivePage } from './pages/LivePage';
 import { Icon } from './components/Icon';
 import { translations } from './lib/translations';
 import { HistoryItem } from './types';
@@ -112,9 +108,9 @@ const editModels: MenuItem[] = [
 ];
 
 const menuData: Record<string, { features: MenuItem[], models: MenuItem[] }> = {
-    Image: { features: imageFeatures, models: imageModels },
-    Video: { features: videoFeatures, models: videoModels },
-    Edit: { features: editFeatures, models: editModels },
+    'Product Studio': { features: imageFeatures, models: imageModels },
+    'Video Gen': { features: videoFeatures, models: videoModels },
+    'Canvas Board': { features: editFeatures, models: editModels },
 };
 
 const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features: MenuItem[], models: MenuItem[], selectedModel?: string, onSelectModel?: (model: string) => void; }) => {
@@ -173,7 +169,7 @@ const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
 
 const App: React.FC = () => {
     const [lang, setLang] = useState<'en' | 'ar'>('en');
-    const [currentPage, setCurrentPage] = useState('image');
+    const [currentPage, setCurrentPage] = useState('product studio');
     const [selectedModel, setSelectedModel] = useState("Imagen 4.0");
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [restoredState, setRestoredState] = useState<HistoryItem | null>(null);
@@ -181,7 +177,7 @@ const App: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [menuCloseTimer, setMenuCloseTimer] = useState<number | null>(null);
 
-    const navItems = ["Explore", "Image", "Video", "Edit", "Upscale", "Skin Editor", "Character", "Assist", "Apps", "Community"];
+    const navItems = ["Product Studio", "Portrait Studio", "Character Studio", "Video Gen", "Live", "Canvas Board", "Upscale", "Mini Apps"];
     const menuRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
@@ -245,14 +241,16 @@ const App: React.FC = () => {
         if (item.source.page === 'product-generation') { // Keep this for backward compatibility
             const mode = item.payload.settings.generationMode;
              if (['video'].includes(mode)) {
-                setCurrentPage('video');
+                setCurrentPage('video gen');
             } else if (['character'].includes(mode)) {
-                setCurrentPage('character');
+                setCurrentPage('character studio');
             } else { // product, mockup, social, design
-                setCurrentPage('image');
+                setCurrentPage('product studio');
             }
         } else if (item.source.page === 'mini-apps') {
-            setCurrentPage('apps');
+            setCurrentPage('mini apps');
+        } else if (item.source.page === 'character') {
+            setCurrentPage('character studio');
         }
     };
 
@@ -273,42 +271,35 @@ const App: React.FC = () => {
         };
 
         switch(currentPage) {
-            case 'image':
+            case 'product studio':
                  return <ImagePage 
                             key={restoredState ? restoredState.id : 'image'}
                             {...sharedPageProps}
                        />;
-            case 'video':
-                // FIX: The VideoPage component only accepts the `selectedModel` prop.
+            case 'video gen':
                 return <VideoPage selectedModel={selectedModel} />;
-            case 'edit':
-                // FIX: The EditPage component does not accept any props.
+            case 'live':
+                return <LivePage />;
+            case 'canvas board':
                 return <EditPage />;
             case 'upscale':
                 return <UpscalerPage />;
-            case 'skin editor':
+            case 'portrait studio':
                 return <SkinEditorPage />;
-            case 'character':
+            case 'character studio':
                  return <CharacterPage 
                             key={restoredState ? restoredState.id : 'character'}
                             {...sharedPageProps}
                        />;
-            case 'apps':
+            case 'mini apps':
                 return <AppsPage 
                             addHistoryItem={addHistoryItem}
                             restoredState={restoredState}
                             clearRestoredState={clearRestoredState}
                        />;
-            case 'explore':
-                return <ExplorePage />;
-            case 'assist':
-// FIX: The LiveAssistPage component does not accept any props. Removed sharedPageProps.
-                return <LiveAssistPage />;
-            case 'community':
-                return <ComingSoonPage title="Community" icon="users" />;
             default:
-                 return <CharacterPage 
-                            key="default-character"
+                 return <ImagePage 
+                            key="default-product-studio"
                             {...sharedPageProps}
                        />;
         }
@@ -316,8 +307,8 @@ const App: React.FC = () => {
 
     return (
         <LanguageContext.Provider value={{ lang, setLang }}>
-            <div className="h-screen bg-background flex flex-col">
-                 <header className="fixed top-0 start-0 end-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/80">
+            <div className="h-screen flex flex-col">
+                 <header className="fixed top-0 start-0 end-0 z-40 bg-background/50 backdrop-blur-md border-b border-border/50">
                     <div className="container mx-auto px-4 flex justify-between items-center h-16">
                         <div className="flex items-center gap-6">
                             <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43NDkgNS4yOTEgMjEgNy41IDIxSDE2LjVDMTguNzQ5IDIxIDIxIDE4Ljc0OSAyMSAxNi41VjcuNUMyMSA1LjI1MSAxODc0OSAzIDE2LjUgM0g3LjVaTTcuNSA0LjVIMTYuNUMxNy44NjkgNC41IDE5IDUuNjMxIDE5IDcuNVYxNi45IDE3Ljg2OSAxNy44NjkgMTkgMTYuNSAxOUg3LjVDNi4xMzEgMTkgNSAxNy44NjkgNSAxNi41VjcuNUM1IDYuMTMxIDYuMTMxIDQuNSA3LjUgNC41WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+" alt="Logo" className="w-8 h-8"/>
@@ -340,7 +331,6 @@ const App: React.FC = () => {
                                         >
                                             <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-all relative ${isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
                                                 {item}
-                                                {item === 'Community' && <span className="ms-1.5 text-xs text-yellow-300 bg-yellow-300/20 px-1.5 py-0.5 rounded-full align-middle">New</span>}
                                                 {isActive && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full animate-glow"></div>}
                                             </a>
                                             {openMenu === item && menuData[item] && (
@@ -374,7 +364,7 @@ const App: React.FC = () => {
                 </header>
 
                 {isMobileMenuOpen && (
-                     <div className="md:hidden fixed inset-0 top-16 bg-background/95 z-30 animate-fade-in">
+                     <div className="md:hidden fixed inset-0 top-16 bg-background/50 backdrop-blur-md z-30 animate-fade-in">
                         <div className="container mx-auto px-4 pt-4">
                              <nav className="flex flex-col gap-2">
                                 {navItems.map(item => (

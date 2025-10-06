@@ -546,11 +546,11 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
     return (
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
             {/* Left Sidebar */}
-            <div className="bg-card border-b md:border-b-0 md:border-r border-border md:w-[380px] flex-shrink-0 flex flex-col">
+            <div className="bg-card/50 backdrop-blur-md border-b md:border-b-0 md:border-r border-border/50 md:w-[380px] flex-shrink-0 flex flex-col">
                  <div className="p-4 border-b flex justify-between items-center">
                     <div>
-                        <h2 className="text-lg font-bold">AI Multi-Modal Generation</h2>
-                        <p className="text-sm text-muted-foreground mt-1">Create stunning AI-generated content</p>
+                        <h2 className="text-lg font-bold">Product Studio</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Generate professional product photos, mockups, and more.</p>
                     </div>
                     <Tooltip text={t('startOver')}>
                         <button onClick={() => setIsStartOverModalOpen(true)} className="p-2 rounded-md hover:bg-accent text-muted-foreground">
@@ -722,7 +722,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
             </div>
             
             {/* Center Content */}
-            <main className="flex-1 flex flex-col min-h-0 bg-background/95">
+            <main className="flex-1 flex flex-col min-h-0">
                  <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-8">
                     {error && (
                         <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-md mb-6 relative">
@@ -753,7 +753,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                 </div>
             </main>
             {/* Right Sidebar */}
-            <div className="bg-card border-t md:border-t-0 md:border-l border-border md:w-[350px] flex-shrink-0">
+            <div className="bg-card/50 backdrop-blur-md border-t md:border-t-0 md:border-l border-border/50 md:w-[350px] flex-shrink-0">
                 <Tabs tabs={[{key: 'History', label: t('history')}, {key: 'Brand', label: t('brand')}]}>
                     {(activeTab) => (
                         <div className="p-4 h-full">

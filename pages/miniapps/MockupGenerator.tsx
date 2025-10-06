@@ -57,7 +57,7 @@ const MockupGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
             onBack={onBack}
         >
             <div className="grid lg:grid-cols-2 gap-8 h-full">
-                <div className="flex flex-col gap-6 bg-card border p-6 rounded-lg">
+                <div className="flex flex-col gap-6 bg-card/80 backdrop-blur-md border p-6 rounded-lg">
                     <FileUpload
                         onFileUpload={handleFileUpload}
                         label={t('uploadProductTransparent')}

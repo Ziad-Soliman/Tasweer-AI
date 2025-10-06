@@ -367,7 +367,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
 
     const renderGenerationUI = () => (
         <div className="flex flex-1 flex-col md:flex-row min-h-0">
-             <aside className="w-full md:w-96 bg-card border-b md:border-r md:border-b-0 border-border flex-shrink-0 flex flex-col">
+             <aside className="w-full md:w-96 bg-card/50 backdrop-blur-md border-b md:border-r md:border-b-0 border-border/50 flex-shrink-0 flex flex-col">
                 <div className="flex-1 p-4 space-y-5 overflow-y-auto">
                     <div className="p-1 bg-muted rounded-lg grid grid-cols-2 items-center shadow-inner">
                         {characterModes.map(mode => (
@@ -444,7 +444,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
                     </button>
                 </div>
             </aside>
-            <main className="flex-1 p-4 md:p-6 bg-background overflow-y-auto">
+            <main className="flex-1 p-4 md:p-6 overflow-y-auto">
                  {isLoading ? (
                     <div className="h-full flex items-center justify-center"> <Icon name="spinner" className="w-12 h-12 text-primary animate-spin" /> </div>
                  ) : error ? (
@@ -452,7 +452,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
                  ) : generatedImages.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> {generatedImages.map((src, i) => <img key={i} src={src} alt={`Generated character ${i + 1}`} className="w-full h-auto object-cover rounded-lg bg-muted" />)} </div>
                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-8"><Icon name="users" className="w-20 h-20 text-primary/20 mb-4" /><h2 className="text-2xl font-bold text-foreground">Bring Your Characters to Life</h2><p className="max-w-md mt-2">Use the controls on the left to describe your character, set the style, and generate stunning concept art.</p></div>
+                    <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-8"><Icon name="users" className="w-20 h-20 text-primary/20 mb-4" /><h2 className="text-2xl font-bold text-foreground">Character Generation Studio</h2><p className="max-w-md mt-2">Use the controls on the left to describe your character, set the style, and generate stunning concept art.</p></div>
                 )}
             </main>
         </div>
@@ -465,7 +465,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
         return (
             <div className="flex flex-1 flex-col md:flex-row min-h-0">
                 {/* Left Sidebar */}
-                <aside className="w-full md:w-96 bg-card border-b md:border-r md:border-b-0 border-border flex-shrink-0 flex flex-col">
+                <aside className="w-full md:w-96 bg-card/50 backdrop-blur-md border-b md:border-r md:border-b-0 border-border/50 flex-shrink-0 flex flex-col">
                     <div className="p-4 space-y-4 overflow-y-auto flex-1">
                         <div className="p-1 bg-muted rounded-lg grid grid-cols-2 items-center shadow-inner">
                             {characterModes.map(mode => (
@@ -551,7 +551,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
                 {/* Right Content Area */}
                 <main className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
                      <h2 className="text-xl font-semibold">Output Preview</h2>
-                     <div className="relative flex-1 bg-zinc-900 border border-border rounded-lg flex items-center justify-center min-h-[300px] p-4">
+                     <div className="relative flex-1 border border-border rounded-lg flex items-center justify-center min-h-[300px] p-4">
                         {isLoading ? <Icon name="spinner" className="w-10 h-10 animate-spin text-primary" />
                             : error ? <p className="text-destructive p-4 text-center">{error}</p>
                             : consistencyPreviewImages.length > 0 ? (
@@ -576,7 +576,7 @@ export const CharacterPage: React.FC<CharacterPageProps> = (props) => {
                          <ActionButton icon="move" title="Animate" />
                      </div>
 
-                    <div className="w-full bg-zinc-900 rounded-lg border border-border">
+                    <div className="w-full rounded-lg border border-border">
                         <div className="flex justify-between items-center cursor-pointer p-3 border-b border-border" onClick={() => setIsTemplatesExpanded(!isTemplatesExpanded)}>
                             <h3 className="font-semibold text-foreground flex items-center gap-3">
                                 <div className="w-5 h-5 bg-green-900/50 border border-green-500 rounded-sm flex items-center justify-center">

@@ -1,4 +1,7 @@
 
+
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import MiniAppLayout from './shared/MiniAppLayout';
@@ -9,10 +12,6 @@ import * as geminiService from '../../services/geminiService';
 import { ThumbnailElement, AISuggestions } from '../../types';
 import { useTranslation } from '../../App';
 import { FONT_OPTIONS } from '../../constants';
-
-interface MiniAppProps {
-    onBack: () => void;
-}
 
 const NANO_BANANA_YELLOW = '#FDE047';
 const NANO_BANANA_BLACK = '#262626';
@@ -92,6 +91,9 @@ const PropertiesInspector: React.FC<{
     );
 };
 
+interface MiniAppProps {
+    onBack: () => void;
+}
 
 const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
     const { t } = useTranslation();
@@ -318,7 +320,7 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         <MiniAppLayout title={t('youtube-thumbnail-generator-title')} description={t('youtube-thumbnail-generator-desc')} onBack={onBack}>
             <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-150px)]">
                 {/* Controls Sidebar */}
-                <div className="w-full md:w-80 bg-card border rounded-lg p-4 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+                <div className="w-full md:w-80 bg-card/80 backdrop-blur-md border rounded-lg p-4 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
                     <div>
                         <h3 className="font-semibold mb-2">{t('templates')}</h3>
                         <div className="grid grid-cols-3 gap-2">
@@ -378,7 +380,7 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col gap-4">
                     {/* Top Toolbar */}
-                     <div className="flex-shrink-0 bg-card border rounded-lg p-2 flex items-center justify-between">
+                     <div className="flex-shrink-0 bg-card/80 backdrop-blur-md border rounded-lg p-2 flex items-center justify-between">
                          <div className="flex items-center gap-1">
                             <Tooltip text={t('undo')}><button onClick={handleUndo} disabled={historyIndex <= 0} className="p-2 rounded hover:bg-accent disabled:opacity-50"><Icon name="undo" className="w-5 h-5"/></button></Tooltip>
                             <Tooltip text={t('redo')}><button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className="p-2 rounded hover:bg-accent disabled:opacity-50"><Icon name="redo" className="w-5 h-5"/></button></Tooltip>
@@ -451,7 +453,7 @@ const YouTubeThumbnailGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                 </div>
 
                 {/* Properties Inspector */}
-                 <div className="w-full md:w-64 bg-card border rounded-lg p-4 flex-shrink-0 overflow-y-auto">
+                 <div className="w-full md:w-64 bg-card/80 backdrop-blur-md border rounded-lg p-4 flex-shrink-0 overflow-y-auto">
                     <h3 className="font-semibold mb-2">{t('properties')}</h3>
                     <PropertiesInspector
                         selectedElement={selectedElement}

@@ -114,7 +114,7 @@ export const EditPage: React.FC = () => {
             {!imagePreview ? (
                 <div className="m-auto flex flex-col items-center text-center max-w-md">
                     <Icon name="edit" className="w-24 h-24 text-primary/50" />
-                    <h1 className="text-4xl font-bold mt-4">Draw to Edit</h1>
+                    <h1 className="text-4xl font-bold mt-4">Canvas Board</h1>
                     <p className="text-muted-foreground mt-2">Upload an image, mask an area, and describe your changes to transform your pictures with AI.</p>
                     <div className="w-full mt-8">
                         <FileUpload onFileUpload={handleFileUpload} label={t('uploadToEdit')} />
@@ -140,7 +140,7 @@ export const EditPage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <div className="w-full max-w-2xl p-4 bg-card border rounded-lg shadow-lg flex flex-col md:flex-row items-center gap-4">
+                    <div className="w-full max-w-2xl p-4 bg-card/50 backdrop-blur-md border border-border/50 rounded-lg shadow-lg flex flex-col md:flex-row items-center gap-4">
                         <div className="flex items-center gap-2">
                             <label className="text-xs text-muted-foreground">{t('magicEditBrush')}</label>
                             <input type="range" min="10" max="100" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="w-24 accent-primary"/>
