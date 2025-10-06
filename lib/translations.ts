@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     // App.tsx
-    aiDesigner: 'AI Designer',
+    aiDesigner: 'CRE8',
     productGeneration: 'Product Generation',
     miniApps: 'Mini Apps',
     classicGeneration: 'Classic Generation',
@@ -484,7 +484,7 @@ export const translations = {
   },
   ar: {
     // App.tsx
-    aiDesigner: 'المصمم الذكي',
+    aiDesigner: 'CRE8',
     productGeneration: 'إنشاء صور المنتجات',
     miniApps: 'تطبيقات مصغرة',
     classicGeneration: 'إنشاء كلاسيكي',

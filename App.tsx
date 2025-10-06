@@ -1,3 +1,4 @@
+
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
@@ -289,7 +290,8 @@ const App: React.FC = () => {
             case 'character studio':
                  return <CharacterPage 
                             key={restoredState ? restoredState.id : 'character'}
-                            {...sharedPageProps}
+                            addHistoryItem={addHistoryItem}
+                            restoredState={restoredState}
                        />;
             case 'mini apps':
                 return <AppsPage 
@@ -311,86 +313,5 @@ const App: React.FC = () => {
                  <header className="fixed top-0 start-0 end-0 z-40 bg-background/50 backdrop-blur-md border-b border-border/50">
                     <div className="container mx-auto px-4 flex justify-between items-center h-16">
                         <div className="flex items-center gap-6">
-                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43NDkgNS4yOTEgMjEgNy41IDIxSDE2LjVDMTguNzQ5IDIxIDIxIDE4Ljc0OSAyMSAxNi41VjcuNUMyMSA1LjI1MSAxODc0OSAzIDE2LjUgM0g3LjVaTTcuNSA0LjVIMTYuNUMxNy44NjkgNC41IDE5IDUuNjMxIDE5IDcuNVYxNi45IDE3Ljg2OSAxNy44NjkgMTkgMTYuNSAxOUg3LjVDNi4xMzEgMTkgNSAxNy44NjkgNSAxNi41VjcuNUM1IDYuMTMxIDYuMTMxIDQuNSA3LjUgNC41WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+" alt="Logo" className="w-8 h-8"/>
-
-                            <nav ref={menuRef} className="hidden md:flex items-center gap-1">
-                                {navItems.map(item => {
-                                    const isActive = currentPage === item.toLowerCase() || openMenu === item;
-                                    return (
-                                        <div 
-                                            key={item} 
-                                            onMouseEnter={() => {
-                                                if (menuCloseTimer) clearTimeout(menuCloseTimer);
-                                                menuData[item] && setOpenMenu(item);
-                                            }} 
-                                            onMouseLeave={() => {
-                                                const timer = window.setTimeout(() => setOpenMenu(null), 200);
-                                                setMenuCloseTimer(timer);
-                                            }} 
-                                            className="relative"
-                                        >
-                                            <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-3 py-2 text-sm font-medium rounded-md transition-all relative ${isActive ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                                                {item}
-                                                {isActive && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full animate-glow"></div>}
-                                            </a>
-                                            {openMenu === item && menuData[item] && (
-                                                <AppMenu 
-                                                    features={menuData[item].features} 
-                                                    models={menuData[item].models} 
-                                                    selectedModel={selectedModel} 
-                                                    onSelectModel={(model) => { setSelectedModel(model); setOpenMenu(null); }} 
-                                                />
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </nav>
-                        </div>
-                        <div className="hidden md:flex items-center gap-4 text-sm font-medium">
-                            <a href="#" className="text-foreground hover:text-primary transition-colors">{t('pricing')}</a>
-                            <button onClick={toggleLang} className="text-foreground hover:text-primary transition-colors">
-                                {lang === 'en' ? 'العربية' : 'English'}
-                            </button>
-                            <a href="#" className="text-foreground hover:text-primary transition-colors">{t('login')}</a>
-                            <a href="#" className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors">{t('signUp')}</a>
-                            <button className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-muted-foreground"><Icon name="users" className="w-5 h-5"/></button>
-                        </div>
-                        <div className="md:hidden">
-                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md text-muted-foreground hover:bg-muted">
-                                <Icon name={isMobileMenuOpen ? "close" : "menu"} className="w-6 h-6"/>
-                            </button>
-                        </div>
-                    </div>
-                </header>
-
-                {isMobileMenuOpen && (
-                     <div className="md:hidden fixed inset-0 top-16 bg-background/50 backdrop-blur-md z-30 animate-fade-in">
-                        <div className="container mx-auto px-4 pt-4">
-                             <nav className="flex flex-col gap-2">
-                                {navItems.map(item => (
-                                    <a key={item} href="#" onClick={(e) => { e.preventDefault(); handleNavClick(item);}} className={`px-4 py-3 text-lg font-medium rounded-md transition-colors ${currentPage === item.toLowerCase() ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                                        {item}
-                                    </a>
-                                ))}
-                            </nav>
-                             <div className="border-t border-border mt-6 pt-6 flex flex-col gap-4 text-lg font-medium">
-                                <a href="#" className="text-foreground hover:text-primary transition-colors">{t('pricing')}</a>
-                                 <button onClick={toggleLang} className="text-foreground hover:text-primary transition-colors text-start w-fit">
-                                    {lang === 'en' ? 'العربية' : 'English'}
-                                </button>
-                                <a href="#" className="text-foreground hover:text-primary transition-colors">{t('login')}</a>
-                                <a href="#" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md transition-colors text-center">{t('signUp')}</a>
-                            </div>
-                        </div>
-                     </div>
-                )}
-                
-                <main className="pt-16 flex-1 flex flex-col min-h-0">
-                     {renderPage()}
-                </main>
-            </div>
-        </LanguageContext.Provider>
-    );
-};
-
-export default App;
+                            <a href="#" className="flex items-center gap-2" onClick={(e) => { e.preventDefault(); handleNavClick('Product Studio'); }}>
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDNDNS4yOTEgMyAzIDUuMjUxIDMgNy41VjE2LjVDMyAxOC43

@@ -55,6 +55,16 @@ const ErrorDisplay: React.FC<{ message: string; onRetry: () => void }> = ({ mess
     );
 };
 
+// FIX: Added missing handleDownload function to enable downloading the selected image.
+const handleDownload = (src: string) => {
+    const link = document.createElement('a');
+    link.href = src;
+    link.download = 'generated-image.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 // FIX: Reconstructed the Canvas component and added the named export.
 export const Canvas: React.FC<CanvasProps> = (props) => {
     const {
