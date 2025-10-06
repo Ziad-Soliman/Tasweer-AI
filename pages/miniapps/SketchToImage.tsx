@@ -40,37 +40,36 @@ const Controls: React.FC<{
             </div>
 
             <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Reference Image (Optional)</h3>
-                <FileUpload onFileUpload={props.onFileUpload} label="Upload reference image" uploadedFileName={props.referenceImageFile?.name} />
+                <h3 className="font-semibold text-foreground">{t('uploadReferenceImage')}</h3>
+                <FileUpload onFileUpload={props.onFileUpload} label={t('uploadReferenceImage')} uploadedFileName={props.referenceImageFile?.name} />
             </div>
 
             <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Drawing Tools</h3>
+                <h3 className="font-semibold text-foreground">{t('drawingTools')}</h3>
                 <div className="flex items-center gap-4">
-                    <label className="text-sm text-muted-foreground">Color</label>
+                    <label className="text-sm text-muted-foreground">{t('color')}</label>
                     <input type="color" value={props.brushColor} onChange={(e) => props.setBrushColor(e.target.value)} className="p-0 h-8 w-8 bg-transparent border-none cursor-pointer rounded-lg"/>
                 </div>
                 <div>
-                    <label className="text-sm text-muted-foreground">Brush Size</label>
+                    <label className="text-sm text-muted-foreground">{t('magicEditBrush')}</label>
                     <input type="range" min="2" max="50" value={props.brushSize} onChange={(e) => props.setBrushSize(Number(e.target.value))} className="w-full accent-primary mt-1"/>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => props.sketchCanvasRef.current?.undo()} className="text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"><Icon name="undo" className="w-4 h-4" /> Undo</button>
-                    <button onClick={() => props.sketchCanvasRef.current?.redo()} className="text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"><Icon name="redo" className="w-4 h-4" /> Redo</button>
-                    <button onClick={() => props.sketchCanvasRef.current?.clear()} className="text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"><Icon name="trash" className="w-4 h-4" /> Clear</button>
+                    <button onClick={() => props.sketchCanvasRef.current?.undo()} className="text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"><Icon name="undo" className="w-4 h-4" /> {t('undo')}</button>
+                    <button onClick={() => props.sketchCanvasRef.current?.redo()} className="text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"><Icon name="redo" className="w-4 h-4" /> {t('redo')}</button>
+                    <button onClick={() => props.sketchCanvasRef.current?.clear()} className="text-sm p-2 rounded-md bg-secondary hover:bg-accent flex items-center justify-center gap-2"><Icon name="trash" className="w-4 h-4" /> {t('clearCanvas')}</button>
                 </div>
             </div>
 
             <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">AI Prompt</h3>
+                <h3 className="font-semibold text-foreground">{t('aiPrompt')}</h3>
                 <div>
-                    <label className="text-sm text-muted-foreground">Description</label>
+                    <label className="text-sm text-muted-foreground">{t('description')}</label>
                     <textarea value={props.prompt} onChange={(e) => props.setPrompt(e.target.value)} placeholder={t('sketchPrompt')} className="w-full bg-background border-input rounded-md p-2 text-sm min-h-[100px] resize-none mt-1"/>
                 </div>
                 <div>
-                    <label className="text-sm text-muted-foreground">Style</label>
+                    <label className="text-sm text-muted-foreground">{t('style')}</label>
                     <select value={props.style} onChange={(e) => props.setStyle(e.target.value)} className="h-10 w-full rounded-md border-input bg-background px-3 py-2 text-sm mt-1">
-                        {/* FIX: Correctly map over PHOTO_STYLES array, using `s.id` for the key and `s.name` for the value and display text. */}
                         {PHOTO_STYLES.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                     </select>
                 </div>

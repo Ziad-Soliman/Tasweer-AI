@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { ImagePage } from './pages/ImagePage';
 import { VideoPage } from './pages/VideoPage';
@@ -50,107 +46,108 @@ export const useTranslation = () => {
 // --- DATA FOR MENUS ---
 
 interface MenuItem {
-    name: string;
-    description: string;
+    nameKey: keyof typeof translations.en;
+    descriptionKey: keyof typeof translations.en;
     icon: string;
     new?: boolean;
     best?: boolean;
 }
 
 const imageFeatures: MenuItem[] = [
-    { name: "Create Image", description: "Generate AI images", icon: "image" },
-    { name: "Soul ID Character", description: "Create unique character", icon: "users" },
-    { name: "Draw to Edit", description: "From sketch to picture", icon: "pencil" },
-    { name: "Fashion Factory", description: "Create fashion sets", icon: "shirt" },
-    { name: "Edit Image", description: "Change with inpainting", icon: "wand" },
-    { name: "Image Upscale", description: "Enhance image quality", icon: "expand" },
-    { name: "Photodump Studio", description: "Generate Your Aesthetic", new: true, icon: "camera" },
+    { nameKey: "createImage", descriptionKey: "createImageDesc", icon: "image" },
+    { nameKey: "soulIdCharacter", descriptionKey: "soulIdCharacterDesc", icon: "users" },
+    { nameKey: "drawToEdit", descriptionKey: "drawToEditDesc", icon: "pencil" },
+    { nameKey: "fashionFactory", descriptionKey: "fashionFactoryDesc", icon: "shirt" },
+    { nameKey: "editImage", descriptionKey: "editImageDesc", icon: "wand" },
+    { nameKey: "imageUpscale", descriptionKey: "imageUpscaleDesc", icon: "expand" },
+    { nameKey: "photodumpStudio", descriptionKey: "photodumpStudioDesc", new: true, icon: "camera" },
 ];
 
 const imageModels: MenuItem[] = [
-    { name: "Imagen 4.0", description: "Google's most powerful image model", best: true, icon: 'sparkles' },
-    { name: "Wan 2.2 Image", description: "Realistic images", icon: 'image' },
-    { name: "Seedream 4.0", description: "Advanced image editing", new: true, icon: 'sliders' },
-    { name: "Nano Banana", description: "Smart image editing", icon: 'wand' },
-    { name: "Flux Kontext", description: "Prompt-based editing", icon: 'pencil' },
-    { name: "GPT Image", description: "Advanced OpenAI model", icon: 'cube' },
-    { name: "Topaz", description: "High-resolution upscaler", icon: 'arrow-up' },
+    { nameKey: "imagen4", descriptionKey: "imagen4Desc", best: true, icon: 'sparkles' },
+    { nameKey: "wan22Image", descriptionKey: "wan22ImageDesc", icon: 'image' },
+    { nameKey: "seedream4", descriptionKey: "seedream4Desc", new: true, icon: 'sliders' },
+    { nameKey: "nanoBanana", descriptionKey: "nanoBananaDesc", icon: 'wand' },
+    { nameKey: "fluxKontext", descriptionKey: "fluxKontextDesc", icon: 'pencil' },
+    { nameKey: "gptImage", descriptionKey: "gptImageDesc", icon: 'cube' },
+    { nameKey: "topaz", descriptionKey: "topazDesc", icon: 'arrow-up' },
 ];
 
 const videoFeatures: MenuItem[] = [
-    { name: "Create Video", description: "Generate AI videos", icon: 'video' },
-    { name: "Lipsync Studio", description: "Create Talking Clips", icon: 'mic' },
-    { name: "Talking Avatar", description: "Lipsync with motion", icon: 'history' },
-    { name: "Draw to Video", description: "Sketch turns into a cinema", best: true, icon: 'edit' },
-    { name: "UGC Factory", description: "Build UGC video with avatar", icon: 'users' },
-    { name: "Video Upscale", description: "Enhance video quality", icon: 'expand' },
-    { name: "Higgsfield Animate", description: "Video smart replacement", new: true, icon: 'sun' },
+    { nameKey: "createVideo", descriptionKey: "createVideoDesc", icon: 'video' },
+    { nameKey: "lipsyncStudio", descriptionKey: "lipsyncStudioDesc", icon: 'mic' },
+    { nameKey: "talkingAvatar", descriptionKey: "talkingAvatarDesc", icon: 'history' },
+    { nameKey: "drawToVideo", descriptionKey: "drawToVideoDesc", best: true, icon: 'edit' },
+    { nameKey: "ugcFactory", descriptionKey: "ugcFactoryDesc", icon: 'users' },
+    { nameKey: "videoUpscale", descriptionKey: "videoUpscaleDesc", icon: 'expand' },
+    { nameKey: "higgsfieldAnimate", descriptionKey: "higgsfieldAnimateDesc", new: true, icon: 'sun' },
 ];
 
 const videoModels: MenuItem[] = [
-    { name: "Higgsfield DOP", description: "VFX and camera control", icon: 'camera' },
-    { name: "Google VEO 3", description: "Video with synced audio", icon: 'brand' },
-    { name: "Kling 2.5 Turbo", description: "Powerful creation, great value", icon: 'sparkles' },
-    { name: "Kling Speak", description: "Next-gen talking avatars", icon: 'mic' },
-    { name: "Seedance Pro", description: "Create multi-shot videos", icon: 'sliders' },
-    { name: "Minimax Hailuo 02", description: "Fastest high-dynamic video", icon: 'audio-waveform' },
-    { name: "Wan 2.5", description: "Next-gen video generation with sound", new: true, icon: 'video' },
+    { nameKey: "higgsfieldDOP", descriptionKey: "higgsfieldDOPDesc", icon: 'camera' },
+    { nameKey: "googleVEO3", descriptionKey: "googleVEO3Desc", icon: 'brand' },
+    { nameKey: "kling25Turbo", descriptionKey: "kling25TurboDesc", icon: 'sparkles' },
+    { nameKey: "klingSpeak", descriptionKey: "klingSpeakDesc", icon: 'mic' },
+    { nameKey: "seedancePro", descriptionKey: "seedanceProDesc", icon: 'sliders' },
+    { nameKey: "minimaxHailuo02", descriptionKey: "minimaxHailuo02Desc", icon: 'audio-waveform' },
+    { nameKey: "wan25", descriptionKey: "wan25Desc", new: true, icon: 'video' },
 ];
 
 const editFeatures: MenuItem[] = [
-    { name: "Banana Placement", description: "More control, more products", new: true, icon: 'wand' },
-    { name: "Product Placement", description: "Place products in an image", icon: 'package' },
-    { name: "Edit Image", description: "Change with inpainting", icon: 'edit' },
-    { name: "Multi Reference", description: "Multiple edits in one shot", icon: 'copy' },
-    { name: "Upscale", description: "Enhance resolution and quality", icon: 'expand' },
+    { nameKey: "bananaPlacement", descriptionKey: "bananaPlacementDesc", new: true, icon: 'wand' },
+    { nameKey: "productPlacement", descriptionKey: "productPlacementDesc", icon: 'package' },
+    { nameKey: "editImage", descriptionKey: "editImageDesc", icon: 'edit' },
+    { nameKey: "multiReference", descriptionKey: "multiReferenceDesc", icon: 'copy' },
+    { nameKey: "upscale", descriptionKey: "upscaleDesc", icon: 'expand' },
 ];
 
 const editModels: MenuItem[] = [
-    { name: "Flux Kontext", description: "Visual edits by prompt", icon: 'pencil' },
-    { name: "Nano Banana Edit", description: "Advanced image editing", new: true, icon: 'wand' },
-    { name: "Topaz", description: "High-resolution upscaler", icon: 'arrow-up' },
+    { nameKey: "fluxKontext", descriptionKey: "fluxKontextDesc", icon: 'pencil' },
+    { nameKey: "nanoBananaEdit", descriptionKey: "nanoBananaEditDesc", new: true, icon: 'wand' },
+    { nameKey: "topaz", descriptionKey: "topazDesc", icon: 'arrow-up' },
 ];
 
 const menuData: Record<string, { features: MenuItem[], models: MenuItem[] }> = {
-    'Product Studio': { features: imageFeatures, models: imageModels },
-    'Video Gen': { features: videoFeatures, models: videoModels },
-    'Canvas Board': { features: editFeatures, models: editModels },
+    'navProductStudio': { features: imageFeatures, models: imageModels },
+    'navVideoGen': { features: videoFeatures, models: videoModels },
+    'navCanvasBoard': { features: editFeatures, models: editModels },
 };
 
 const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features: MenuItem[], models: MenuItem[], selectedModel?: string, onSelectModel?: (model: string) => void; }) => {
+    const { t } = useTranslation();
     return (
         <div className="absolute top-full start-0 mt-2 w-[550px] bg-popover border border-border rounded-lg shadow-2xl p-4 grid grid-cols-2 gap-4 animate-slide-up-fade z-50">
             <div>
-                <h3 className="font-semibold text-sm mb-3 px-2">Features</h3>
+                <h3 className="font-semibold text-sm mb-3 px-2">{t('features')}</h3>
                 <div className="space-y-1">
                     {features.map(feature => (
-                        <a key={feature.name} href="#" className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted">
+                        <a key={feature.nameKey} href="#" className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted">
                             <Icon name={feature.icon} className="w-5 h-5 text-muted-foreground" />
                             <div>
                                 <p className="font-medium text-sm text-foreground">
-                                    {feature.name}
-                                    {feature.new && <span className="ms-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">NEW</span>}
-                                    {feature.best && <span className="ms-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">BEST</span>}
+                                    {t(feature.nameKey)}
+                                    {feature.new && <span className="ms-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">{t('newBadge')}</span>}
+                                    {feature.best && <span className="ms-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">{t('bestBadge')}</span>}
                                 </p>
-                                <p className="text-xs text-muted-foreground">{feature.description}</p>
+                                <p className="text-xs text-muted-foreground">{t(feature.descriptionKey)}</p>
                             </div>
                         </a>
                     ))}
                 </div>
             </div>
             <div>
-                <h3 className="font-semibold text-sm mb-3 px-2">Models</h3>
+                <h3 className="font-semibold text-sm mb-3 px-2">{t('models')}</h3>
                 <div className="space-y-1">
                     {models.map(model => (
-                        <button key={model.name} onClick={() => onSelectModel && onSelectModel(model.name)} className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedModel === model.name ? 'bg-muted' : 'hover:bg-muted'}`}>
+                        <button key={model.nameKey} onClick={() => onSelectModel && onSelectModel(t(model.nameKey))} className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedModel === t(model.nameKey) ? 'bg-muted' : 'hover:bg-muted'}`}>
                             <Icon name={model.icon} className="w-5 h-5 text-muted-foreground" />
                             <div>
                                 <p className="font-medium text-sm text-foreground">
-                                    {model.name}
-                                    {model.new && <span className="ms-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">NEW</span>}
-                                    {model.best && <span className="ms-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">BEST</span>}
+                                    {t(model.nameKey)}
+                                    {model.new && <span className="ms-1 text-xs text-primary bg-primary/20 px-1.5 py-0.5 rounded-full">{t('newBadge')}</span>}
+                                    {model.best && <span className="ms-1 text-xs text-pink-400 bg-pink-400/20 px-1.5 py-0.5 rounded-full">{t('bestBadge')}</span>}
                                 </p>
-                                <p className="text-xs text-muted-foreground">{model.description}</p>
+                                <p className="text-xs text-muted-foreground">{t(model.descriptionKey)}</p>
                             </div>
                         </button>
                     ))}
@@ -160,19 +157,20 @@ const AppMenu = ({ features, models, selectedModel, onSelectModel }: { features:
     );
 };
 
-const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => (
-    <div className="flex-1 flex items-center justify-center text-center p-8 flex-col">
-        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-            <Icon name={icon} className="w-10 h-10 text-primary" />
+const ComingSoonPage = ({ title, icon }: { title: string, icon: string }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="flex-1 flex items-center justify-center text-center p-8 flex-col">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                <Icon name={icon} className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">{title}</h1>
+            <p className="mt-2 text-md text-muted-foreground">{t('comingSoonMessage')}</p>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">{title}</h1>
-        <p className="mt-2 text-md text-muted-foreground">This page is under construction. Coming soon!</p>
-    </div>
-);
+    );
+};
 
-
-const App: React.FC = () => {
-    const [lang, setLang] = useState<'en' | 'ar'>('en');
+const AppContent: React.FC = () => {
     const [currentPage, setCurrentPage] = useState('product studio');
     const [selectedModel, setSelectedModel] = useState("Imagen 4.0");
     const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -181,14 +179,22 @@ const App: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [menuCloseTimer, setMenuCloseTimer] = useState<number | null>(null);
 
-    const navItems = ["Product Studio", "Portrait Studio", "Character Studio", "Video Gen", "Canvas Board", "Upscale", "Mini Apps", "Live Assistant", "Gallery", "Pricing"];
     const menuRef = useRef<HTMLDivElement>(null);
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const { setLang } = useContext(LanguageContext);
 
-    useEffect(() => {
-        document.documentElement.lang = lang;
-        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    }, [lang]);
+    const navItems: { key: keyof typeof translations.en, pageId: string, hasMenu?: boolean }[] = [
+        { key: 'navProductStudio', pageId: 'product studio', hasMenu: true },
+        { key: 'navPortraitStudio', pageId: 'portrait studio' },
+        { key: 'navCharacterStudio', pageId: 'character studio' },
+        { key: 'navVideoGen', pageId: 'video gen', hasMenu: true },
+        { key: 'navCanvasBoard', pageId: 'canvas board', hasMenu: true },
+        { key: 'navUpscale', pageId: 'upscale' },
+        { key: 'navMiniApps', pageId: 'mini apps' },
+        { key: 'navLiveAssistant', pageId: 'live assistant' },
+        { key: 'navGallery', pageId: 'gallery' },
+        { key: 'navPricing', pageId: 'pricing' },
+    ];
     
     useEffect(() => {
         if (isMobileMenuOpen) {
@@ -211,9 +217,8 @@ const App: React.FC = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleNavClick = (item: string) => {
-        const page = item.toLowerCase();
-        setCurrentPage(page);
+    const handleNavClick = (pageId: string) => {
+        setCurrentPage(pageId);
         setIsMobileMenuOpen(false);
         setOpenMenu(null);
     }
@@ -303,9 +308,9 @@ const App: React.FC = () => {
                             clearRestoredState={clearRestoredState}
                        />;
             case 'gallery':
-                return <ComingSoonPage title="Gallery" icon="layout-grid" />;
+                return <ComingSoonPage title={t('navGallery')} icon="layout-grid" />;
             case 'pricing':
-                return <ComingSoonPage title="Pricing" icon="credit-card" />;
+                return <ComingSoonPage title={t('navPricing')} icon="credit-card" />;
             default:
                  return <ImagePage 
                             key="default-product-studio"
@@ -315,90 +320,103 @@ const App: React.FC = () => {
     };
 
     return (
-        <LanguageContext.Provider value={{ lang, setLang }}>
-            <div className="h-screen flex flex-col">
-                 <header className="fixed top-0 start-0 end-0 z-40 bg-background/50 backdrop-blur-md border-b border-border/50">
-                    <div className="px-4 flex justify-between items-center h-16">
-                        <div className="flex items-center gap-6">
-                            <a href="#" className="flex items-center" onClick={(e) => { e.preventDefault(); handleNavClick('Product Studio'); }}>
-                                <span className="font-bold text-lg tracking-tight">CRE8 <span className="text-muted-foreground font-normal">by Ziad Ashraf</span></span>
-                            </a>
-                            <nav ref={menuRef} className="hidden md:flex items-center gap-1 bg-card/50 border border-border/50 rounded-full px-2 shadow-sm">
-                                {navItems.map(item => {
-                                    const page = item.toLowerCase();
-                                    const hasMenu = ['Product Studio', 'Video Gen', 'Canvas Board'].includes(item);
-                                    
-                                    const handleMouseEnter = () => {
-                                        if (menuCloseTimer) clearTimeout(menuCloseTimer);
-                                        if (hasMenu) setOpenMenu(item);
-                                    };
-                                    
-                                    const handleMouseLeave = () => {
-                                        if (hasMenu) {
-                                            const timer = window.setTimeout(() => setOpenMenu(null), 150);
-                                            setMenuCloseTimer(timer);
-                                        }
-                                    };
+        <div className="h-screen flex flex-col">
+             <header className="fixed top-0 start-0 end-0 z-40 bg-background/50 backdrop-blur-md border-b border-border/50">
+                <div className="px-4 flex justify-between items-center h-16">
+                    <div className="flex items-center gap-6">
+                        <a href="#" className="flex items-center" onClick={(e) => { e.preventDefault(); handleNavClick('product studio'); }}>
+                            <span className="font-bold text-lg tracking-tight">CRE8 <span className="text-muted-foreground font-normal">{t('byZiadAshraf')}</span></span>
+                        </a>
+                        <nav ref={menuRef} className="hidden md:flex items-center gap-1 bg-card/50 border border-border/50 rounded-full px-2 shadow-sm">
+                            {navItems.map(item => {
+                                const hasMenu = item.hasMenu;
+                                
+                                const handleMouseEnter = () => {
+                                    if (menuCloseTimer) clearTimeout(menuCloseTimer);
+                                    if (hasMenu) setOpenMenu(item.key);
+                                };
+                                
+                                const handleMouseLeave = () => {
+                                    if (hasMenu) {
+                                        const timer = window.setTimeout(() => setOpenMenu(null), 150);
+                                        setMenuCloseTimer(timer);
+                                    }
+                                };
 
-                                    return (
-                                        <div key={item} className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-                                            <button
-                                                onClick={() => handleNavClick(item)}
-                                                className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors flex items-center gap-2 ${currentPage === page ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                            >
-                                                <span>{item}</span>
-                                                {hasMenu && <Icon name="chevron-down" className={`w-3 h-3 transition-transform ${openMenu === item ? 'rotate-180' : ''}`} />}
-                                            </button>
-                                            {hasMenu && openMenu === item && (
-                                                <AppMenu
-                                                    features={menuData[item].features}
-                                                    models={menuData[item].models}
-                                                    selectedModel={selectedModel}
-                                                    onSelectModel={(model) => {
-                                                        setSelectedModel(model);
-                                                        setOpenMenu(null);
-                                                    }}
-                                                />
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </nav>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={toggleLang} className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10 bg-secondary hover:bg-accent text-secondary-foreground">
-                                {lang.toUpperCase()}
-                            </button>
-                            <button className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-semibold h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90">
-                                Sign Up
-                            </button>
-                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 text-muted-foreground">
-                                <Icon name={isMobileMenuOpen ? "close" : "menu"} className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
-                 </header>
-
-                {isMobileMenuOpen && (
-                     <div className="fixed inset-0 top-16 bg-background z-30 md:hidden animate-fade-in">
-                        <nav className="flex flex-col p-4 space-y-2">
-                             {navItems.map(item => (
-                                <button
-                                    key={item}
-                                    onClick={() => handleNavClick(item)}
-                                    className={`w-full text-left p-3 text-lg font-semibold rounded-lg ${currentPage === item.toLowerCase() ? 'bg-muted text-primary' : 'hover:bg-muted'}`}
-                                >
-                                    {item}
-                                </button>
-                            ))}
+                                return (
+                                    <div key={item.key} className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                                        <button
+                                            onClick={() => handleNavClick(item.pageId)}
+                                            className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors flex items-center gap-2 ${currentPage === item.pageId ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                        >
+                                            <span>{t(item.key)}</span>
+                                            {hasMenu && <Icon name="chevron-down" className={`w-3 h-3 transition-transform ${openMenu === item.key ? 'rotate-180' : ''}`} />}
+                                        </button>
+                                        {hasMenu && openMenu === item.key && menuData[item.key as keyof typeof menuData] && (
+                                            <AppMenu
+                                                features={menuData[item.key as keyof typeof menuData].features}
+                                                models={menuData[item.key as keyof typeof menuData].models}
+                                                selectedModel={selectedModel}
+                                                onSelectModel={(model) => {
+                                                    setSelectedModel(model);
+                                                    setOpenMenu(null);
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </nav>
                     </div>
-                )}
-                
-                <div key={currentPage} className="flex-1 flex pt-16 animate-fade-in">
-                     {renderPage()}
+                    <div className="flex items-center gap-2">
+                        <button onClick={toggleLang} className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-medium h-10 w-10 bg-secondary hover:bg-accent text-secondary-foreground">
+                            {lang === 'en' ? 'AR' : 'EN'}
+                        </button>
+                        <button className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-semibold h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90">
+                            {t('signUp')}
+                        </button>
+                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 text-muted-foreground">
+                            <Icon name={isMobileMenuOpen ? "close" : "menu"} className="w-6 h-6" />
+                        </button>
+                    </div>
                 </div>
+             </header>
+
+            {isMobileMenuOpen && (
+                 <div className="fixed inset-0 top-16 bg-background z-30 md:hidden animate-fade-in">
+                    <nav className="flex flex-col p-4 space-y-2">
+                         {navItems.map(item => (
+                            <button
+                                key={item.key}
+                                onClick={() => handleNavClick(item.pageId)}
+                                className={`w-full text-left p-3 text-lg font-semibold rounded-lg ${currentPage === item.pageId ? 'bg-muted text-primary' : 'hover:bg-muted'}`}
+                            >
+                                {t(item.key)}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            )}
+            
+            <div key={currentPage} className="flex-1 flex pt-16 animate-fade-in">
+                 {renderPage()}
             </div>
+        </div>
+    );
+};
+
+
+const App: React.FC = () => {
+    const [lang, setLang] = useState<'en' | 'ar'>('ar');
+
+    useEffect(() => {
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    }, [lang]);
+    
+    return (
+        <LanguageContext.Provider value={{ lang, setLang }}>
+            <AppContent />
         </LanguageContext.Provider>
     );
 };

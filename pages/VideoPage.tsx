@@ -10,7 +10,7 @@ const WelcomeScreen = () => {
             <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
                  <Icon name="video" className="w-12 h-12 text-primary" />
             </div>
-            <h1 className="text-5xl font-bold tracking-tighter text-foreground">Video Generation Studio</h1>
+            <h1 className="text-5xl font-bold tracking-tighter text-foreground">{t('videoGenStudioTitle')}</h1>
             <p className="text-muted-foreground mt-2 max-w-md">{t('video-generator-desc')}</p>
         </div>
     );
@@ -63,7 +63,7 @@ export const VideoPage = ({ selectedModel }: { selectedModel: string }) => {
                          <div className="aspect-video bg-card/50 rounded-lg flex flex-col items-center justify-center text-center p-4">
                             <Icon name="spinner" className="w-10 h-10 text-primary animate-spin"/>
                             <p className="mt-4 font-semibold text-foreground">{loadingMessage}</p>
-                            <p className="text-sm text-muted-foreground">This can take a few minutes...</p>
+                            <p className="text-sm text-muted-foreground">{t('videoGenerationTakesTime')}</p>
                          </div>
                     )}
                     {generatedVideo && (
@@ -74,7 +74,7 @@ export const VideoPage = ({ selectedModel }: { selectedModel: string }) => {
                     {error && (
                         <div className="aspect-video bg-destructive/10 border border-destructive text-destructive rounded-lg flex flex-col items-center justify-center p-4">
                             <Icon name="error" className="w-8 h-8 mb-2" />
-                            <h3 className="font-bold">Generation Failed</h3>
+                            <h3 className="font-bold">{t('generationFailed')}</h3>
                             <p className="text-sm max-w-md text-center">{error}</p>
                         </div>
                     )}
@@ -87,7 +87,7 @@ export const VideoPage = ({ selectedModel }: { selectedModel: string }) => {
                         type="text"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="e.g., A cinematic shot of a majestic whale breaching the ocean at sunset"
+                        placeholder={t('videoPromptPlaceholder')}
                         className="flex-1 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground px-2"
                         disabled={isLoading}
                     />
@@ -96,7 +96,7 @@ export const VideoPage = ({ selectedModel }: { selectedModel: string }) => {
                         disabled={isLoading || !prompt}
                         className="bg-primary text-primary-foreground h-10 px-6 rounded-md text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-opacity"
                     >
-                        {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <>Generate <Icon name="wand" className="w-4 h-4" /></>}
+                        {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <>{t('generate')} <Icon name="wand" className="w-4 h-4" /></>}
                     </button>
                 </div>
             </div>

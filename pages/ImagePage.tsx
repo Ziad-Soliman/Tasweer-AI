@@ -17,6 +17,8 @@ import { StylePresetModal } from '../components/StylePresetModal';
 import { PRESETS } from '../constants/presets';
 import * as geminiService from '../services/geminiService';
 import { useTranslation } from '../App';
+// FIX: Import 'translations' to correctly type translation keys.
+import { translations } from '../lib/translations';
 import { NEGATIVE_PROMPT_PRESETS, SOCIAL_MEDIA_TEMPLATES, PHOTO_STYLES, CAMERA_ZOOMS, SHOT_TYPES, COLOR_TONES, MOCKUP_TYPES, CINEMATIC_LIGHTING_STYLES, CAMERA_PERSPECTIVE_OPTIONS } from '../constants';
 import { FileUpload } from '../components/FileUpload';
 import { Icon } from '../components/Icon';
@@ -45,17 +47,20 @@ interface GeneratedItem {
     isLoading: boolean;
 }
 
-const LoadingCard = () => (
-    <div className="w-full bg-[#111118] border border-border/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
-        <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute w-12 h-12 bg-primary/20 rounded-full animate-pulse opacity-50"></div>
-            <div className="absolute w-5 h-5 bg-pink-500/20 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
-            <div className="absolute w-10 h-10 bg-gradient-to-br from-primary/30 to-purple-700/30 rounded-full"></div>
+const LoadingCard = () => {
+    const { t } = useTranslation();
+    return (
+        <div className="w-full bg-[#111118] border border-border/50 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="absolute w-12 h-12 bg-primary/20 rounded-full animate-pulse opacity-50"></div>
+                <div className="absolute w-5 h-5 bg-pink-500/20 rounded-full animate-pulse opacity-50" style={{ animationDelay: '0.3s' }}></div>
+                <div className="absolute w-10 h-10 bg-gradient-to-br from-primary/30 to-purple-700/30 rounded-full"></div>
+            </div>
+            <p className="mt-6 font-semibold text-foreground tracking-wide">{t('forgingNewRealities')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('renderingLandscapes')}</p>
         </div>
-        <p className="mt-6 font-semibold text-foreground tracking-wide">Forging New Realities ...</p>
-        <p className="mt-1 text-sm text-muted-foreground">Rendering impossible landscapes...</p>
-    </div>
-);
+    )
+};
 
 
 interface ImageCardProps {
@@ -191,11 +196,11 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
     const numImages: GenerationSettings['numberOfImages'][] = [1, 2, 3, 4];
-    const generationModes: {id: GenerationMode, name: string, icon: string}[] = [
-        {id: 'product', name: 'Product', icon: 'package'},
-        {id: 'mockup', name: 'Mockup', icon: 'shirt'},
-        {id: 'social', name: 'Social', icon: 'users'},
-        {id: 'design', name: 'Design', icon: 'sparkles'},
+    const generationModes: {id: GenerationMode, nameKey: keyof typeof translations.en, icon: string}[] = [
+        {id: 'product', nameKey: 'modeProduct', icon: 'package'},
+        {id: 'mockup', nameKey: 'modeMockup', icon: 'shirt'},
+        {id: 'social', nameKey: 'modeSocial', icon: 'users'},
+        {id: 'design', nameKey: 'modeDesign', icon: 'sparkles'},
     ];
     
     useEffect(() => {
@@ -514,7 +519,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
         }, t('loadingExtractingPalette'), "Palette extraction failed.");
     };
 
-    const mainImageLabel = settings.generationMode === 'product' || settings.generationMode === 'mockup' ? 'Product Image' : 'Main Subject Image';
+    const mainImageLabel = settings.generationMode === 'product' || settings.generationMode === 'mockup' ? t('productImageLabel') : t('mainSubjectImageLabel');
 
     if (selectedImageIndex !== null) {
         return (
@@ -537,7 +542,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                     onGenerateCopy={() => handleGenerateCopy(false)}
                 />
                  <button onClick={() => setSelectedImageIndex(null)} className="absolute top-20 left-4 z-50 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 hover:bg-accent backdrop-blur-sm text-sm font-medium">
-                    <Icon name="arrow-left" className="w-4 h-4"/> Back to Gallery
+                    <Icon name="arrow-left" className="w-4 h-4"/> {t('backToGallery')}
                 </button>
             </div>
         )
@@ -549,8 +554,8 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
             <div className="bg-card/50 backdrop-blur-md border-b md:border-b-0 md:border-r border-border/50 md:w-[380px] flex-shrink-0 flex flex-col">
                  <div className="p-4 border-b flex justify-between items-center">
                     <div>
-                        <h2 className="text-lg font-bold">Product Studio</h2>
-                        <p className="text-sm text-muted-foreground mt-1">Generate professional product photos, mockups, and more.</p>
+                        <h2 className="text-lg font-bold">{t('productStudio')}</h2>
+                        <p className="text-sm text-muted-foreground mt-1">{t('productStudioDesc')}</p>
                     </div>
                     <Tooltip text={t('startOver')}>
                         <button onClick={() => setIsStartOverModalOpen(true)} className="p-2 rounded-md hover:bg-accent text-muted-foreground">
@@ -568,14 +573,14 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                             }}
                             className={`flex-1 text-center px-2 py-1.5 text-xs font-semibold rounded-md transition-colors flex flex-col items-center gap-1 ${settings.generationMode === mode.id ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
                                 <Icon name={mode.icon} className="w-4 h-4" />
-                                {mode.name}
+                                {t(mode.nameKey)}
                             </button>
                         ))}
                     </div>
 
                     {settings.generationMode === 'mockup' && (
                         <div className="animate-fade-in">
-                            <Label>Mockup Type</Label>
+                            <Label>{t('mockupType')}</Label>
                             <select
                                 value={settings.mockupType}
                                 onChange={(e) => {
@@ -593,7 +598,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
 
                     {settings.generationMode === 'social' && (
                         <div className="animate-fade-in">
-                            <Label>Social Media Template</Label>
+                            <Label>{t('socialMediaTemplate')}</Label>
                             <select
                                 value={settings.selectedSocialTemplateId || ''}
                                 onChange={(e) => {
@@ -630,7 +635,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                     )}
                      {['social', 'design'].includes(settings.generationMode) && !productImage && (
                         <div>
-                            <Label>Core Subject / Idea</Label>
+                            <Label>{t('mainSubjectImageLabel')}</Label>
                             <textarea
                                 value={settings.productDescription}
                                 onChange={(e) => setSettings(s => ({ ...s, productDescription: e.target.value }))}
@@ -643,60 +648,60 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                     <div>
                         <div className="flex justify-between items-center mb-2">
                              <Label className="flex items-center gap-2 font-semibold text-foreground mb-0">
-                                <Icon name="pencil" className="w-4 h-4 text-muted-foreground" /> Prompt
+                                <Icon name="pencil" className="w-4 h-4 text-muted-foreground" /> {t('prompt')}
                             </Label>
                             <Tooltip text={t('enhancePrompt')}><button onClick={handleEnhancePrompt} disabled={isEnhancingPrompt || !sceneDescription} className="p-1 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-50"><Icon name="wand" className={`w-4 h-4 ${isEnhancingPrompt ? 'animate-pulse' : ''}`}/></button></Tooltip>
                         </div>
                         <SceneSuggestions templates={suggestions} onSelect={(s) => { setSceneDescription(s.prompt); isPromptDirty.current = true; }} isLoading={isLoadingSuggestions} />
                          <textarea ref={textareaRef} value={sceneDescription} onChange={(e) => {setSceneDescription(e.target.value); isPromptDirty.current = true;}}
-                            placeholder="Describe your scene..." className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[100px] resize-none mt-2"
+                            placeholder={t('promptPlaceholder')} className="w-full bg-input border border-border rounded-md p-2 text-sm min-h-[100px] resize-none mt-2"
                             rows={3} disabled={isLoading || !!promptGenerationMessage} onFocus={() => isPromptDirty.current = true} />
                     </div>
 
                     <div>
-                        <p className="text-sm font-semibold text-muted-foreground mb-2">Advanced Mode</p>
+                        <p className="text-sm font-semibold text-muted-foreground mb-2">{t('advancedMode')}</p>
                         <div className="bg-card border border-border rounded-lg p-2 space-y-2">
-                             <SelectControl icon="cube" label="AI Model" value={selectedModel} onChange={() => {}} children={<option>{selectedModel}</option>} />
-                             <SelectControl icon="aspect-ratio" label="Aspect Ratio" value={settings.aspectRatio} onChange={e => setSettings(s => ({...s, aspectRatio: e.target.value as AspectRatio}))}>
+                             <SelectControl icon="cube" label={t('aiModel')} value={selectedModel} onChange={() => {}} children={<option>{selectedModel}</option>} />
+                             <SelectControl icon="aspect-ratio" label={t('aspectRatio')} value={settings.aspectRatio} onChange={e => setSettings(s => ({...s, aspectRatio: e.target.value as AspectRatio}))}>
                                 {(['1:1', '4:5', '16:9', '9:16', '4:3', '3:4'] as AspectRatio[]).map(r => <option key={r} value={r}>{r}</option>)}
                             </SelectControl>
                              <SelectControl icon="image" label={t('numberOfImages')} value={String(settings.numberOfImages)} onChange={e => setSettings(s => ({...s, numberOfImages: parseInt(e.target.value, 10) as GenerationSettings['numberOfImages']}))}>
                                 {numImages.map(num => <option key={num} value={num}>{num}</option>)}
                             </SelectControl>
-                            <SelectControl icon="wand" label="Style" value={settings.photoStyle} onChange={e => setSettings(s => ({...s, photoStyle: e.target.value}))}>
+                            <SelectControl icon="wand" label={t('style')} value={settings.photoStyle} onChange={e => setSettings(s => ({...s, photoStyle: e.target.value}))}>
                                 {PHOTO_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
                             </SelectControl>
-                            <SelectControl icon="sun" label="Lighting" value={settings.lightingStyle} onChange={e => setSettings(s => ({...s, lightingStyle: e.target.value}))}>
+                            <SelectControl icon="sun" label={t('lighting')} value={settings.lightingStyle} onChange={e => setSettings(s => ({...s, lightingStyle: e.target.value}))}>
                                 {CINEMATIC_LIGHTING_STYLES.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
                             </SelectControl>
-                            <SelectControl icon="camera" label="Perspective" value={settings.cameraPerspective} onChange={e => setSettings(s => ({...s, cameraPerspective: e.target.value}))}>
+                            <SelectControl icon="camera" label={t('perspective')} value={settings.cameraPerspective} onChange={e => setSettings(s => ({...s, cameraPerspective: e.target.value}))}>
                                 {CAMERA_PERSPECTIVE_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
                             </SelectControl>
                              <div className="p-2">
-                                 <Label>Negative Prompt</Label>
-                                <input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))} placeholder="e.g. text, watermark, blurry..." className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"/>
+                                 <Label>{t('negativePrompt')}</Label>
+                                <input type="text" value={settings.negativePrompt} onChange={(e) => setSettings(s => ({...s, negativePrompt: e.target.value}))} placeholder={t('negativePromptPlaceholder')} className="w-full bg-input border border-border rounded-md px-2 py-1.5 text-sm"/>
                             </div>
                         </div>
                     </div>
 
                      <div>
-                         <Label>Style Reference Image</Label>
+                         <Label>{t('styleReferenceImage')}</Label>
                         <div className="flex gap-2 items-start">
                             {styleRefImagePreview && (
                                 <img src={styleRefImagePreview} alt="Style Preview" className="w-20 h-20 object-contain rounded-md border bg-muted flex-shrink-0" />
                             )}
                             <div className="flex-1">
-                                <FileUpload onFileUpload={setStyleRefImage} label="Upload style reference" uploadedFileName={styleRefImage?.name} onClear={() => setStyleRefImage(null)} />
+                                <FileUpload onFileUpload={setStyleRefImage} label={t('styleReferenceImage')} uploadedFileName={styleRefImage?.name} onClear={() => setStyleRefImage(null)} />
                             </div>
                         </div>
                     </div>
                     <div>
-                         <Label className="flex items-center gap-2 mb-2 font-semibold text-foreground"><Icon name="sparkles" className="w-4 h-4 text-muted-foreground" /> Key Objects</Label>
+                         <Label className="flex items-center gap-2 mb-2 font-semibold text-foreground"><Icon name="sparkles" className="w-4 h-4 text-muted-foreground" /> {t('keyObjects')}</Label>
                         <div className="space-y-3">
                              {settings.keyObjects.map(obj => (
                                  <div key={obj.id} className="bg-input/50 p-2 rounded-md space-y-2">
                                     <div className="flex items-center gap-2">
-                                        <input type="text" placeholder="Object name" value={obj.name} onChange={e => handleUpdateKeyObject(obj.id, { name: e.target.value })} className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-sm"/>
+                                        <input type="text" placeholder={t('objectName')} value={obj.name} onChange={e => handleUpdateKeyObject(obj.id, { name: e.target.value })} className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-sm"/>
                                         <button onClick={() => handleRemoveKeyObject(obj.id)} className="p-1 text-muted-foreground hover:text-destructive"><Icon name="close" className="w-4 h-4"/></button>
                                     </div>
                                     <div className="flex gap-2 items-center">
@@ -704,13 +709,13 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                                             <img src={keyObjectPreviews[obj.id]} alt={obj.name} className="w-12 h-12 object-contain rounded-md border bg-muted flex-shrink-0" />
                                         )}
                                         <div className="flex-1">
-                                            <FileUpload onFileUpload={file => handleUpdateKeyObject(obj.id, { image: file })} label="Object Image" uploadedFileName={obj.image?.name} onClear={() => handleUpdateKeyObject(obj.id, { image: null })} />
+                                            <FileUpload onFileUpload={file => handleUpdateKeyObject(obj.id, { image: file })} label={t('objectImage')} uploadedFileName={obj.image?.name} onClear={() => handleUpdateKeyObject(obj.id, { image: null })} />
                                         </div>
                                     </div>
                                 </div>
                              ))}
                         </div>
-                        <button onClick={handleAddKeyObject} className="text-xs font-semibold text-primary mt-2">+ Add Object</button>
+                        <button onClick={handleAddKeyObject} className="text-xs font-semibold text-primary mt-2">{t('addObject')}</button>
                     </div>
                 </div>
 
@@ -726,7 +731,7 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                  <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-8">
                     {error && (
                         <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-md mb-6 relative">
-                            <h3 className="font-bold">Generation Failed</h3>
+                            <h3 className="font-bold">{t('generationFailed')}</h3>
                             <p className="text-sm">{error}</p>
                             <button onClick={() => setError(null)} className="absolute top-2 right-2 p-1"><Icon name="close" className="w-4 h-4"/></button>
                         </div>
@@ -746,8 +751,8 @@ export const ImagePage: React.FC<ImagePageProps> = (props) => {
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-8 animate-fade-in">
                             <Icon name="image" className="w-24 h-24 text-primary/20" />
-                            <h2 className="text-2xl font-bold mt-4 text-foreground">Image Studio</h2>
-                            <p className="max-w-sm mt-2">Configure your generation in the left panel. Your results will appear here.</p>
+                            <h2 className="text-2xl font-bold mt-4 text-foreground">{t('imageStudio')}</h2>
+                            <p className="max-w-sm mt-2">{t('imageStudioDesc')}</p>
                         </div>
                     )}
                 </div>

@@ -103,7 +103,7 @@ export const EditPage: React.FC = () => {
             const resultBase64 = await geminiService.magicEditImage(imageWithMask, prompt);
             setResultImage(`data:image/png;base64,${resultBase64}`);
         } catch(e) {
-            setError(e instanceof Error ? e.message : "Magic Edit failed.");
+            setError(e instanceof Error ? e.message : t('magicEditFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -114,8 +114,8 @@ export const EditPage: React.FC = () => {
             {!imagePreview ? (
                 <div className="m-auto flex flex-col items-center text-center max-w-md">
                     <Icon name="edit" className="w-24 h-24 text-primary/50" />
-                    <h1 className="text-4xl font-bold mt-4">Canvas Board</h1>
-                    <p className="text-muted-foreground mt-2">Upload an image, mask an area, and describe your changes to transform your pictures with AI.</p>
+                    <h1 className="text-4xl font-bold mt-4">{t('canvasBoardTitle')}</h1>
+                    <p className="text-muted-foreground mt-2">{t('canvasBoardDesc')}</p>
                     <div className="w-full mt-8">
                         <FileUpload onFileUpload={handleFileUpload} label={t('uploadToEdit')} />
                     </div>
