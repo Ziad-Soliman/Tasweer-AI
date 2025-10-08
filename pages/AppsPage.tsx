@@ -30,7 +30,6 @@ import AIPatternGenerator from './miniapps/AIPatternGenerator';
 import AICharacterConceptGenerator from './miniapps/AICharacterConceptGenerator';
 import AIProductPackagingDesigner from './miniapps/AIProductPackagingDesigner';
 import AIStoryboardGenerator from './miniapps/AIStoryboardGenerator';
-// FIX: Changed to a default import because NeuroSalesCopywriter now has a default export.
 import NeuroSalesCopywriter from './miniapps/NeuroSalesCopywriter';
 import SketchToImage from './miniapps/SketchToImage';
 import LipsyncStudio from './miniapps/LipsyncStudio';

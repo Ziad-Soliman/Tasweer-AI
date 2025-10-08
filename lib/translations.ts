@@ -602,7 +602,6 @@ export const translations = {
     characterGenStudioDesc: 'Use the controls on the left to describe your character, set the style, and generate stunning concept art.',
     characterConsistencyTitle: 'Character Consistency',
     characterConsistencyDesc: 'Upload a clear portrait of your character to generate consistent images.',
-    // FIX: Removed duplicate key. The other instance was conflicting.
     productImageLabel: 'Product Image',
     mainSubjectImageLabel: 'Main Subject Image',
     forgingNewRealities: 'Forging New Realities ...',
@@ -725,7 +724,6 @@ export const translations = {
     step6Title: 'Weave in Hypnotic Suggestions',
     step7Title: 'Final Review & Optimization',
     inputDetails: '1. Input Details',
-    // FIX: Added missing translation key used in NeuroSalesCopywriter.tsx.
     productService: 'Product / Service',
     storytellingAngle: 'Storytelling Angle',
     buyingMotivations: 'Buying Motivations & Pain Points',
@@ -756,10 +754,8 @@ export const translations = {
     drawingTools: "Drawing Tools",
     color: "Color",
     aiPrompt: "AI Prompt",
-// FIX: Renamed the 'description' key to 'aiPromptDescription' to avoid duplication.
     aiPromptDescription: "Description",
     generateFromSketch: "Generate from Sketch",
-    // FIX: Add missing key used in AICharacterConceptGenerator and SketchToImage.
     uploadReferenceImage: 'Upload Reference Image',
 
     // Live Page Personas
@@ -1391,7 +1387,6 @@ export const translations = {
     characterGenStudioDesc: 'استخدم عناصر التحكم على اليسار لوصف شخصيتك وتعيين النمط وإنشاء فن تصوري مذهل.',
     characterConsistencyTitle: 'تناسق الشخصية',
     characterConsistencyDesc: 'ارفع صورة واضحة لشخصيتك لإنشاء صور متناسقة.',
-    // FIX: Removed duplicate key. The other instance was conflicting.
     productImageLabel: 'صورة المنتج',
     mainSubjectImageLabel: 'صورة الموضوع الرئيسي',
     forgingNewRealities: 'صياغة حقائق جديدة ...',
@@ -1514,8 +1509,6 @@ export const translations = {
     step6Title: 'دمج الاقتراحات التنويمية',
     step7Title: 'المراجعة النهائية والتحسين',
     inputDetails: '1. تفاصيل الإدخال',
-    // FIX: Added missing translation key used in NeuroSalesCopywriter.tsx.
-    productService: 'المنتج / الخدمة',
     storytellingAngle: 'زاوية سرد القصة',
     buyingMotivations: 'دوافع الشراء ونقاط الألم',
     generationSteps: '2. خطوات الإنشاء',
@@ -1539,15 +1532,15 @@ export const translations = {
     storyTypeCustomer: "قصة نجاح عميل",
     storyTypeFounder: "رحلة المؤسس",
     storyTypeHistorical: "موازاة تاريخية",
+    productService: 'المنتج / الخدمة',
+
 
     // SketchToImage
     drawingTools: "أدوات الرسم",
     color: "اللون",
     aiPrompt: "أمر الذكاء الاصطناعي",
-// FIX: Renamed the 'description' key to 'aiPromptDescription' to avoid duplication.
     aiPromptDescription: "الوصف",
     generateFromSketch: "إنشاء من الرسم",
-    // FIX: Add missing key used in AICharacterConceptGenerator and SketchToImage.
     uploadReferenceImage: 'رفع صورة مرجعية',
 
     // Live Page Personas
