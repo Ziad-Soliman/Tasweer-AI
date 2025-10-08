@@ -92,8 +92,7 @@ const Controls: React.FC<{
 };
 
 
-// FIX: Changed to a named export to resolve module resolution error in AppsPage.tsx.
-export const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
+const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -274,3 +273,5 @@ export const VideoAdScripter: React.FC<MiniAppProps> = ({ onBack }) => {
         </MiniAppLayout>
     );
 };
+
+export default VideoAdScripter;

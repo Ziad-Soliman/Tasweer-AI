@@ -9,8 +9,7 @@ import PaletteExtractor from './miniapps/PaletteExtractor';
 import ImageExpander from './miniapps/ImageExpander';
 import ProductNamer from './miniapps/ProductNamer';
 import LogoIdeator from './miniapps/LogoIdeator';
-// FIX: Changed to named import to resolve module resolution error.
-import { VideoAdScripter } from './miniapps/VideoAdScripter';
+import VideoAdScripter from './miniapps/VideoAdScripter';
 import AIPhotoshootDirector from './miniapps/AIPhotoshootDirector';
 import BrandVoiceGuide from './miniapps/BrandVoiceGuide';
 import YouTubeThumbnailGenerator from './miniapps/YouTubeThumbnailGenerator';
