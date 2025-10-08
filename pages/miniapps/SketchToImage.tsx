@@ -64,7 +64,8 @@ const Controls: React.FC<{
             <div className="space-y-4">
                 <h3 className="font-semibold text-foreground">{t('aiPrompt')}</h3>
                 <div>
-                    <label className="text-sm text-muted-foreground">{t('description')}</label>
+                    {/* FIX: Use the unique translation key 'aiPromptDescription' instead of the duplicated 'description'. */}
+                    <label className="text-sm text-muted-foreground">{t('aiPromptDescription')}</label>
                     <textarea value={props.prompt} onChange={(e) => props.setPrompt(e.target.value)} placeholder={t('sketchPrompt')} className="w-full bg-background border-input rounded-md p-2 text-sm min-h-[100px] resize-none mt-1"/>
                 </div>
                 <div>

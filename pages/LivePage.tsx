@@ -175,6 +175,7 @@ interface ARPlane {
 
 // --- Main Component ---
 export const LivePage = () => {
+    const { t } = useTranslation();
     const [conversationState, setConversationState] = useState<ConversationState>('idle');
     const [videoSource, setVideoSource] = useState<VideoSource | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -280,7 +281,7 @@ export const LivePage = () => {
                     // Stop the display stream if we can't get mic audio, as the API needs it.
                     displayStream.getTracks().forEach(track => track.stop());
                     if (micError instanceof Error && (micError.name === 'NotAllowedError' || micError.name === 'PermissionDeniedError')) {
-                        throw new Error("Microphone access is required for screen sharing. Please grant permission and try again.");
+                        throw new Error(t('liveCameraError'));
                     }
                     throw micError;
                 }
@@ -454,7 +455,7 @@ export const LivePage = () => {
             setError(errorMessage);
             setConversationState('error');
         }
-    }, [activePersona, stopConversation, conversationState, isVisualContextEnabled]);
+    }, [activePersona, stopConversation, conversationState, isVisualContextEnabled, t]);
 
     useEffect(() => {
         if (conversationState !== 'idle' && conversationState !== 'error' && conversationState !== 'connecting' && videoSource) {
@@ -470,17 +471,18 @@ export const LivePage = () => {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-6 animate-fade-in">
                 <div className="z-10">
-                    <h1 className="text-5xl font-bold tracking-tighter text-foreground">Live Creative Studio</h1>
-                    <p className="text-muted-foreground mt-2 max-w-md mx-auto">Your real-time AI collaborator for design, coding, storytelling, and more.</p>
+                    <h1 className="text-5xl font-bold tracking-tighter text-foreground">{t('liveStudioTitle')}</h1>
+                    <p className="text-muted-foreground mt-2 max-w-md mx-auto">{t('liveStudioDesc')}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 z-10">
                     <button onClick={() => startConversation('camera')} className="px-8 py-4 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center gap-3 text-lg hover:bg-primary/90 transition-colors">
-                        <Icon name="camera" className="w-6 h-6"/> Use Camera
+                        <Icon name="camera" className="w-6 h-6"/> {t('useCamera')}
                     </button>
                     <button onClick={() => startConversation('display')} className="px-8 py-4 bg-secondary text-secondary-foreground rounded-lg font-semibold flex items-center gap-3 text-lg hover:bg-accent transition-colors">
-                        <Icon name="desktop" className="w-6 h-6"/> Share Screen
+                        <Icon name="desktop" className="w-6 h-6"/> {t('shareScreen')}
                     </button>
                 </div>
+                {error && <p className="text-destructive mt-4">{error}</p>}
             </div>
         )
     }
@@ -492,12 +494,12 @@ export const LivePage = () => {
                 {/* Left Column */}
                 <div className="flex flex-col gap-4 min-h-0">
                     <div className="relative z-10 bg-card/50 backdrop-blur-md border border-border/50 rounded-lg p-3 space-y-2">
-                        <h3 className="text-lg font-semibold">Active Persona</h3>
+                        <h3 className="text-lg font-semibold">{t('activePersona')}</h3>
                          <div ref={personaDropdownRef} className="relative">
                             <button onClick={() => setIsPersonaDropdownOpen(o => !o)} className="w-full px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap bg-primary text-primary-foreground flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <Icon name={creativePersonas[activePersona].icon} className="w-4 h-4" />
-                                    {activePersona}
+                                    {t(activePersona.replace(/\s/g, '') as any) || activePersona}
                                 </div>
                                 <Icon name="chevron-down" className="w-4 h-4" />
                             </button>
@@ -511,7 +513,7 @@ export const LivePage = () => {
                                             title={systemInstruction}
                                         >
                                             <Icon name={icon} className="w-4 h-4 text-muted-foreground" />
-                                            <span>{id}</span>
+                                            <span>{t(id.replace(/\s/g, '') as any) || id}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -521,12 +523,12 @@ export const LivePage = () => {
                     </div>
 
                     <div className="bg-card/50 backdrop-blur-md border border-border/50 rounded-lg flex flex-col flex-1 min-h-0">
-                        <h3 className="text-md font-semibold p-3 border-b border-border/50">Live Transcription</h3>
+                        <h3 className="text-md font-semibold p-3 border-b border-border/50">{t('liveTranscription')}</h3>
                         <div ref={transcriptionScrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 text-sm">
-                            {transcriptions.length === 0 && <p className="text-muted-foreground text-center pt-4">Conversation will appear here...</p>}
+                            {transcriptions.length === 0 && <p className="text-muted-foreground text-center pt-4">{t('transcriptionPlaceholder')}</p>}
                             {transcriptions.map(t => (
                                 <div key={t.id} className="animate-fade-in">
-                                    <strong className={t.role === 'user' ? 'text-blue-400' : 'text-primary'}>{t.role === 'user' ? 'You' : 'AI'}:</strong> {t.text}
+                                    <strong className={t.role === 'user' ? 'text-blue-400' : 'text-primary'}>{t.role === 'user' ? t('yourTurn') : t('aiTurn')}:</strong> {t.text}
                                 </div>
                             ))}
                         </div>
@@ -575,11 +577,14 @@ export const LivePage = () => {
                     
                     <div className="flex flex-col flex-1 gap-4 min-h-0 bg-card/50 backdrop-blur-md border border-border/50 rounded-lg">
                         <div className="p-4 border-b border-border/50 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold flex items-center gap-2"><Icon name="sparkles" className="w-5 h-5 text-primary"/> AI Insights</h3>
-                            <ToggleSwitch checked={isVisualContextEnabled} onChange={setIsVisualContextEnabled} label="Enable Visual Context" />
+                            <h3 className="text-lg font-semibold flex items-center gap-2"><Icon name="sparkles" className="w-5 h-5 text-primary"/> {t('aiInsights')}</h3>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">{t('enableVisualContext')}</span>
+                                <ToggleSwitch checked={isVisualContextEnabled} onChange={setIsVisualContextEnabled} label={t('enableVisualContext')} />
+                            </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {aiInsights.length === 0 && <p className="text-muted-foreground text-center pt-10">Insights from your AI assistant will appear here.</p>}
+                            {aiInsights.length === 0 && <p className="text-muted-foreground text-center pt-10">{t('insightsPlaceholder')}</p>}
                             {aiInsights.map(insight => <InsightCard key={insight.id} insight={insight} />)}
                         </div>
                         <div className="p-4 border-t border-border/50">
@@ -588,7 +593,7 @@ export const LivePage = () => {
                                 className={`w-full rounded-md font-semibold text-lg hover:opacity-90 transition-all flex items-center justify-center gap-3 px-8 py-3 shadow-lg ring-1 ring-white/20 bg-red-600`}
                             >
                                 <Icon name={'mic'} className={`w-6 h-6`} />
-                                End Session
+                                {t('endSession')}
                             </button>
                         </div>
                     </div>
@@ -600,6 +605,7 @@ export const LivePage = () => {
 
 const InsightCard: React.FC<{insight: AIInsight}> = ({ insight }) => {
     const { type, data, persona } = insight;
+    const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
 
     const handleCopy = (text: string) => {
@@ -623,7 +629,7 @@ const InsightCard: React.FC<{insight: AIInsight}> = ({ insight }) => {
                 <div>
                     <div className="flex justify-between items-center mb-1">
                          <p className="text-xs font-semibold">{data.component} ({data.language})</p>
-                         <Tooltip text={copied ? "Copied!" : "Copy code"}>
+                         <Tooltip text={copied ? t('copied') : t('copyCode')}>
                              <button onClick={() => handleCopy(data.code)} className="p-1 text-muted-foreground hover:text-foreground"><Icon name={copied ? "check" : "copy"} className="w-3.5 h-3.5"/></button>
                          </Tooltip>
                     </div>

@@ -9,9 +9,10 @@ interface FileUploadProps {
     onClear?: () => void;
     disabled?: boolean;
     disabledReason?: string;
+    accept?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, uploadedFileName, onClear, disabled, disabledReason }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, uploadedFileName, onClear, disabled, disabledReason, accept = "image/png, image/jpeg, image/webp" }) => {
     const [isDragging, setIsDragging] = useState(false);
     const { t } = useTranslation();
 
@@ -95,7 +96,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, label, upl
                     </>
                 )}
             </div>
-            <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" disabled={disabled} />
+            <input type="file" className="hidden" onChange={handleFileChange} accept={accept} disabled={disabled} />
         </label>
     );
 };

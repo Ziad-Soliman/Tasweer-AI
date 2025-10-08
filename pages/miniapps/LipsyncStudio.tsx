@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MiniAppLayout from './shared/MiniAppLayout';
+import { FileUpload } from '../../components/FileUpload';
 import { Icon } from '../../components/Icon';
 import * as geminiService from '../../services/geminiService';
 import { useTranslation } from '../../App';
@@ -8,8 +9,9 @@ interface MiniAppProps {
     onBack: () => void;
 }
 
-const AIVideoGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
-    const [prompt, setPrompt] = useState('');
+const LipsyncStudio: React.FC<MiniAppProps> = ({ onBack }) => {
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [audioFile, setAudioFile] = useState<File | null>(null);
     const [resultUrl, setResultUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
@@ -17,7 +19,7 @@ const AIVideoGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
     const { t } = useTranslation();
 
     const handleGenerate = async () => {
-        if (!prompt) return;
+        if (!avatarFile || !audioFile) return;
         setIsLoading(true);
         setError(null);
         setResultUrl(null);
@@ -34,7 +36,7 @@ const AIVideoGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
         }, 5000);
 
         try {
-            const url = await geminiService.generateVideoFromText(prompt);
+            const url = await geminiService.generateLipsyncVideo(avatarFile, audioFile);
             setResultUrl(url);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to generate video.");
@@ -47,30 +49,36 @@ const AIVideoGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
 
     return (
         <MiniAppLayout
-            title={t('video-generator-title')}
-            description={t('video-generator-desc')}
+            title={t('lipsync-studio-title')}
+            description={t('lipsync-studio-desc')}
             onBack={onBack}
         >
             <div className="max-w-4xl mx-auto flex flex-col gap-8">
-                <div className="bg-card border p-6 rounded-lg flex flex-col gap-4">
-                     <div>
-                        <label className="block text-sm font-medium text-foreground mb-1.5">{t('videoPrompt')}</label>
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder={t('videoPromptPlaceholder')}
-                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-24 resize-none"
-                        />
-                    </div>
-                     <button
+                <div className="grid md:grid-cols-2 gap-8 items-start">
+                    <FileUpload
+                        onFileUpload={setAvatarFile}
+                        label={t('uploadAvatar')}
+                        uploadedFileName={avatarFile?.name}
+                        onClear={() => setAvatarFile(null)}
+                    />
+                    <FileUpload
+                        onFileUpload={setAudioFile}
+                        label={t('uploadAudio')}
+                        uploadedFileName={audioFile?.name}
+                        onClear={() => setAudioFile(null)}
+                        accept="audio/mp3, audio/wav, audio/mpeg"
+                    />
+                </div>
+                 <div className="text-center">
+                    <button
                         onClick={handleGenerate}
-                        disabled={!prompt || isLoading}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2 self-start"
+                        disabled={!avatarFile || !audioFile || isLoading}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium h-12 px-6 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 gap-2"
                     >
-                        {isLoading ? ( <Icon name="spinner" className="animate-spin w-5 h-5" /> ) : ( <Icon name="video" className="w-5 h-5" /> )}
-                        <span>{isLoading ? loadingMessage : t('generateVideo')}</span>
+                        {isLoading ? ( <Icon name="spinner" className="animate-spin w-5 h-5" /> ) : ( <Icon name="mic" className="w-5 h-5" /> )}
+                        <span>{isLoading ? loadingMessage : t('generateLipsyncVideo')}</span>
                     </button>
-                    {error && <p className="text-sm text-destructive">{error}</p>}
+                    {error && <p className="text-sm text-destructive text-center mt-4">{error}</p>}
                 </div>
 
                 {isLoading && (
@@ -84,7 +92,7 @@ const AIVideoGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                 {resultUrl && (
                     <div className="animate-fade-in space-y-4">
                         <h3 className="text-lg font-semibold text-center text-foreground">{t('result')}</h3>
-                        <video src={resultUrl} controls autoPlay loop className="w-full max-w-2xl mx-auto rounded-lg shadow-lg" />
+                        <video src={resultUrl} controls autoPlay loop className="w-full max-w-lg mx-auto rounded-lg shadow-lg" />
                     </div>
                 )}
             </div>
@@ -92,4 +100,4 @@ const AIVideoGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
     );
 };
 
-export default AIVideoGenerator;
+export default LipsyncStudio;

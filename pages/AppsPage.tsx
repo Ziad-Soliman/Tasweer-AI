@@ -34,6 +34,7 @@ import AIStoryboardGenerator from './miniapps/AIStoryboardGenerator';
 // FIX: Changed to a default import because NeuroSalesCopywriter now has a default export.
 import NeuroSalesCopywriter from './miniapps/NeuroSalesCopywriter';
 import SketchToImage from './miniapps/SketchToImage';
+import LipsyncStudio from './miniapps/LipsyncStudio';
 import { HistoryItem } from '../types';
 import { Icon } from '../components/Icon';
 
@@ -57,6 +58,13 @@ const miniApps: {
         descriptionKey: 'neurosales-copywriter-desc',
         imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 256 144' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='256' height='144' fill='%2318181b'/%3e%3cdefs%3e%3cfilter id='s' x='-20%25' y='-20%25' width='140%25' height='140%25'%3e%3cfeGaussianBlur stdDeviation='4'/%3e%3c/filter%3e%3c/defs%3e%3cg filter='url(%23s)' fill-rule='evenodd' clip-rule='evenodd'%3e%3cpath d='M128 32C106.909 32 90 48.9086 90 70V80C90 91.0457 98.9543 100 110 100H115V112H141V100H146C157.046 100 166 91.0457 166 80V70C166 48.9086 149.091 32 128 32Z' stroke='%2380FF00' stroke-width='4'/%3e%3cpath d='M121 70H135' stroke='%2380FF00' stroke-width='3' stroke-linecap='round'/%3e%3cpath d='M118 78H138' stroke='%23a1a3b3' stroke-width='3' stroke-linecap='round'/%3e%3cpath d='M115 86H141' stroke='%23a1a3b3' stroke-width='3' stroke-linecap='round'/%3e%3c/g%3e%3c/svg%3e`,
         component: NeuroSalesCopywriter
+    },
+    { 
+        id: 'lipsync-studio', 
+        titleKey: 'lipsync-studio-title',
+        descriptionKey: 'lipsync-studio-desc',
+        imageUrl: `data:image/svg+xml,%3csvg viewBox='0 0 256 144' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='256' height='144' fill='%2318181b'/%3e%3cdefs%3e%3cfilter id='s' x='-20%25' y='-20%25' width='140%25' height='140%25'%3e%3cfeGaussianBlur stdDeviation='4'/%3e%3c/filter%3e%3c/defs%3e%3cg filter='url(%23s)'%3e%3ccircle cx='128' cy='62' r='20' stroke='%23a1a3b3' stroke-width='4'/%3e%3cpath d='M116 92C122 102 134 102 140 92' stroke='%2380FF00' stroke-width='4' stroke-linecap='round'/%3e%3cpath d='M90 72H105' stroke='%23a1a3b3' stroke-width='4' stroke-linecap='round'/%3e%3cpath d='M151 72H166' stroke='%23a1a3b3' stroke-width='4' stroke-linecap='round'/%3e%3c/g%3e%3c/svg%3e`,
+        component: LipsyncStudio
     },
     { 
         id: 'video-generator', 

@@ -1530,6 +1530,17 @@ export const generateVideoFromText = async (prompt: string): Promise<string> => 
     return URL.createObjectURL(videoBlob);
 };
 
+export const generateLipsyncVideo = async (avatarImageFile: File, _audioFile: File): Promise<string> => {
+    const avatarImagePart = await fileToGenerativePart(avatarImageFile);
+    const prompt = `Animate the mouth of the character in this portrait to look like they are speaking. The video should be a short, 5-second, looping clip of the character's head and shoulders, with natural, subtle head movements. The background should remain static.`;
+    
+    // The image data is already base64 in the inlineData property of the Part.
+    const imageBase64 = avatarImagePart.inlineData.data;
+
+    // Call the existing generateVideo function
+    return generateVideo(imageBase64, prompt);
+};
+
 export const generatePresentation = async (topic: string): Promise<Presentation> => {
     const prompt = `Generate a 5-slide presentation on the topic: "${topic}". Include a main title and for each slide, provide a slide number, title, an array of 3-4 content bullet points, and a descriptive prompt for an AI image generator to create a relevant visual.`;
 

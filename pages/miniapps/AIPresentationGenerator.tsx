@@ -135,39 +135,41 @@ const AIPresentationGenerator: React.FC<MiniAppProps> = ({ onBack }) => {
                          <div key={slide.slideNumber} className="bg-card border p-6 rounded-lg grid md:grid-cols-2 gap-6 items-center">
                             <div className="space-y-2">
                                 <h3 className="font-bold text-xl text-foreground">{slide.slideNumber}. {slide.title}</h3>
-                                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                                <ul className="list-disc list-inside space-y-1">
                                     {slide.content.map((point, i) => <li key={i}>{point}</li>)}
                                 </ul>
                             </div>
-                            <div className="bg-muted p-4 rounded-md">
-                                <p className="text-sm font-semibold text-foreground mb-2">{t('imageSuggestion')}</p>
-                                <p className="text-sm italic text-muted-foreground">"{slide.imagePrompt}"</p>
+                            <div className="bg-muted/50 rounded-lg p-4">
+                                <p className="text-xs font-semibold text-muted-foreground">{t('imageSuggestion')}</p>
+                                <p className="text-xs italic mt-1">{slide.imagePrompt}</p>
                             </div>
-                         </div>
+                        </div>
                     ))}
                 </div>
             );
         }
         return null;
     };
-    
+
     return (
         <MiniAppLayout controls={<Controls onBack={onBack} onGenerate={handleInitialGenerate} isLoading={isLoading && messages.length < 2} />}>
             <div className="h-full flex flex-col p-4">
                 <div className="flex-1 overflow-y-auto space-y-4 flex flex-col pb-4">
                     {messages.length === 0 && !isLoading && (
-                        <div className="m-auto text-center text-muted-foreground"><Icon name="sparkles" className="w-16 h-16 mx-auto" /><p>Your presentation outline will appear here.</p></div>
+                        <div className="m-auto text-center text-muted-foreground">
+                            <Icon name="presentation" className="w-16 h-16 mx-auto" />
+                            <p>Your presentation outline will appear here.</p>
+                        </div>
                     )}
                     {messages.map(msg => <div key={msg.id} className="flex flex-col">{renderMessageContent(msg)}</div>)}
                     {isLoading && <div className="self-start"><Icon name="spinner" className="w-6 h-6 animate-spin text-primary" /></div>}
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     <div ref={scrollRef} />
                 </div>
-                
                 {messages.length > 0 && (
                     <div className="flex-shrink-0 pt-4 border-t">
                         <div className="relative">
-                            <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="Refine your presentation... (e.g., 'make slide 3 more detailed')" className="flex h-12 w-full rounded-md border border-input bg-background ps-4 pe-12 text-sm" disabled={isLoading}/>
+                            <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} placeholder="Refine your presentation... (e.g., 'add a slide about future trends')" className="flex h-12 w-full rounded-md border border-input bg-background ps-4 pe-12 text-sm" disabled={isLoading}/>
                             <button onClick={handleSendMessage} disabled={isLoading || !userInput.trim()} className="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-primary text-primary-foreground disabled:opacity-50"><Icon name="send" className="w-5 h-5" /></button>
                         </div>
                     </div>

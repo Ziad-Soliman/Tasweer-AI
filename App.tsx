@@ -324,8 +324,9 @@ const AppContent: React.FC = () => {
              <header className="fixed top-0 start-0 end-0 z-40 bg-background/50 backdrop-blur-md border-b border-border/50">
                 <div className="px-4 flex justify-between items-center h-16">
                     <div className="flex items-center gap-6">
-                        <a href="#" className="flex items-center" onClick={(e) => { e.preventDefault(); handleNavClick('product studio'); }}>
-                            <span className="font-bold text-lg tracking-tight">CRE8 <span className="text-muted-foreground font-normal">{t('byZiadAshraf')}</span></span>
+                        <a href="#" className="flex flex-col leading-tight" onClick={(e) => { e.preventDefault(); handleNavClick('product studio'); }}>
+                            <span className="font-bold text-xl tracking-tighter">CRE8</span>
+                            <span className="text-xs text-muted-foreground">{t('byZiadAshraf')}</span>
                         </a>
                         <nav ref={menuRef} className="hidden md:flex items-center gap-1 bg-card/50 border border-border/50 rounded-full px-2 shadow-sm">
                             {navItems.map(item => {

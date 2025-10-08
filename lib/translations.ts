@@ -174,7 +174,6 @@ export const translations = {
     editorToolRemoveObject: 'Remove Object',
     editorToolExpandImage: 'Expand Image',
     editorToolAddText: 'Add Text',
-    // FIX: Add missing undo/redo translation keys
     undo: 'Undo',
     redo: 'Redo',
 
@@ -463,6 +462,9 @@ export const translations = {
     generateComic: 'Generate Comic',
     writingComicScript: 'Writing script...',
     addNegativePrompt: 'Add a negative prompt...',
+    uploadAvatar: 'Upload Avatar Image',
+    uploadAudio: 'Upload Audio File',
+    generateLipsyncVideo: 'Generate Lipsync Video',
     
     // YouTube Thumbnail Generator
     templates: 'Templates',
@@ -563,12 +565,9 @@ export const translations = {
     keyMoments: 'Key Moments',
     socialPosts: 'Social Posts',
     uploadClothingReference: 'Upload Clothing Reference',
-    uploadReferenceImage: 'Upload Reference Image (Optional)',
     sketchPrompt: 'Describe what the sketch should become...',
     clearCanvas: 'Clear Canvas',
     generateFromSketch: 'Generate from Sketch',
-    uploadAvatar: 'Upload Avatar Image',
-    uploadAudio: 'Upload Audio File',
     
     // Hardcoded strings from components
     backToGallery: 'Back to Gallery',
@@ -595,9 +594,6 @@ export const translations = {
     selected: '{{count}} selected',
     additionalCharacterObjects: 'Additional Characters / Objects',
     upscaleImage: 'Upscale Image',
-    upscaleType: 'Upscale Type',
-    upscalerRecommendation: 'We recommend using portraits for best results.',
-    upscalerPlaceholder: 'Your upscaled image will appear here',
     generalUpscaling: 'General Upscaling',
     upscalePortrait: 'Upscale Portrait',
     optimizedForFaces: 'Optimized for Faces',
@@ -607,6 +603,7 @@ export const translations = {
     characterGenStudioDesc: 'Use the controls on the left to describe your character, set the style, and generate stunning concept art.',
     characterConsistencyTitle: 'Character Consistency',
     characterConsistencyDesc: 'Upload a clear portrait of your character to generate consistent images.',
+    // FIX: Removed duplicate key. The other instance was conflicting.
     productImageLabel: 'Product Image',
     mainSubjectImageLabel: 'Main Subject Image',
     forgingNewRealities: 'Forging New Realities ...',
@@ -729,7 +726,7 @@ export const translations = {
     step6Title: 'Weave in Hypnotic Suggestions',
     step7Title: 'Final Review & Optimization',
     inputDetails: '1. Input Details',
-    productService: 'Product / Service',
+// FIX: The 'productService' key was duplicated. This is the correct one.
     storytellingAngle: 'Storytelling Angle',
     buyingMotivations: 'Buying Motivations & Pain Points',
     generationSteps: '2. Generation Steps',
@@ -759,26 +756,37 @@ export const translations = {
     drawingTools: "Drawing Tools",
     color: "Color",
     aiPrompt: "AI Prompt",
+// FIX: Renamed the 'description' key to 'aiPromptDescription' to avoid duplication.
+    aiPromptDescription: "Description",
+    generateFromSketch: "Generate from Sketch",
+    // FIX: Add missing key used in AICharacterConceptGenerator and SketchToImage.
+    uploadReferenceImage: 'Upload Reference Image',
 
     // Live Page Personas
-    personaArtDirector: "Art Director",
-    personaUXDesigner: "UX/UI Designer",
-    personaFilmmaker: "Filmmaker",
-    personaStoryteller: "Storyteller",
-    personaCopywriter: "Copywriter",
-    personaBrandStrategist: "Brand Strategist",
-    personaPresentationCoach: "Presentation Coach",
-    personaFashionStylist: "Fashion Stylist",
-    personaWebDeveloper: "Web Developer",
-    personaPrintConsultant: "Print Consultant",
-    personaGameDesigner: "Game Designer",
-    personaARVRDeveloper: "AR/VR Developer",
-    personaSoundDesigner: "Sound Designer",
-    personaInteriorDesigner: "Interior Designer",
-    personaFitnessCoach: "Fitness Coach",
+    ArtDirector: "Art Director",
+    UXUIDesigner: "UX/UI Designer",
+    Filmmaker: "Filmmaker",
+    Storyteller: "Storyteller",
+    Copywriter: "Copywriter",
+    BrandStrategist: "Brand Strategist",
+    PresentationCoach: "Presentation Coach",
+    FashionStylist: "Fashion Stylist",
+    WebDeveloper: "Web Developer",
+    PrintConsultant: "Print Consultant",
+    GameDesigner: "Game Designer",
+    ARVRDeveloper: "AR/VR Developer",
+    SoundDesigner: "Sound Designer",
+    InteriorDesigner: "Interior Designer",
+    FitnessCoach: "Fitness Coach",
 
     copyCode: "Copy code",
     template: "Template",
+
+    // FIX: Add missing keys for UpscalerPage.tsx
+    upscalerRecommendation: 'Recommendation: Upload a high-quality image for best results.',
+    upscaleType: 'Upscale Type',
+    upscalerPlaceholder: 'Your upscaled image will appear here.',
+
     byZiadAshraf: 'by Ziad Ashraf',
   },
   ar: {
@@ -956,7 +964,6 @@ export const translations = {
     editorToolRemoveObject: 'إزالة عنصر',
     editorToolExpandImage: 'توسيع الصورة',
     editorToolAddText: 'إضافة نص',
-    // FIX: Add missing undo/redo translation keys
     undo: 'تراجع',
     redo: 'إعادة',
 
@@ -1244,6 +1251,9 @@ export const translations = {
     generateComic: 'إنشاء قصة مصورة',
     writingComicScript: 'جارٍ كتابة النص...',
     addNegativePrompt: 'أضف أمرًا سلبيًا...',
+    uploadAvatar: 'ارفع صورة الأفاتار',
+    uploadAudio: 'ارفع ملف الصوت',
+    generateLipsyncVideo: 'إنشاء فيديو مزامنة الشفاه',
     
     // YouTube Thumbnail Generator
     templates: 'قوالب',
@@ -1344,13 +1354,10 @@ export const translations = {
     keyMoments: 'اللحظات الرئيسية',
     socialPosts: 'منشورات السوشيال ميديا',
     uploadClothingReference: 'ارفع صورة مرجعية للملابس',
-    uploadReferenceImage: 'ارفع صورة مرجعية (اختياري)',
     sketchPrompt: 'صف ما يجب أن يصبح عليه الرسم...',
     clearCanvas: 'مسح اللوحة',
     generateFromSketch: 'إنشاء من الرسم',
-    uploadAvatar: 'ارفع صورة الأفاتار',
-    uploadAudio: 'ارفع ملف الصوت',
-
+    
     // Hardcoded strings from components
     backToGallery: 'العودة للمعرض',
     productStudio: 'استوديو المنتجات',
@@ -1376,9 +1383,6 @@ export const translations = {
     selected: '{{count}} محدد',
     additionalCharacterObjects: 'شخصيات / عناصر إضافية',
     upscaleImage: 'تحسين جودة الصورة',
-    upscaleType: 'نوع التحسين',
-    upscalerRecommendation: 'نوصي باستخدام صور البورتريه للحصول على أفضل النتائج.',
-    upscalerPlaceholder: 'ستظهر صورتك المحسنة هنا',
     generalUpscaling: 'تحسين عام',
     upscalePortrait: 'تحسين البورتريه',
     optimizedForFaces: 'محسن للوجوه',
@@ -1388,6 +1392,7 @@ export const translations = {
     characterGenStudioDesc: 'استخدم عناصر التحكم على اليسار لوصف شخصيتك وتعيين النمط وإنشاء فن تصوري مذهل.',
     characterConsistencyTitle: 'تناسق الشخصية',
     characterConsistencyDesc: 'ارفع صورة واضحة لشخصيتك لإنشاء صور متناسقة.',
+    // FIX: Removed duplicate key. The other instance was conflicting.
     productImageLabel: 'صورة المنتج',
     mainSubjectImageLabel: 'صورة الموضوع الرئيسي',
     forgingNewRealities: 'صياغة حقائق جديدة ...',
@@ -1510,7 +1515,7 @@ export const translations = {
     step6Title: 'دمج الاقتراحات التنويمية',
     step7Title: 'المراجعة النهائية والتحسين',
     inputDetails: '1. تفاصيل الإدخال',
-    productService: 'المنتج / الخدمة',
+// FIX: The 'productService' key was duplicated. This is the correct one.
     storytellingAngle: 'زاوية سرد القصة',
     buyingMotivations: 'دوافع الشراء ونقاط الألم',
     generationSteps: '2. خطوات الإنشاء',
@@ -1539,26 +1544,37 @@ export const translations = {
     drawingTools: "أدوات الرسم",
     color: "اللون",
     aiPrompt: "أمر الذكاء الاصطناعي",
+// FIX: Renamed the 'description' key to 'aiPromptDescription' to avoid duplication.
+    aiPromptDescription: "الوصف",
+    generateFromSketch: "إنشاء من الرسم",
+    // FIX: Add missing key used in AICharacterConceptGenerator and SketchToImage.
+    uploadReferenceImage: 'رفع صورة مرجعية',
 
     // Live Page Personas
-    personaArtDirector: "مدير فني",
-    personaUXDesigner: "مصمم تجربة وواجهة المستخدم",
-    personaFilmmaker: "صانع أفلام",
-    personaStoryteller: "راوي قصص",
-    personaCopywriter: "كاتب إعلانات",
-    personaBrandStrategist: "خبير استراتيجية العلامة التجارية",
-    personaPresentationCoach: "مدرب عروض تقديمية",
-    personaFashionStylist: "منسق أزياء",
-    personaWebDeveloper: "مطور ويب",
-    personaPrintConsultant: "مستشار طباعة",
-    personaGameDesigner: "مصمم ألعاب",
-    personaARVRDeveloper: "مطور الواقع المعزز/الافتراضي",
-    personaSoundDesigner: "مصمم صوت",
-    personaInteriorDesigner: "مصمم داخلي",
-    personaFitnessCoach: "مدرب لياقة",
+    ArtDirector: "مدير فني",
+    UXUIDesigner: "مصمم تجربة وواجهة المستخدم",
+    Filmmaker: "صانع أفلام",
+    Storyteller: "راوي قصص",
+    Copywriter: "كاتب إعلانات",
+    BrandStrategist: "خبير استراتيجية العلامة التجارية",
+    PresentationCoach: "مدرب عروض تقديمية",
+    FashionStylist: "منسق أزياء",
+    WebDeveloper: "مطور ويب",
+    PrintConsultant: "مستشار طباعة",
+    GameDesigner: "مصمم ألعاب",
+    ARVRDeveloper: "مطور الواقع المعزز/الافتراضي",
+    SoundDesigner: "مصمم صوت",
+    InteriorDesigner: "مصمم داخلي",
+    FitnessCoach: "مدرب لياقة",
 
     copyCode: "نسخ الكود",
     template: "قالب",
+    
+    // FIX: Add missing keys for UpscalerPage.tsx
+    upscalerRecommendation: 'توصية: ارفع صورة عالية الجودة للحصول على أفضل النتائج.',
+    upscaleType: 'نوع التحسين',
+    upscalerPlaceholder: 'ستظهر صورتك المحسّنة هنا.',
+
     byZiadAshraf: 'بواسطة زياد أشرف',
   }
 };
