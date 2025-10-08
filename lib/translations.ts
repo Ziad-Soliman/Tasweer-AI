@@ -567,7 +567,6 @@ export const translations = {
     uploadClothingReference: 'Upload Clothing Reference',
     sketchPrompt: 'Describe what the sketch should become...',
     clearCanvas: 'Clear Canvas',
-    generateFromSketch: 'Generate from Sketch',
     
     // Hardcoded strings from components
     backToGallery: 'Back to Gallery',
@@ -726,7 +725,8 @@ export const translations = {
     step6Title: 'Weave in Hypnotic Suggestions',
     step7Title: 'Final Review & Optimization',
     inputDetails: '1. Input Details',
-// FIX: The 'productService' key was duplicated. This is the correct one.
+    // FIX: Added missing translation key used in NeuroSalesCopywriter.tsx.
+    productService: 'Product / Service',
     storytellingAngle: 'Storytelling Angle',
     buyingMotivations: 'Buying Motivations & Pain Points',
     generationSteps: '2. Generation Steps',
@@ -1356,7 +1356,6 @@ export const translations = {
     uploadClothingReference: 'ارفع صورة مرجعية للملابس',
     sketchPrompt: 'صف ما يجب أن يصبح عليه الرسم...',
     clearCanvas: 'مسح اللوحة',
-    generateFromSketch: 'إنشاء من الرسم',
     
     // Hardcoded strings from components
     backToGallery: 'العودة للمعرض',
@@ -1515,7 +1514,8 @@ export const translations = {
     step6Title: 'دمج الاقتراحات التنويمية',
     step7Title: 'المراجعة النهائية والتحسين',
     inputDetails: '1. تفاصيل الإدخال',
-// FIX: The 'productService' key was duplicated. This is the correct one.
+    // FIX: Added missing translation key used in NeuroSalesCopywriter.tsx.
+    productService: 'المنتج / الخدمة',
     storytellingAngle: 'زاوية سرد القصة',
     buyingMotivations: 'دوافع الشراء ونقاط الألم',
     generationSteps: '2. خطوات الإنشاء',
